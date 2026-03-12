@@ -1,5 +1,13 @@
 import { format, subDays, addDays, addWeeks, addMonths } from "date-fns";
 
+export interface ClientNote {
+  id: string;
+  collectorId: string;
+  collectorName: string;
+  date: string;
+  note: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -10,10 +18,17 @@ export interface Client {
   totalOwed: number;
   totalPaid: number;
   monthlyPayment: number;
+  downPayment: number;
+  installmentMonths: number;
   status: "active" | "delinquent" | "completed" | "new";
   assignedCollector: string;
   lastContact: string;
   nextPaymentDue: string;
+  caseNumber: string;
+  caseType: string;
+  daysAging: number;
+  tags: string[];
+  notes: ClientNote[];
 }
 
 export interface Payment {

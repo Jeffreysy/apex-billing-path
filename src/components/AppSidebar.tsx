@@ -54,7 +54,7 @@ const AppSidebar = () => {
         <p className="mb-2 mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           Collectors
         </p>
-        {navItems.slice(3).map((item) => {
+        {navItems.slice(4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
