@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
-import AROversightDashboard from "./pages/AROversightDashboard";
+import FinancialOversightDashboard from "./pages/FinancialOversightDashboard";
 import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
