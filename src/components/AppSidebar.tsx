@@ -37,7 +37,7 @@ const AppSidebar = () => {
         <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           Admin
         </p>
-        {navItems.slice(0, 3).map((item) => {
+        {navItems.slice(0, 4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
