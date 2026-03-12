@@ -112,41 +112,11 @@ const LegalDashboard = () => {
         <TaskPanel department="legal" />
       </div>
 
-      {/* All Clients with Billing */}
-      <div className="mt-6 dashboard-section">
-        <h2 className="mb-4 text-lg font-semibold">Client Billing Overview</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="pb-3 font-medium">Client</th>
-                <th className="pb-3 font-medium">Case #</th>
-                <th className="pb-3 font-medium">Type</th>
-                <th className="pb-3 font-medium">Stage</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 font-medium">Balance</th>
-                <th className="pb-3 font-medium">Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.slice(0, 12).map((c) => (
-                <tr key={c.id} className="border-b last:border-0">
-                  <td className="py-3 font-medium">{c.name}</td>
-                  <td className="py-3 font-mono text-xs">{c.caseNumber}</td>
-                  <td className="py-3 text-muted-foreground">{c.caseType}</td>
-                  <td className="py-3 capitalize">{c.caseStage}</td>
-                  <td className="py-3">
-                    <Badge variant={c.status === "delinquent" ? "destructive" : c.status === "completed" ? "secondary" : "default"} className="text-xs capitalize">{c.status}</Badge>
-                  </td>
-                  <td className="py-3 font-semibold">${(c.totalOwed - c.totalPaid).toLocaleString()}</td>
-                  <td className="py-3">
-                    <div className="flex flex-wrap gap-1">{c.tags.slice(0, 2).map((t) => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}</div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Billing info accessible via Client Search Bar above */}
+      <div className="mt-6 rounded-lg border border-dashed border-muted-foreground/30 p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          To view billing details, contract breakdown, notes, and tags for a specific client, use the <strong>Client Search Bar</strong> above.
+        </p>
       </div>
     </DashboardLayout>
   );
