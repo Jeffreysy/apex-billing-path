@@ -1,18 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  BarChart3,
-  Users,
   Phone,
   DollarSign,
   TrendingUp,
   LayoutDashboard,
   FileText,
+  Search,
 } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
   { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
   { path: "/contracts", label: "Contracts & AR", icon: FileText },
+  { path: "/clients", label: "Client Lookup", icon: Search },
   { path: "/collector/c1", label: "Sarah Mitchell", icon: Phone },
   { path: "/collector/c2", label: "James Rodriguez", icon: Phone },
   { path: "/collector/c3", label: "Aisha Patel", icon: Phone },
