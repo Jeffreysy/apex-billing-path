@@ -1,18 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  BarChart3,
-  Users,
   Phone,
   DollarSign,
   TrendingUp,
   LayoutDashboard,
   FileText,
+  Search,
 } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
   { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
   { path: "/contracts", label: "Contracts & AR", icon: FileText },
+  { path: "/clients", label: "Client Lookup", icon: Search },
   { path: "/collector/c1", label: "Sarah Mitchell", icon: Phone },
   { path: "/collector/c2", label: "James Rodriguez", icon: Phone },
   { path: "/collector/c3", label: "Aisha Patel", icon: Phone },
@@ -37,7 +37,7 @@ const AppSidebar = () => {
         <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           Admin
         </p>
-        {navItems.slice(0, 3).map((item) => {
+        {navItems.slice(0, 4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
@@ -54,7 +54,7 @@ const AppSidebar = () => {
         <p className="mb-2 mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           Collectors
         </p>
-        {navItems.slice(3).map((item) => {
+        {navItems.slice(4).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
