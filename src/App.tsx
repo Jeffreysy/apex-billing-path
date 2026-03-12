@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
+import ClientLookup from "./pages/ClientLookup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
