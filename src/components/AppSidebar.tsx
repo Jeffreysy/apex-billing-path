@@ -17,7 +17,7 @@ const sections = [
     items: [
       { path: "/collections", label: "Collections", icon: Phone },
       { path: "/legal", label: "Legal", icon: Scale },
-      { path: "/ar-oversight", label: "AR Oversight", icon: Eye },
+      { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
       { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
       { path: "/contracts", label: "Contracts & AR", icon: FileText },
       { path: "/clients", label: "Client Lookup", icon: Search },

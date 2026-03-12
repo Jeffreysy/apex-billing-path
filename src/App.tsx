@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
-import AROversightDashboard from "./pages/AROversightDashboard";
+import FinancialOversightDashboard from "./pages/FinancialOversightDashboard";
 import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
@@ -25,7 +25,8 @@ const App = () => (
           <Route path="/" element={<AdminDashboard />} />
           <Route path="/collections" element={<CollectionsDashboard />} />
           <Route path="/legal" element={<LegalDashboard />} />
-          <Route path="/ar-oversight" element={<AROversightDashboard />} />
+          <Route path="/ar-oversight" element={<FinancialOversightDashboard />} />
+          <Route path="/financial-oversight" element={<FinancialOversightDashboard />} />
           <Route path="/reporting" element={<ReportingPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/clients" element={<ClientLookup />} />

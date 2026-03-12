@@ -334,3 +334,56 @@ export function getCaseTypeBilling() {
     };
   }).filter((d) => d.count > 0);
 }
+
+// Transaction type breakdown
+export type TransactionType = "down_payment" | "monthly_installment" | "consult_fee" | "retainer_fee" | "court_filing" | "settlement";
+
+export function getTransactionsByType() {
+  const types: { type: TransactionType; label: string; total: number; count: number }[] = [
+    { type: "down_payment", label: "Down Payment", total: clients.filter(c => c.downPaymentPaid).reduce((s, c) => s + c.downPayment, 0), count: clients.filter(c => c.downPaymentPaid).length },
+    { type: "monthly_installment", label: "Monthly Installment", total: payments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0) * 0.6, count: Math.floor(payments.filter(p => p.status === "completed").length * 0.6) },
+    { type: "consult_fee", label: "Consult Fee", total: Math.floor(payments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0) * 0.12), count: Math.floor(payments.length * 0.1) },
+    { type: "retainer_fee", label: "Retainer Fee", total: Math.floor(payments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0) * 0.15), count: clients.filter(c => c.status !== "new").length },
+    { type: "court_filing", label: "Court Filing", total: Math.floor(payments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0) * 0.08), count: Math.floor(payments.length * 0.05) },
+    { type: "settlement", label: "Settlement", total: Math.floor(payments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0) * 0.05), count: clients.filter(c => c.caseStage === "settlement" || c.caseStage === "closed").length },
+  ];
+  return types;
+}
+
+export function getDailyCollections() {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  return days.map(day => ({
+    day,
+    collector: Math.floor(Math.random() * 8000) + 3000,
+    crm: Math.floor(Math.random() * 5000) + 2000,
+    total: 0,
+  })).map(d => ({ ...d, total: d.collector + d.crm }));
+}
+
+export function getWeeklyPastCollections() {
+  return Array.from({ length: 12 }, (_, i) => {
+    const weekStart = subDays(new Date(), (12 - i) * 7);
+    const collector = Math.floor(Math.random() * 18000) + 6000;
+    const crm = Math.floor(Math.random() * 12000) + 4000;
+    return {
+      week: format(weekStart, "MMM dd"),
+      collector,
+      crm,
+      total: collector + crm,
+    };
+  });
+}
+
+export function getMonthlyPastCollections() {
+  return Array.from({ length: 6 }, (_, i) => {
+    const month = subDays(new Date(), (6 - i) * 30);
+    const collector = Math.floor(Math.random() * 60000) + 25000;
+    const crm = Math.floor(Math.random() * 40000) + 15000;
+    return {
+      month: format(month, "MMM yyyy"),
+      collector,
+      crm,
+      total: collector + crm,
+    };
+  });
+}
