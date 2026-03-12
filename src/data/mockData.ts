@@ -8,6 +8,27 @@ export interface ClientNote {
   note: string;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  assignedTo: string; // department or person id
+  assignedToName: string;
+  assignedBy: string;
+  assignedByName: string;
+  department: "collections" | "legal" | "ar" | "admin";
+  targetDepartment: "collections" | "legal" | "ar" | "admin";
+  clientId?: string;
+  clientName?: string;
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "open" | "in_progress" | "completed" | "escalated";
+  createdDate: string;
+  dueDate: string;
+  notes: string;
+}
+
+export type CaseStage = "intake" | "discovery" | "negotiation" | "litigation" | "settlement" | "closed";
+
 export interface Client {
   id: string;
   name: string;
@@ -26,9 +47,12 @@ export interface Client {
   nextPaymentDue: string;
   caseNumber: string;
   caseType: string;
+  caseStage: CaseStage;
   daysAging: number;
   tags: string[];
   notes: ClientNote[];
+  retainerDate: string;
+  downPaymentPaid: boolean;
 }
 
 export interface Payment {
@@ -50,7 +74,7 @@ export interface CallLog {
   collectorId: string;
   collectorName: string;
   date: string;
-  duration: number; // seconds
+  duration: number;
   outcome: "payment_taken" | "promise_to_pay" | "no_answer" | "left_voicemail" | "callback_scheduled" | "disputed";
   notes: string;
 }
@@ -62,12 +86,13 @@ export interface Collector {
   totalCollected: number;
   callsMade: number;
   paymentsTaken: number;
+  isLead: boolean;
 }
 
 export const collectors: Collector[] = [
-  { id: "c1", name: "Sarah Mitchell", avatar: "SM", totalCollected: 47850, callsMade: 342, paymentsTaken: 89 },
-  { id: "c2", name: "James Rodriguez", avatar: "JR", totalCollected: 38200, callsMade: 298, paymentsTaken: 72 },
-  { id: "c3", name: "Aisha Patel", avatar: "AP", totalCollected: 52100, callsMade: 410, paymentsTaken: 98 },
+  { id: "c1", name: "Sarah Mitchell", avatar: "SM", totalCollected: 47850, callsMade: 342, paymentsTaken: 89, isLead: true },
+  { id: "c2", name: "James Rodriguez", avatar: "JR", totalCollected: 38200, callsMade: 298, paymentsTaken: 72, isLead: false },
+  { id: "c3", name: "Aisha Patel", avatar: "AP", totalCollected: 52100, callsMade: 410, paymentsTaken: 98, isLead: false },
 ];
 
 const clientNames = [
@@ -83,6 +108,8 @@ const caseTypes = [
   "Immigration", "Criminal Defense", "Estate Planning", "Business Litigation",
   "Real Estate", "Employment Law",
 ];
+
+const caseStages: CaseStage[] = ["intake", "discovery", "negotiation", "litigation", "settlement", "closed"];
 
 const tagOptions = [
   "VIP", "Payment Plan", "Auto-Pay", "Hardship", "Dispute", "Priority",
@@ -146,9 +173,12 @@ export const clients: Client[] = clientNames.map((name, i) => {
     nextPaymentDue: format(addDays(new Date(), Math.floor(Math.random() * 30)), "yyyy-MM-dd"),
     caseNumber: `CASE-2024-${String(1000 + i).slice(-4)}`,
     caseType: caseTypes[i % caseTypes.length],
+    caseStage: caseStages[i % caseStages.length],
     daysAging,
     tags: clientTags,
     notes: clientNotes.sort((a, b) => b.date.localeCompare(a.date)),
+    retainerDate: format(subDays(new Date(), Math.floor(Math.random() * 300) + 30), "yyyy-MM-dd"),
+    downPaymentPaid: status !== "new",
   };
 });
 
@@ -186,6 +216,49 @@ export const callLogs: CallLog[] = Array.from({ length: 80 }, (_, i) => {
   };
 });
 
+const taskTitles = [
+  "Follow up on disputed invoice",
+  "Client requesting payment plan modification",
+  "Escalate delinquent account for legal review",
+  "Verify settlement terms with attorney",
+  "Process refund for overpayment",
+  "Update client contact information",
+  "Schedule mediation hearing",
+  "Review retainer agreement terms",
+  "Send demand letter — 90+ days past due",
+  "Confirm client identity for compliance",
+  "Prepare case summary for court filing",
+  "Negotiate reduced settlement amount",
+];
+
+const departments: Task["department"][] = ["collections", "legal", "ar", "admin"];
+
+export const tasks: Task[] = Array.from({ length: 24 }, (_, i) => {
+  const client = clients[i % clients.length];
+  const fromDept = departments[i % 4];
+  const toDept = departments[(i + 1) % 4];
+  const priorities: Task["priority"][] = ["low", "medium", "high", "urgent"];
+  const statuses: Task["status"][] = ["open", "in_progress", "completed", "escalated"];
+  return {
+    id: `task-${i + 1}`,
+    title: taskTitles[i % taskTitles.length],
+    description: `Action required for ${client.name} — ${client.caseNumber}`,
+    assignedTo: toDept,
+    assignedToName: toDept.charAt(0).toUpperCase() + toDept.slice(1),
+    assignedBy: fromDept,
+    assignedByName: fromDept.charAt(0).toUpperCase() + fromDept.slice(1),
+    department: fromDept,
+    targetDepartment: toDept,
+    clientId: client.id,
+    clientName: client.name,
+    priority: priorities[i % 4],
+    status: statuses[i % 4],
+    createdDate: format(subDays(new Date(), Math.floor(Math.random() * 30)), "yyyy-MM-dd"),
+    dueDate: format(addDays(new Date(), Math.floor(Math.random() * 14) + 1), "yyyy-MM-dd"),
+    notes: `Created by ${fromDept} department for ${toDept} review.`,
+  };
+});
+
 // Chart data generators
 export function getWeeklyCollections(weeks: number) {
   return Array.from({ length: weeks }, (_, i) => {
@@ -219,6 +292,15 @@ export function getForecastData() {
   return weeks;
 }
 
+export function getMonthlyForecast() {
+  return Array.from({ length: 6 }, (_, i) => ({
+    month: format(addMonths(new Date(), i + 1), "MMM yyyy"),
+    projected: Math.floor(Math.random() * 120000) + 60000,
+    pessimistic: Math.floor(Math.random() * 80000) + 30000,
+    optimistic: Math.floor(Math.random() * 160000) + 90000,
+  }));
+}
+
 export function getContractAnalytics() {
   return Array.from({ length: 6 }, (_, i) => {
     const month = subDays(new Date(), (5 - i) * 30);
@@ -239,4 +321,16 @@ export function getARAgingData() {
     { range: "61-90 days", amount: 12000, count: 3 },
     { range: "90+ days", amount: 8500, count: 2 },
   ];
+}
+
+export function getCaseTypeBilling() {
+  return caseTypes.map((ct) => {
+    const caseClients = clients.filter((c) => c.caseType === ct);
+    return {
+      caseType: ct,
+      totalBilled: caseClients.reduce((s, c) => s + c.totalOwed, 0),
+      totalCollected: caseClients.reduce((s, c) => s + c.totalPaid, 0),
+      count: caseClients.length,
+    };
+  }).filter((d) => d.count > 0);
 }

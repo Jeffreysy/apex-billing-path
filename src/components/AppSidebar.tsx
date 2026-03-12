@@ -1,76 +1,89 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  Phone,
-  DollarSign,
-  TrendingUp,
-  LayoutDashboard,
-  FileText,
-  Search,
+  Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
+  Scale, Eye, Users, ChevronDown, ChevronRight,
 } from "lucide-react";
+import { useState } from "react";
 
-const navItems = [
-  { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
-  { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
-  { path: "/contracts", label: "Contracts & AR", icon: FileText },
-  { path: "/clients", label: "Client Lookup", icon: Search },
-  { path: "/collector/c1", label: "Sarah Mitchell", icon: Phone },
-  { path: "/collector/c2", label: "James Rodriguez", icon: Phone },
-  { path: "/collector/c3", label: "Aisha Patel", icon: Phone },
+const sections = [
+  {
+    label: "Admin",
+    items: [
+      { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Departments",
+    items: [
+      { path: "/collections", label: "Collections", icon: Phone },
+      { path: "/legal", label: "Legal", icon: Scale },
+      { path: "/ar-oversight", label: "AR Oversight", icon: Eye },
+      { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
+      { path: "/contracts", label: "Contracts & AR", icon: FileText },
+      { path: "/clients", label: "Client Lookup", icon: Search },
+    ],
+  },
+  {
+    label: "Collectors",
+    items: [
+      { path: "/collector/c1", label: "Sarah Mitchell (Lead)", icon: Users },
+      { path: "/collector/c2", label: "James Rodriguez", icon: Phone },
+      { path: "/collector/c3", label: "Aisha Patel", icon: Phone },
+    ],
+  },
 ];
 
 const AppSidebar = () => {
   const location = useLocation();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const toggle = (label: string) => setCollapsed((p) => ({ ...p, [label]: !p[label] }));
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-          <DollarSign className="h-5 w-5 text-sidebar-primary-foreground" />
+      <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+          <DollarSign className="h-4 w-4 text-sidebar-primary-foreground" />
         </div>
         <div>
           <h1 className="text-sm font-bold text-sidebar-primary-foreground">LexCollect</h1>
-          <p className="text-xs text-sidebar-foreground/60">Billing & Collections</p>
+          <p className="text-[10px] text-sidebar-foreground/60">Billing & Collections</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
-        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-          Admin
-        </p>
-        {navItems.slice(0, 4).map((item) => {
-          const isActive = location.pathname === item.path;
+      <nav className="flex-1 overflow-y-auto p-3">
+        {sections.map((section) => {
+          const isCollapsed = collapsed[section.label];
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`sidebar-link ${isActive ? "sidebar-link-active" : "sidebar-link-inactive"}`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-
-        <p className="mb-2 mt-6 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-          Collectors
-        </p>
-        {navItems.slice(4).map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`sidebar-link ${isActive ? "sidebar-link-active" : "sidebar-link-inactive"}`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
+            <div key={section.label} className="mb-1">
+              <button
+                onClick={() => toggle(section.label)}
+                className="mb-1 flex w-full items-center justify-between px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80"
+              >
+                {section.label}
+                {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </button>
+              {!isCollapsed && section.items.map((item) => {
+                const isActive = location.pathname === item.path ||
+                  (item.path !== "/" && location.pathname.startsWith(item.path));
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`sidebar-link ${isActive ? "sidebar-link-active" : "sidebar-link-inactive"}`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span className="truncate text-xs">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-sidebar-foreground/50">v1.0 Prototype</p>
+      <div className="border-t border-sidebar-border p-3">
+        <p className="text-[10px] text-sidebar-foreground/50">v2.0 — Role-Based Platform</p>
       </div>
     </aside>
   );
