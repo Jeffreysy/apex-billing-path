@@ -25,7 +25,7 @@ const CollectorDashboard = () => {
 
   if (col || cl || pl || cal) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
-  const collector = collectors.find(c => c.id === collectorId);
+  const collector = collectors.find(c => c.name === decodeURIComponent(collectorId || ""));
   if (!collector) return <DashboardLayout><p className="text-muted-foreground">Collector not found.</p></DashboardLayout>;
 
   const myClients = clients.filter(c => c.assignedCollector === collector.name);
