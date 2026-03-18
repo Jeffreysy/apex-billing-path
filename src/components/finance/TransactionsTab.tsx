@@ -20,8 +20,6 @@ const TransactionsTab = ({ dateRange }: Props) => {
   const [methodFilter, setMethodFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  if (pl || cl) return <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>;
-
   const transactionTypes = computeTransactionsByType(payments, clients);
   const totalTxnAmount = transactionTypes.reduce((s, t) => s + t.total, 0);
 
