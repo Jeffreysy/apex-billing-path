@@ -37,6 +37,8 @@ const TransactionsTab = ({ dateRange }: Props) => {
     }).sort((a, b) => b.date.localeCompare(a.date));
   }, [search, methodFilter, statusFilter, dateRange, payments]);
 
+  if (pl || cl) return <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

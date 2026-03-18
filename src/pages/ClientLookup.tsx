@@ -16,8 +16,6 @@ const ClientLookup = () => {
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
-
   const filteredClients = useMemo(() => {
     if (!search.trim()) return [];
     const q = search.toLowerCase();
