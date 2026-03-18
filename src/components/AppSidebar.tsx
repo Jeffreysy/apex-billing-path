@@ -26,9 +26,10 @@ const sections = [
   {
     label: "Collectors",
     items: [
-      { path: "/collector/c1", label: "Sarah Mitchell (Lead)", icon: Users },
-      { path: "/collector/c2", label: "James Rodriguez", icon: Phone },
-      { path: "/collector/c3", label: "Aisha Patel", icon: Phone },
+      { path: "/collector/Alejandro A", label: "Alejandro A", icon: Users },
+      { path: "/collector/Patricio D", label: "Patricio D", icon: Phone },
+      { path: "/collector/Patricio R", label: "Patricio R", icon: Phone },
+      { path: "/collector/Maritza V", label: "Maritza V", icon: Phone },
     ],
   },
 ];
