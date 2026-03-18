@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { clients } from "@/data/mockData";
+import { useMergedClients } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,11 @@ import {
 import { Search } from "lucide-react";
 
 const ARPortfolioTab = () => {
+  const { data: clients = [], isLoading } = useMergedClients();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading AR portfolio...</div>;
 
   const filtered = clients.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -30,9 +33,7 @@ const ARPortfolioTab = () => {
           <Input placeholder="Search clients or case numbers..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -61,10 +62,10 @@ const ARPortfolioTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map(c => {
+            {filtered.slice(0, 100).map(c => {
               const pct = c.totalOwed > 0 ? Math.round((c.totalPaid / c.totalOwed) * 100) : 0;
               const paidInstallments = c.downPaymentPaid
-                ? Math.min(c.installmentMonths, Math.floor((c.totalPaid - c.downPayment) / c.monthlyPayment))
+                ? Math.min(c.installmentMonths, Math.floor((c.totalPaid - c.downPayment) / Math.max(1, c.monthlyPayment)))
                 : 0;
               const remaining = Math.max(0, c.installmentMonths - Math.max(0, paidInstallments));
               return (
@@ -98,6 +99,7 @@ const ARPortfolioTab = () => {
             })}
           </TableBody>
         </Table>
+        {filtered.length > 100 && <p className="mt-2 text-xs text-muted-foreground text-center">Showing first 100 of {filtered.length} contracts</p>}
       </div>
     </div>
   );
