@@ -1,33 +1,28 @@
 import { useState, useMemo } from "react";
-import { payments, clients, getTransactionsByType } from "@/data/mockData";
+import { usePaymentsData, useMergedClients, computeTransactionsByType } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import {
-  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-} from "recharts";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
-const PIE_COLORS = [
-  "hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(152 60% 40%)",
-  "hsl(38 92% 50%)", "hsl(280 60% 50%)", "hsl(0 72% 51%)",
-];
+const PIE_COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(152 60% 40%)", "hsl(38 92% 50%)", "hsl(280 60% 50%)", "hsl(0 72% 51%)"];
 
 interface Props { dateRange?: DateRange }
 
 const TransactionsTab = ({ dateRange }: Props) => {
+  const { data: payments = [], isLoading: pl } = usePaymentsData();
+  const { data: clients = [], isLoading: cl } = useMergedClients();
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const transactionTypes = getTransactionsByType();
+  if (pl || cl) return <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>;
+
+  const transactionTypes = computeTransactionsByType(payments, clients);
   const totalTxnAmount = transactionTypes.reduce((s, t) => s + t.total, 0);
 
   const filtered = useMemo(() => {
@@ -42,11 +37,10 @@ const TransactionsTab = ({ dateRange }: Props) => {
       }
       return matchSearch && matchMethod && matchStatus && matchDate;
     }).sort((a, b) => b.date.localeCompare(a.date));
-  }, [search, methodFilter, statusFilter, dateRange]);
+  }, [search, methodFilter, statusFilter, dateRange, payments]);
 
   return (
     <div className="space-y-6">
-      {/* Transaction Type Breakdown */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Breakdown by Type</h2>
@@ -54,7 +48,7 @@ const TransactionsTab = ({ dateRange }: Props) => {
             {transactionTypes.map(t => (
               <div key={t.type} className="flex items-center gap-3">
                 <span className="w-36 text-sm font-medium text-foreground">{t.label}</span>
-                <div className="flex-1"><Progress value={(t.total / totalTxnAmount) * 100} className="h-2" /></div>
+                <div className="flex-1"><Progress value={totalTxnAmount > 0 ? (t.total / totalTxnAmount) * 100 : 0} className="h-2" /></div>
                 <span className="w-20 text-right text-sm font-semibold text-foreground">${Math.round(t.total).toLocaleString()}</span>
                 <Badge variant="outline" className="text-[10px] w-10 justify-center">{t.count}</Badge>
               </div>
@@ -75,7 +69,6 @@ const TransactionsTab = ({ dateRange }: Props) => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -102,7 +95,6 @@ const TransactionsTab = ({ dateRange }: Props) => {
         </Select>
       </div>
 
-      {/* Transaction Table */}
       <div className="dashboard-section overflow-x-auto">
         <Table>
           <TableHeader>
@@ -116,7 +108,7 @@ const TransactionsTab = ({ dateRange }: Props) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map(p => (
+            {filtered.slice(0, 100).map(p => (
               <TableRow key={p.id}>
                 <TableCell className="text-xs">{p.date}</TableCell>
                 <TableCell className="font-medium">{p.clientName}</TableCell>

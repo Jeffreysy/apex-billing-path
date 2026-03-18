@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { clients } from "@/data/mockData";
+import { useMergedClients } from "@/hooks/useSupabaseData";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ClientSearchBar = () => {
+  const { data: clients = [] } = useMergedClients();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const ClientSearchBar = () => {
     return clients.filter(
       (c) => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
     ).slice(0, 8);
-  }, [search]);
+  }, [search, clients]);
 
   const statusVariant: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
     active: "default", delinquent: "destructive", completed: "secondary", new: "outline",

@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { getForecastData, getWeeklyCollections, getMonthlyCollections, getContractAnalytics } from "@/data/mockData";
+import { useMergedClients, useCollectionsByAging, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, LineChart, Line,
@@ -7,19 +7,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ReportingPage = () => {
-  const forecastData = getForecastData();
-  const weeklyData = getWeeklyCollections(12);
-  const monthlyData = getMonthlyCollections(6);
-  const contractData = getContractAnalytics();
+  const { data: clients = [], isLoading: cl } = useMergedClients();
+  const { data: agingRaw = [], isLoading: al } = useCollectionsByAging();
+
+  if (cl || al) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
+
+  const forecastData = computeForecastData(clients);
+  const weeklyData = computeWeeklyCollections(agingRaw);
+  const monthlyData = computeMonthlyCollections(agingRaw);
+  const contractData = computeContractAnalytics(clients);
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Reporting & Forecasting</h1>
-        <p className="text-muted-foreground">Revenue projections, historical collections, and contract analytics</p>
-      </div>
-
-      {/* Forecast */}
+      <div className="mb-6"><h1 className="text-2xl font-bold">Reporting & Forecasting</h1><p className="text-muted-foreground">Revenue projections, historical collections, and contract analytics</p></div>
       <div className="dashboard-section mb-6">
         <h2 className="mb-1 text-lg font-semibold">Revenue Forecast — Next 8 Weeks</h2>
         <p className="mb-4 text-sm text-muted-foreground">Projected incoming payments with optimistic and pessimistic bands</p>
@@ -36,15 +36,10 @@ const ReportingPage = () => {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Historical */}
       <div className="dashboard-section mb-6">
         <h2 className="mb-4 text-lg font-semibold">Historical Collections</h2>
         <Tabs defaultValue="weekly">
-          <TabsList>
-            <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          </TabsList>
+          <TabsList><TabsTrigger value="weekly">Weekly</TabsTrigger><TabsTrigger value="monthly">Monthly</TabsTrigger></TabsList>
           <TabsContent value="weekly">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={weeklyData}>
@@ -73,8 +68,6 @@ const ReportingPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Contract Analytics */}
       <div className="dashboard-section">
         <h2 className="mb-1 text-lg font-semibold">Contract Analytics</h2>
         <p className="mb-4 text-sm text-muted-foreground">New contracts started vs contracts reaching full maturity each month</p>
@@ -83,8 +76,7 @@ const ReportingPage = () => {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(220 10% 46%)" />
             <YAxis tick={{ fontSize: 12 }} stroke="hsl(220 10% 46%)" />
-            <Tooltip />
-            <Legend />
+            <Tooltip /><Legend />
             <Line type="monotone" dataKey="started" stroke="hsl(174 60% 40%)" strokeWidth={2} name="Contracts Started" dot={{ r: 4 }} />
             <Line type="monotone" dataKey="matured" stroke="hsl(152 60% 40%)" strokeWidth={2} name="Fully Matured" dot={{ r: 4 }} />
             <Line type="monotone" dataKey="delinquent" stroke="hsl(0 72% 51%)" strokeWidth={2} name="Delinquent" dot={{ r: 4 }} />
