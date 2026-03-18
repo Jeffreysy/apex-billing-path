@@ -39,6 +39,8 @@ const ClientLookup = () => {
     [selectedClient, collectors]
   );
 
+  if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+
   const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
     active: { variant: "default", icon: CheckCircle },
     delinquent: { variant: "destructive", icon: AlertTriangle },
