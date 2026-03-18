@@ -55,6 +55,39 @@ export type Database = {
           },
         ]
       }
+      ar_monthly_summary: {
+        Row: {
+          created_at: string | null
+          days_31_60: number | null
+          days_61_90: number | null
+          id: string
+          month: string
+          over_90: number | null
+          total: number | null
+          under_30: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          days_31_60?: number | null
+          days_61_90?: number | null
+          id?: string
+          month: string
+          over_90?: number | null
+          total?: number | null
+          under_30?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          days_31_60?: number | null
+          days_61_90?: number | null
+          id?: string
+          month?: string
+          over_90?: number | null
+          total?: number | null
+          under_30?: number | null
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -317,7 +350,7 @@ export type Database = {
           client: string
           client_id: string | null
           collected: number | null
-          collector: string
+          collector: string | null
           created_at: string | null
           days_out: number | null
           delinquency_status: string | null
@@ -341,7 +374,7 @@ export type Database = {
           client: string
           client_id?: string | null
           collected?: number | null
-          collector: string
+          collector?: string | null
           created_at?: string | null
           days_out?: number | null
           delinquency_status?: string | null
@@ -365,7 +398,7 @@ export type Database = {
           client?: string
           client_id?: string | null
           collected?: number | null
-          collector?: string
+          collector?: string | null
           created_at?: string | null
           days_out?: number | null
           delinquency_status?: string | null
@@ -880,7 +913,7 @@ export type Database = {
         Row: {
           aging_bucket: string | null
           amount: number
-          client_id: string
+          client_id: string | null
           collector_name: string | null
           commission: number | null
           created_at: string
@@ -899,7 +932,7 @@ export type Database = {
         Insert: {
           aging_bucket?: string | null
           amount: number
-          client_id: string
+          client_id?: string | null
           collector_name?: string | null
           commission?: number | null
           created_at?: string
@@ -918,7 +951,7 @@ export type Database = {
         Update: {
           aging_bucket?: string | null
           amount?: number
-          client_id?: string
+          client_id?: string | null
           collector_name?: string | null
           commission?: number | null
           created_at?: string
@@ -994,6 +1027,36 @@ export type Database = {
             | Database["public"]["Enums"]["timekeeper_type"]
             | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      team_performance: {
+        Row: {
+          avg_per_call: number | null
+          collected_calls: number | null
+          collector: string
+          created_at: string | null
+          id: string
+          month: string
+          total_collected: number | null
+        }
+        Insert: {
+          avg_per_call?: number | null
+          collected_calls?: number | null
+          collector: string
+          created_at?: string | null
+          id?: string
+          month: string
+          total_collected?: number | null
+        }
+        Update: {
+          avg_per_call?: number | null
+          collected_calls?: number | null
+          collector?: string
+          created_at?: string | null
+          id?: string
+          month?: string
+          total_collected?: number | null
         }
         Relationships: []
       }
