@@ -177,8 +177,137 @@ export type Database = {
           },
         ]
       }
+      case_events: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          event_date: string
+          event_time: string | null
+          event_type: string
+          id: string
+          immigration_case_id: string | null
+          judge: string | null
+          location: string | null
+          matter_id: string | null
+          notes: string | null
+          result: string | null
+          webex_or_in_person: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          event_date: string
+          event_time?: string | null
+          event_type: string
+          id?: string
+          immigration_case_id?: string | null
+          judge?: string | null
+          location?: string | null
+          matter_id?: string | null
+          notes?: string | null
+          result?: string | null
+          webex_or_in_person?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          event_date?: string
+          event_time?: string | null
+          event_type?: string
+          id?: string
+          immigration_case_id?: string | null
+          judge?: string | null
+          location?: string | null
+          matter_id?: string | null
+          notes?: string | null
+          result?: string | null
+          webex_or_in_person?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_events_immigration_case_id_fkey"
+            columns: ["immigration_case_id"]
+            isOneToOne: false
+            referencedRelation: "immigration_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_events_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "matters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_milestones: {
+        Row: {
+          client_id: string | null
+          completed: boolean | null
+          created_at: string | null
+          id: string
+          immigration_case_id: string
+          milestone_date: string | null
+          milestone_type: string
+          notes: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          immigration_case_id: string
+          milestone_date?: string | null
+          milestone_type: string
+          notes?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          immigration_case_id?: string
+          milestone_date?: string | null
+          milestone_type?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_milestones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_milestones_immigration_case_id_fkey"
+            columns: ["immigration_case_id"]
+            isOneToOne: false
+            referencedRelation: "immigration_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
+          a_number: string | null
           address_line1: string | null
           address_line2: string | null
           assigned_collector: string | null
@@ -192,20 +321,28 @@ export type Database = {
           custom_fields: Json | null
           days_past_due: number | null
           delinquency_status: string | null
+          detained: boolean | null
           email: string | null
+          filevine_project_id: string | null
           id: string
           is_active: boolean
+          mycase_id: number | null
           name: string
+          nationality: string | null
           next_payment_date: string | null
           notes: string | null
           payment_terms_days: number
           phone: string | null
           practice_area: string | null
+          preferred_contact_method: string | null
+          preferred_language: string | null
+          referral_source: string | null
           state: string | null
           updated_at: string
           zip_code: string | null
         }
         Insert: {
+          a_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
           assigned_collector?: string | null
@@ -219,20 +356,28 @@ export type Database = {
           custom_fields?: Json | null
           days_past_due?: number | null
           delinquency_status?: string | null
+          detained?: boolean | null
           email?: string | null
+          filevine_project_id?: string | null
           id?: string
           is_active?: boolean
+          mycase_id?: number | null
           name: string
+          nationality?: string | null
           next_payment_date?: string | null
           notes?: string | null
           payment_terms_days?: number
           phone?: string | null
           practice_area?: string | null
+          preferred_contact_method?: string | null
+          preferred_language?: string | null
+          referral_source?: string | null
           state?: string | null
           updated_at?: string
           zip_code?: string | null
         }
         Update: {
+          a_number?: string | null
           address_line1?: string | null
           address_line2?: string | null
           assigned_collector?: string | null
@@ -246,15 +391,22 @@ export type Database = {
           custom_fields?: Json | null
           days_past_due?: number | null
           delinquency_status?: string | null
+          detained?: boolean | null
           email?: string | null
+          filevine_project_id?: string | null
           id?: string
           is_active?: boolean
+          mycase_id?: number | null
           name?: string
+          nationality?: string | null
           next_payment_date?: string | null
           notes?: string | null
           payment_terms_days?: number
           phone?: string | null
           practice_area?: string | null
+          preferred_contact_method?: string | null
+          preferred_language?: string | null
+          referral_source?: string | null
           state?: string | null
           updated_at?: string
           zip_code?: string | null
@@ -275,6 +427,7 @@ export type Database = {
           activity_type: string | null
           call_direction: string | null
           case_status: string | null
+          client_id: string | null
           client_name: string
           collected_amount: number | null
           collector: string
@@ -299,6 +452,7 @@ export type Database = {
           activity_type?: string | null
           call_direction?: string | null
           case_status?: string | null
+          client_id?: string | null
           client_name: string
           collected_amount?: number | null
           collector: string
@@ -323,6 +477,7 @@ export type Database = {
           activity_type?: string | null
           call_direction?: string | null
           case_status?: string | null
+          client_id?: string | null
           client_name?: string
           collected_amount?: number | null
           collector?: string
@@ -342,7 +497,15 @@ export type Database = {
           transaction_id?: string | null
           weekday?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "collection_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contracts: {
         Row: {
@@ -358,6 +521,7 @@ export type Database = {
           down_payment_paid: boolean | null
           id: string
           installments_paid: number | null
+          matter_id: string | null
           maturity_date: string | null
           monthly_installment: number | null
           next_due_date: string | null
@@ -382,6 +546,7 @@ export type Database = {
           down_payment_paid?: boolean | null
           id?: string
           installments_paid?: number | null
+          matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
           next_due_date?: string | null
@@ -406,6 +571,7 @@ export type Database = {
           down_payment_paid?: boolean | null
           id?: string
           installments_paid?: number | null
+          matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
           next_due_date?: string | null
@@ -423,6 +589,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "matters"
             referencedColumns: ["id"]
           },
         ]
@@ -530,6 +703,105 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      immigration_cases: {
+        Row: {
+          a_number: string | null
+          case_number: string
+          case_stage: string | null
+          case_type: string
+          client_id: string | null
+          created_at: string | null
+          date_retained: string | null
+          detained: boolean | null
+          filevine_id: string | null
+          filevine_phase: string | null
+          filevine_project_id: string | null
+          hearing_type: string | null
+          id: string
+          immigration_court: string | null
+          immigration_judge: string | null
+          lead_attorney: string | null
+          matter_id: string | null
+          nationality: string | null
+          next_steps: string | null
+          notes: string | null
+          paralegal: string | null
+          practice_area: string
+          retained_for: string | null
+          team: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          a_number?: string | null
+          case_number: string
+          case_stage?: string | null
+          case_type: string
+          client_id?: string | null
+          created_at?: string | null
+          date_retained?: string | null
+          detained?: boolean | null
+          filevine_id?: string | null
+          filevine_phase?: string | null
+          filevine_project_id?: string | null
+          hearing_type?: string | null
+          id?: string
+          immigration_court?: string | null
+          immigration_judge?: string | null
+          lead_attorney?: string | null
+          matter_id?: string | null
+          nationality?: string | null
+          next_steps?: string | null
+          notes?: string | null
+          paralegal?: string | null
+          practice_area: string
+          retained_for?: string | null
+          team?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          a_number?: string | null
+          case_number?: string
+          case_stage?: string | null
+          case_type?: string
+          client_id?: string | null
+          created_at?: string | null
+          date_retained?: string | null
+          detained?: boolean | null
+          filevine_id?: string | null
+          filevine_phase?: string | null
+          filevine_project_id?: string | null
+          hearing_type?: string | null
+          id?: string
+          immigration_court?: string | null
+          immigration_judge?: string | null
+          lead_attorney?: string | null
+          matter_id?: string | null
+          nationality?: string | null
+          next_steps?: string | null
+          notes?: string | null
+          paralegal?: string | null
+          practice_area?: string
+          retained_for?: string | null
+          team?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "immigration_cases_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "immigration_cases_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "matters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_jobs: {
         Row: {
@@ -781,16 +1053,25 @@ export type Database = {
       }
       matters: {
         Row: {
+          a_number: string | null
           billing_type: Database["public"]["Enums"]["billing_type"]
           budget_amount: number | null
+          case_stage: string | null
           client_id: string
           close_date: string | null
           contingency_percent: number | null
+          court_case_number: string | null
           created_at: string
           custom_fields: Json | null
           description: string | null
+          detained: boolean | null
+          filevine_id: string | null
+          filevine_project_id: string | null
           flat_fee_amount: number | null
+          hearing_type: string | null
           id: string
+          immigration_court: string | null
+          immigration_judge: string | null
           matter_number: string
           name: string
           notes: string | null
@@ -803,16 +1084,25 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          a_number?: string | null
           billing_type?: Database["public"]["Enums"]["billing_type"]
           budget_amount?: number | null
+          case_stage?: string | null
           client_id: string
           close_date?: string | null
           contingency_percent?: number | null
+          court_case_number?: string | null
           created_at?: string
           custom_fields?: Json | null
           description?: string | null
+          detained?: boolean | null
+          filevine_id?: string | null
+          filevine_project_id?: string | null
           flat_fee_amount?: number | null
+          hearing_type?: string | null
           id?: string
+          immigration_court?: string | null
+          immigration_judge?: string | null
           matter_number: string
           name: string
           notes?: string | null
@@ -825,16 +1115,25 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          a_number?: string | null
           billing_type?: Database["public"]["Enums"]["billing_type"]
           budget_amount?: number | null
+          case_stage?: string | null
           client_id?: string
           close_date?: string | null
           contingency_percent?: number | null
+          court_case_number?: string | null
           created_at?: string
           custom_fields?: Json | null
           description?: string | null
+          detained?: boolean | null
+          filevine_id?: string | null
+          filevine_project_id?: string | null
           flat_fee_amount?: number | null
+          hearing_type?: string | null
           id?: string
+          immigration_court?: string | null
+          immigration_judge?: string | null
           matter_number?: string
           name?: string
           notes?: string | null
