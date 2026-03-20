@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -41,30 +41,18 @@ const ClientLookup = () => {
     [selectedClient, collectors]
   );
 
-  // Immigration cases for selected client - match by client name since contracts are the source
-  const clientImmigrationCases = useMemo(() => {
-    if (!selectedClient) return [];
-    const clientName = selectedClient.name.toLowerCase();
-    // Try matching by client_id first, then by name through clients table
-    return immigrationCases.filter(ic => {
-      // Match by name - find the client record that matches
-      return ic.client_id !== null;
-    }).filter(ic => {
-      // We need to match through the client name
-      const matchingCase = immigrationCases.find(c => c.id === ic.id);
-      return matchingCase !== undefined;
-    });
-  }, [selectedClient, immigrationCases]);
-
-  // Get all immigration cases (we'll show all for the selected client by matching client_id)
+  // Immigration cases for selected client - match by client_id OR by name from notes field
   const clientCasesById = useMemo(() => {
     if (!selectedClient) return [];
-    // Match contracts to clients, then clients to immigration_cases
-    // Since selectedClient comes from contracts, we try to match the client name
+    const clientName = selectedClient.name.toLowerCase().trim();
     return immigrationCases.filter(ic => {
-      if (!ic.client_id) return false;
-      // We don't have direct client_id on the contract-based selectedClient, so match by case_number
-      return ic.case_number === selectedClient.caseNumber;
+      // Match by case_number
+      if (ic.case_number === selectedClient.caseNumber) return true;
+      // Match by client_id if available (through clients table linkage)
+      if (ic.client_id) return false; // already handled above if case_number matched
+      // Match by extracting name from notes field (remove "Filevine: " prefix)
+      const notesName = extractClientNameFromNotes(ic.notes).toLowerCase().trim();
+      return notesName === clientName;
     });
   }, [selectedClient, immigrationCases]);
 
