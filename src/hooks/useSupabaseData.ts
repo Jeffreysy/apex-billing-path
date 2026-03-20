@@ -232,16 +232,38 @@ export function useCollectorPerformance() {
   });
 }
 
+// Helper: extract client name from notes by removing "Filevine: " prefix
+export function extractClientNameFromNotes(notes: string | null): string {
+  if (!notes) return "";
+  const prefix = "Filevine: ";
+  if (notes.startsWith(prefix)) return notes.slice(prefix.length).trim();
+  return notes.trim();
+}
+
 export function useImmigrationCases() {
   return useQuery({
     queryKey: ["immigration-cases"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("immigration_cases")
-        .select("*")
-        .range(0, 4999);
-      if (error) throw error;
-      return data || [];
+      // Paginate to fetch all cases (Supabase max 1000 per request)
+      const allData: any[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("immigration_cases")
+          .select("*")
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData.push(...data);
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
     },
     staleTime: 5 * 60 * 1000,
   });
