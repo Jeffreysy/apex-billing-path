@@ -273,12 +273,25 @@ export function useCaseMilestones() {
   return useQuery({
     queryKey: ["case-milestones"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("case_milestones")
-        .select("*")
-        .range(0, 4999);
-      if (error) throw error;
-      return data || [];
+      const allData: any[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("case_milestones")
+          .select("*")
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData.push(...data);
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allData;
     },
     staleTime: 5 * 60 * 1000,
   });
