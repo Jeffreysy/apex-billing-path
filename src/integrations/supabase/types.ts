@@ -709,7 +709,7 @@ export type Database = {
           a_number: string | null
           case_number: string
           case_stage: string | null
-          case_type: string
+          case_type: string | null
           client_id: string | null
           created_at: string | null
           date_retained: string | null
@@ -736,7 +736,7 @@ export type Database = {
           a_number?: string | null
           case_number: string
           case_stage?: string | null
-          case_type: string
+          case_type?: string | null
           client_id?: string | null
           created_at?: string | null
           date_retained?: string | null
@@ -763,7 +763,7 @@ export type Database = {
           a_number?: string | null
           case_number?: string
           case_stage?: string | null
-          case_type?: string
+          case_type?: string | null
           client_id?: string | null
           created_at?: string | null
           date_retained?: string | null
