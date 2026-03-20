@@ -55,6 +55,8 @@ export interface Client {
   notes: ClientNote[];
   retainerDate: string;
   downPaymentPaid: boolean;
+  filevineId?: string;
+  mycaseId?: number;
 }
 
 export interface Payment {

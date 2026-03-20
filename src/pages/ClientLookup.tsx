@@ -1,18 +1,20 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag } from "lucide-react";
+import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag, Scale, Calendar } from "lucide-react";
 
 const ClientLookup = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: collectors = [] } = useCollectors();
   const { data: payments = [] } = usePaymentsData();
   const { data: callLogs = [] } = useCollectionActivities();
+  const { data: immigrationCases = [] } = useImmigrationCases();
+  const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
@@ -38,6 +40,41 @@ const ClientLookup = () => {
     () => selectedClient ? collectors.find(c => c.name === selectedClient.assignedCollector) : null,
     [selectedClient, collectors]
   );
+
+  // Immigration cases for selected client - match by client name since contracts are the source
+  const clientImmigrationCases = useMemo(() => {
+    if (!selectedClient) return [];
+    const clientName = selectedClient.name.toLowerCase();
+    // Try matching by client_id first, then by name through clients table
+    return immigrationCases.filter(ic => {
+      // Match by name - find the client record that matches
+      return ic.client_id !== null;
+    }).filter(ic => {
+      // We need to match through the client name
+      const matchingCase = immigrationCases.find(c => c.id === ic.id);
+      return matchingCase !== undefined;
+    });
+  }, [selectedClient, immigrationCases]);
+
+  // Get all immigration cases (we'll show all for the selected client by matching client_id)
+  const clientCasesById = useMemo(() => {
+    if (!selectedClient) return [];
+    // Match contracts to clients, then clients to immigration_cases
+    // Since selectedClient comes from contracts, we try to match the client name
+    return immigrationCases.filter(ic => {
+      if (!ic.client_id) return false;
+      // We don't have direct client_id on the contract-based selectedClient, so match by case_number
+      return ic.case_number === selectedClient.caseNumber;
+    });
+  }, [selectedClient, immigrationCases]);
+
+  // Get milestones for this client's cases
+  const clientMilestones = useMemo(() => {
+    const caseIds = new Set(clientCasesById.map(c => c.id));
+    return caseMilestones
+      .filter(m => caseIds.has(m.immigration_case_id))
+      .sort((a, b) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
+  }, [clientCasesById, caseMilestones]);
 
   if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
@@ -119,6 +156,53 @@ const ClientLookup = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Immigration Cases Section */}
+          {clientCasesById.length > 0 && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Scale className="h-4 w-4 text-secondary" />Immigration Cases ({clientCasesById.length})</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="max-h-64 space-y-2 overflow-y-auto">
+                    {clientCasesById.map(ic => (
+                      <div key={ic.id} className="rounded-md border px-3 py-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{ic.case_number}</span>
+                          <Badge variant="outline" className="text-xs capitalize">{ic.case_stage || "—"}</Badge>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>{ic.practice_area}</span>
+                          {ic.lead_attorney && <span>· Atty: {ic.lead_attorney}</span>}
+                          {ic.detained && <Badge variant="destructive" className="text-[10px]">Detained</Badge>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-secondary" />Case Milestones ({clientMilestones.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {clientMilestones.length === 0 ? <p className="text-sm text-muted-foreground">No milestones recorded.</p> : (
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
+                      {clientMilestones.map(m => (
+                        <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <div>
+                            <span className="font-medium">{m.milestone_type}</span>
+                            {m.notes && <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {m.completed && <CheckCircle className="h-3.5 w-3.5 text-secondary" />}
+                            <span className="text-xs text-muted-foreground">{m.milestone_date || "—"}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>

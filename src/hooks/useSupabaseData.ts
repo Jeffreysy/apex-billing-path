@@ -96,6 +96,8 @@ export function useMergedClients() {
           notes: [],
           retainerDate: contract.start_date || "",
           downPaymentPaid: contract.down_payment_paid || false,
+          filevineId: client?.filevine_project_id || undefined,
+          mycaseId: client?.mycase_id ? Number(client.mycase_id) : undefined,
         };
       });
     },
@@ -223,6 +225,36 @@ export function useCollectorPerformance() {
         .select("*")
         .order("month", { ascending: false })
         .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useImmigrationCases() {
+  return useQuery({
+    queryKey: ["immigration-cases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("immigration_cases")
+        .select("*")
+        .range(0, 4999);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCaseMilestones() {
+  return useQuery({
+    queryKey: ["case-milestones"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("case_milestones")
+        .select("*")
+        .range(0, 4999);
       if (error) throw error;
       return data || [];
     },

@@ -2,8 +2,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { tasks } from "@/data/mockData";
-import { useMergedClients, usePaymentsData, useCollectionActivities, useCollectors, useCollectionsByAging, computeWeeklyCollections, computeContractAnalytics, computeCaseTypeBilling } from "@/hooks/useSupabaseData";
-import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle } from "lucide-react";
+import { useMergedClients, usePaymentsData, useCollectionActivities, useCollectors, useCollectionsByAging, computeWeeklyCollections, computeContractAnalytics, computeCaseTypeBilling, useImmigrationCases } from "@/hooks/useSupabaseData";
+import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +16,9 @@ const AdminDashboard = () => {
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: agingRaw = [] } = useCollectionsByAging();
+  const { data: immigrationCases = [], isLoading: icl } = useImmigrationCases();
 
-  if (cl || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
+  if (cl || pl || cal || col || icl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
   const totalAR = clients.reduce((sum, c) => sum + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -27,6 +28,14 @@ const AdminDashboard = () => {
   const weeklyData = computeWeeklyCollections(agingRaw);
   const contractData = computeContractAnalytics(clients);
 
+  // Immigration KPIs
+  const activeImmigrationCases = immigrationCases.filter(c => (c.case_stage || "").toLowerCase() !== "closed").length;
+  const practiceAreaBreakdown = new Map<string, number>();
+  for (const c of immigrationCases.filter(ic => (ic.case_stage || "").toLowerCase() !== "closed")) {
+    const area = c.practice_area || "Unknown";
+    practiceAreaBreakdown.set(area, (practiceAreaBreakdown.get(area) || 0) + 1);
+  }
+  const topPracticeAreas = Array.from(practiceAreaBreakdown, ([area, count]) => ({ area, count })).sort((a, b) => b.count - a.count).slice(0, 4);
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
   const deptData = [
@@ -47,12 +56,21 @@ const AdminDashboard = () => {
     <DashboardLayout title="Admin Dashboard">
       <div className="mb-6"><h1 className="text-2xl font-bold">Admin Dashboard</h1><p className="text-muted-foreground">High-level overview of all departments, KPIs, and firm-wide activity</p></div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total AR Outstanding" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="Active Clients" value={String(activeClients)} icon={<Users className="h-5 w-5" />} />
         <StatCard label="Open Tasks" value={String(openTasks)} icon={<AlertTriangle className="h-5 w-5" />} />
+        <StatCard label="Active Imm. Cases" value={String(activeImmigrationCases)} icon={<Briefcase className="h-5 w-5" />} />
       </div>
+
+      {topPracticeAreas.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {topPracticeAreas.map(pa => (
+            <Badge key={pa.area} variant="outline" className="text-xs">{pa.area}: {pa.count}</Badge>
+          ))}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="dashboard-section lg:col-span-2">
