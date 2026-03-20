@@ -13,6 +13,8 @@ const ClientLookup = () => {
   const { data: collectors = [] } = useCollectors();
   const { data: payments = [] } = usePaymentsData();
   const { data: callLogs = [] } = useCollectionActivities();
+  const { data: immigrationCases = [] } = useImmigrationCases();
+  const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
