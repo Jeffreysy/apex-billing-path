@@ -61,7 +61,16 @@ const AdminDashboard = () => {
         <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="Active Clients" value={String(activeClients)} icon={<Users className="h-5 w-5" />} />
         <StatCard label="Open Tasks" value={String(openTasks)} icon={<AlertTriangle className="h-5 w-5" />} />
+        <StatCard label="Active Imm. Cases" value={String(activeImmigrationCases)} icon={<Briefcase className="h-5 w-5" />} />
       </div>
+
+      {topPracticeAreas.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {topPracticeAreas.map(pa => (
+            <Badge key={pa.area} variant="outline" className="text-xs">{pa.area}: {pa.count}</Badge>
+          ))}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="dashboard-section lg:col-span-2">
