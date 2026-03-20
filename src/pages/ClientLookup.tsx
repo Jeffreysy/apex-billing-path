@@ -192,7 +192,7 @@ const ClientLookup = () => {
                             {m.notes && <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>}
                           </div>
                           <div className="flex items-center gap-2">
-                            {m.completed && <CheckCircle className="h-3.5 w-3.5 text-green-600" />}
+                            {m.completed && <CheckCircle className="h-3.5 w-3.5 text-secondary" />}
                             <span className="text-xs text-muted-foreground">{m.milestone_date || "—"}</span>
                           </div>
                         </div>
