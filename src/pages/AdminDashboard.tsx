@@ -16,8 +16,9 @@ const AdminDashboard = () => {
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: agingRaw = [] } = useCollectionsByAging();
+  const { data: immigrationCases = [], isLoading: icl } = useImmigrationCases();
 
-  if (cl || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
+  if (cl || pl || cal || col || icl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
   const totalAR = clients.reduce((sum, c) => sum + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
