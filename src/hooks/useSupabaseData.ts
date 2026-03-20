@@ -230,6 +230,36 @@ export function useCollectorPerformance() {
   });
 }
 
+export function useImmigrationCases() {
+  return useQuery({
+    queryKey: ["immigration-cases"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("immigration_cases")
+        .select("*")
+        .range(0, 4999);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCaseMilestones() {
+  return useQuery({
+    queryKey: ["case-milestones"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("case_milestones")
+        .select("*")
+        .range(0, 4999);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {
