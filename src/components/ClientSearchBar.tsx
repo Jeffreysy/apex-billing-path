@@ -15,7 +15,7 @@ const ClientSearchBar = () => {
     if (!search.trim()) return [];
     const q = search.toLowerCase();
     return clients.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+      (c) => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.filevineId && c.filevineId.toLowerCase().includes(q)) || (c.mycaseId && String(c.mycaseId).includes(q))
     ).slice(0, 8);
   }, [search, clients]);
 

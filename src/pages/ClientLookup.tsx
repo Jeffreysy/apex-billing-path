@@ -157,6 +157,53 @@ const ClientLookup = () => {
             </Card>
           </div>
 
+          {/* Immigration Cases Section */}
+          {clientCasesById.length > 0 && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Scale className="h-4 w-4 text-secondary" />Immigration Cases ({clientCasesById.length})</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="max-h-64 space-y-2 overflow-y-auto">
+                    {clientCasesById.map(ic => (
+                      <div key={ic.id} className="rounded-md border px-3 py-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{ic.case_number}</span>
+                          <Badge variant="outline" className="text-xs capitalize">{ic.case_stage || "—"}</Badge>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>{ic.practice_area}</span>
+                          {ic.lead_attorney && <span>· Atty: {ic.lead_attorney}</span>}
+                          {ic.detained && <Badge variant="destructive" className="text-[10px]">Detained</Badge>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-secondary" />Case Milestones ({clientMilestones.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {clientMilestones.length === 0 ? <p className="text-sm text-muted-foreground">No milestones recorded.</p> : (
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
+                      {clientMilestones.map(m => (
+                        <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <div>
+                            <span className="font-medium">{m.milestone_type}</span>
+                            {m.notes && <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {m.completed && <CheckCircle className="h-3.5 w-3.5 text-green-600" />}
+                            <span className="text-xs text-muted-foreground">{m.milestone_date || "—"}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><DollarSign className="h-4 w-4 text-secondary" />Payment History ({clientPayments.length})</CardTitle></CardHeader>

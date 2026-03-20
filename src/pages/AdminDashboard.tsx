@@ -56,7 +56,7 @@ const AdminDashboard = () => {
     <DashboardLayout title="Admin Dashboard">
       <div className="mb-6"><h1 className="text-2xl font-bold">Admin Dashboard</h1><p className="text-muted-foreground">High-level overview of all departments, KPIs, and firm-wide activity</p></div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total AR Outstanding" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="Active Clients" value={String(activeClients)} icon={<Users className="h-5 w-5" />} />
