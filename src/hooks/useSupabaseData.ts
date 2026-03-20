@@ -96,6 +96,8 @@ export function useMergedClients() {
           notes: [],
           retainerDate: contract.start_date || "",
           downPaymentPaid: contract.down_payment_paid || false,
+          filevineId: client?.filevine_project_id || undefined,
+          mycaseId: client?.mycase_id ? Number(client.mycase_id) : undefined,
         };
       });
     },
