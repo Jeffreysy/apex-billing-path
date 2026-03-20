@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag } from "lucide-react";
+import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag, Scale, Calendar } from "lucide-react";
 
 const ClientLookup = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
