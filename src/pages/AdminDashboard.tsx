@@ -28,6 +28,14 @@ const AdminDashboard = () => {
   const weeklyData = computeWeeklyCollections(agingRaw);
   const contractData = computeContractAnalytics(clients);
 
+  // Immigration KPIs
+  const activeImmigrationCases = immigrationCases.filter(c => (c.case_stage || "").toLowerCase() !== "closed").length;
+  const practiceAreaBreakdown = new Map<string, number>();
+  for (const c of immigrationCases.filter(ic => (ic.case_stage || "").toLowerCase() !== "closed")) {
+    const area = c.practice_area || "Unknown";
+    practiceAreaBreakdown.set(area, (practiceAreaBreakdown.get(area) || 0) + 1);
+  }
+  const topPracticeAreas = Array.from(practiceAreaBreakdown, ([area, count]) => ({ area, count })).sort((a, b) => b.count - a.count).slice(0, 4);
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
   const deptData = [
