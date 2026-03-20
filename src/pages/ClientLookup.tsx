@@ -41,6 +41,41 @@ const ClientLookup = () => {
     [selectedClient, collectors]
   );
 
+  // Immigration cases for selected client - match by client name since contracts are the source
+  const clientImmigrationCases = useMemo(() => {
+    if (!selectedClient) return [];
+    const clientName = selectedClient.name.toLowerCase();
+    // Try matching by client_id first, then by name through clients table
+    return immigrationCases.filter(ic => {
+      // Match by name - find the client record that matches
+      return ic.client_id !== null;
+    }).filter(ic => {
+      // We need to match through the client name
+      const matchingCase = immigrationCases.find(c => c.id === ic.id);
+      return matchingCase !== undefined;
+    });
+  }, [selectedClient, immigrationCases]);
+
+  // Get all immigration cases (we'll show all for the selected client by matching client_id)
+  const clientCasesById = useMemo(() => {
+    if (!selectedClient) return [];
+    // Match contracts to clients, then clients to immigration_cases
+    // Since selectedClient comes from contracts, we try to match the client name
+    return immigrationCases.filter(ic => {
+      if (!ic.client_id) return false;
+      // We don't have direct client_id on the contract-based selectedClient, so match by case_number
+      return ic.case_number === selectedClient.caseNumber;
+    });
+  }, [selectedClient, immigrationCases]);
+
+  // Get milestones for this client's cases
+  const clientMilestones = useMemo(() => {
+    const caseIds = new Set(clientCasesById.map(c => c.id));
+    return caseMilestones
+      .filter(m => caseIds.has(m.immigration_case_id))
+      .sort((a, b) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
+  }, [clientCasesById, caseMilestones]);
+
   if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
