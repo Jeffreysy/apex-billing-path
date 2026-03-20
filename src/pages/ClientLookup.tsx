@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
