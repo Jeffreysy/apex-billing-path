@@ -28,7 +28,6 @@ const sections = [
     items: [
       { path: "/collector/Alejandro A", label: "Alejandro A", icon: Users },
       { path: "/collector/Patricio D", label: "Patricio D", icon: Phone },
-      { path: "/collector/Patricio R", label: "Patricio R", icon: Phone },
       { path: "/collector/Maritza V", label: "Maritza V", icon: Phone },
     ],
   },

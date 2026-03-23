@@ -246,12 +246,14 @@ export function useCollectors() {
     queryFn: async () => {
       const allActivities = await fetchAllRows<any>("collection_activities");
 
-      const collectorMap = new Map<string, { totalCollected: number; callsMade: number; paymentsTaken: number }>();
+      const knownCollectors = new Set(["Alejandro A", "Patricio D", "Maritza V"]);
+      const collectorMap = new Map<string, { totalCollected: number; totalCommission: number; callsMade: number; paymentsTaken: number }>();
       for (const row of allActivities) {
-        if (!row.collector || row.collector === "0" || row.collector === "System-Auto") continue;
-        const existing = collectorMap.get(row.collector) || { totalCollected: 0, callsMade: 0, paymentsTaken: 0 };
+        if (!row.collector || !knownCollectors.has(row.collector)) continue;
+        const existing = collectorMap.get(row.collector) || { totalCollected: 0, totalCommission: 0, callsMade: 0, paymentsTaken: 0 };
         existing.callsMade += 1;
         existing.totalCollected += Number(row.collected_amount) || 0;
+        existing.totalCommission += Number(row.commission) || 0;
         if ((Number(row.collected_amount) || 0) > 0) {
           existing.paymentsTaken += 1;
         }
@@ -266,9 +268,10 @@ export function useCollectors() {
           name,
           avatar: name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
           totalCollected: Math.round(stats.totalCollected),
+          totalCommission: Math.round(stats.totalCommission),
           callsMade: stats.callsMade,
           paymentsTaken: stats.paymentsTaken,
-          isLead: i === 0,
+          isLead: name === "Alejandro A",
         });
         i++;
       }

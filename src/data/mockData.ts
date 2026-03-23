@@ -88,6 +88,7 @@ export interface Collector {
   name: string;
   avatar: string;
   totalCollected: number;
+  totalCommission: number;
   callsMade: number;
   paymentsTaken: number;
   isLead: boolean;

@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { useCollectors, useCollectionsDashboard, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
-import { DollarSign, Phone, Clock, ExternalLink, Users } from "lucide-react";
+import { DollarSign, Phone, Clock, ExternalLink, Users, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -82,11 +82,24 @@ const CollectorDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Collected" value={`$${collector.totalCollected.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <StatCard label="Calls Made" value={String(collector.callsMade)} icon={<Phone className="h-5 w-5" />} />
-        <StatCard label="Payments Taken" value={String(collector.paymentsTaken)} icon={<Clock className="h-5 w-5" />} />
-      </div>
+      {collector.isLead ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard label="Total Collected" value={`$${collector.totalCollected.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
+            <StatCard label="My Commission" value={`$${collector.totalCommission.toLocaleString()}`} icon={<Percent className="h-5 w-5" />} />
+            <StatCard label="Team Commission" value={`$${collectors.reduce((s, c) => s + c.totalCommission, 0).toLocaleString()}`} icon={<Users className="h-5 w-5" />} />
+            <StatCard label="Calls Made" value={String(collector.callsMade)} icon={<Phone className="h-5 w-5" />} />
+            <StatCard label="Payments Taken" value={String(collector.paymentsTaken)} icon={<Clock className="h-5 w-5" />} />
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <StatCard label="Total Collected" value={`$${collector.totalCollected.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
+          <StatCard label="My Commission" value={`$${collector.totalCommission.toLocaleString()}`} icon={<Percent className="h-5 w-5" />} />
+          <StatCard label="Calls Made" value={String(collector.callsMade)} icon={<Phone className="h-5 w-5" />} />
+          <StatCard label="Payments Taken" value={String(collector.paymentsTaken)} icon={<Clock className="h-5 w-5" />} />
+        </div>
+      )}
 
       {collector.isLead && (
         <div className="mt-6 dashboard-section">
