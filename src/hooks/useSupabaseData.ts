@@ -44,7 +44,85 @@ function mapOutcome(outcome: string | null): CallLog["outcome"] {
   return "no_answer";
 }
 
-// --- Data fetching hooks ---
+// --- Paginated fetch helper ---
+async function fetchAllRows<T>(table: string, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
+  const allData: T[] = [];
+  const pageSize = 1000;
+  let from = 0;
+  let hasMore = true;
+  while (hasMore) {
+    let query = supabase.from(table).select("*").range(from, from + pageSize - 1);
+    if (options?.filter) query = options.filter(query);
+    if (options?.orderBy) query = query.order(options.orderBy, { ascending: options.ascending ?? true });
+    const { data, error } = await query;
+    if (error) throw error;
+    if (data && data.length > 0) {
+      allData.push(...(data as T[]));
+      from += pageSize;
+      hasMore = data.length === pageSize;
+    } else {
+      hasMore = false;
+    }
+  }
+  return allData;
+}
+
+// ========================
+// VIEW-BASED HOOKS
+// ========================
+
+/** 1. Admin KPI — single-row view */
+export function useAdminKPI() {
+  return useQuery({
+    queryKey: ["admin-kpi"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_kpi").select("*").limit(1);
+      if (error) throw error;
+      return (data && data[0]) || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 2. AR Dashboard view — for AR Portfolio tab */
+export function useARDashboard() {
+  return useQuery({
+    queryKey: ["ar-dashboard"],
+    queryFn: async () => {
+      return fetchAllRows<any>("ar_dashboard");
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 3. Collections Dashboard view — pre-sorted by priority_score */
+export function useCollectionsDashboard() {
+  return useQuery({
+    queryKey: ["collections-dashboard"],
+    queryFn: async () => {
+      return fetchAllRows<any>("collections_dashboard");
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 4. Payments Clean view — for transactions tab */
+export function usePaymentsClean() {
+  return useQuery({
+    queryKey: ["payments-clean"],
+    queryFn: async () => {
+      return fetchAllRows<any>("payments_clean", {
+        orderBy: "payment_date",
+        ascending: false,
+      });
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// TABLE-BASED HOOKS (kept for components that still need them)
+// ========================
 
 export function useMergedClients() {
   return useQuery({
@@ -147,7 +225,7 @@ export function useCollectionActivities() {
 
       return (data || []).map((a): CallLog => ({
         id: a.id,
-        clientId: "",
+        clientId: a.client_id || "",
         clientName: a.client_name,
         collectorId: "",
         collectorName: a.collector,
@@ -161,22 +239,22 @@ export function useCollectionActivities() {
   });
 }
 
+/** 6. Collectors — aggregated from collection_activities (replaces team_performance) */
 export function useCollectors() {
   return useQuery({
     queryKey: ["collectors-aggregated"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("team_performance")
-        .select("*");
-      if (error) throw error;
+      const allActivities = await fetchAllRows<any>("collection_activities");
 
       const collectorMap = new Map<string, { totalCollected: number; callsMade: number; paymentsTaken: number }>();
-      for (const row of data || []) {
+      for (const row of allActivities) {
         if (!row.collector || row.collector === "0" || row.collector === "System-Auto") continue;
         const existing = collectorMap.get(row.collector) || { totalCollected: 0, callsMade: 0, paymentsTaken: 0 };
-        existing.totalCollected += Number(row.total_collected) || 0;
-        existing.callsMade += row.collected_calls || 0;
-        existing.paymentsTaken += row.collected_calls || 0;
+        existing.callsMade += 1;
+        existing.totalCollected += Number(row.collected_amount) || 0;
+        if ((Number(row.collected_amount) || 0) > 0) {
+          existing.paymentsTaken += 1;
+        }
         collectorMap.set(row.collector, existing);
       }
 
@@ -194,7 +272,7 @@ export function useCollectors() {
         });
         i++;
       }
-      return collectors;
+      return collectors.sort((a, b) => b.totalCollected - a.totalCollected);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -240,30 +318,14 @@ export function extractClientNameFromNotes(notes: string | null): string {
   return notes.trim();
 }
 
-export function useImmigrationCases() {
+/** 5. Immigration cases — all or filtered by is_closed */
+export function useImmigrationCases(activeOnly = false) {
   return useQuery({
-    queryKey: ["immigration-cases"],
+    queryKey: ["immigration-cases", activeOnly],
     queryFn: async () => {
-      // Paginate to fetch all cases (Supabase max 1000 per request)
-      const allData: any[] = [];
-      const pageSize = 1000;
-      let from = 0;
-      let hasMore = true;
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from("immigration_cases")
-          .select("*")
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          allData.push(...data);
-          from += pageSize;
-          hasMore = data.length === pageSize;
-        } else {
-          hasMore = false;
-        }
-      }
-      return allData;
+      return fetchAllRows<any>("immigration_cases", {
+        filter: activeOnly ? (q: any) => q.eq("is_closed", false) : undefined,
+      });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -273,25 +335,7 @@ export function useCaseMilestones() {
   return useQuery({
     queryKey: ["case-milestones"],
     queryFn: async () => {
-      const allData: any[] = [];
-      const pageSize = 1000;
-      let from = 0;
-      let hasMore = true;
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from("case_milestones")
-          .select("*")
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          allData.push(...data);
-          from += pageSize;
-          hasMore = data.length === pageSize;
-        } else {
-          hasMore = false;
-        }
-      }
-      return allData;
+      return fetchAllRows<any>("case_milestones");
     },
     staleTime: 5 * 60 * 1000,
   });

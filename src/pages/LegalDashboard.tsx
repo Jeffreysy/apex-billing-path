@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
-import { Scale, FileText, AlertTriangle, CheckCircle, Briefcase, TrendingUp, Users, Calendar } from "lucide-react";
+import { Scale, AlertTriangle, CheckCircle, Briefcase, TrendingUp, Users, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -10,24 +10,27 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(38 92% 50%)", "hsl(152 60% 40%)", "hsl(0 72% 51%)", "hsl(262 60% 50%)"];
 
 const LegalDashboard = () => {
-  const { data: cases = [], isLoading: casesLoading } = useImmigrationCases();
+  // Fetch active cases only (is_closed = false)
+  const { data: activeCases = [], isLoading: casesLoading } = useImmigrationCases(true);
+  // Fetch all cases for total counts
+  const { data: allCases = [], isLoading: allCasesLoading } = useImmigrationCases(false);
   const { data: milestones = [], isLoading: milestonesLoading } = useCaseMilestones();
 
-  if (casesLoading || milestonesLoading) return <DashboardLayout title="Legal Department"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  if (casesLoading || allCasesLoading || milestonesLoading) return <DashboardLayout title="Legal Department"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
-  // Case stage distribution
-  const caseStages = ["intake", "discovery", "negotiation", "litigation", "settlement", "closed"] as const;
-  const stageData = caseStages.map(stage => {
-    const stageCases = cases.filter(c => (c.case_stage || "").toLowerCase() === stage);
-    return {
-      stage: stage.charAt(0).toUpperCase() + stage.slice(1),
-      count: stageCases.length,
-    };
-  });
+  const closedCases = allCases.filter(c => c.is_closed === true).length;
+
+  // Case stage distribution from active cases
+  const stageMap = new Map<string, number>();
+  for (const c of activeCases) {
+    const stage = c.case_stage || "Unknown";
+    stageMap.set(stage, (stageMap.get(stage) || 0) + 1);
+  }
+  const stageData = Array.from(stageMap, ([stage, count]) => ({ stage, count })).sort((a, b) => b.count - a.count);
 
   // Practice area breakdown
   const practiceAreaMap = new Map<string, number>();
-  for (const c of cases) {
+  for (const c of activeCases) {
     const area = c.practice_area || "Unknown";
     practiceAreaMap.set(area, (practiceAreaMap.get(area) || 0) + 1);
   }
@@ -35,31 +38,29 @@ const LegalDashboard = () => {
 
   // Attorney assignments
   const attorneyMap = new Map<string, number>();
-  for (const c of cases) {
+  for (const c of activeCases) {
     const attorney = c.lead_attorney || "Unassigned";
     attorneyMap.set(attorney, (attorneyMap.get(attorney) || 0) + 1);
   }
   const attorneyData = Array.from(attorneyMap, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
 
-  // Upcoming milestones (not completed, with a date)
+  // Upcoming milestones
   const upcomingMilestones = milestones
     .filter(m => !m.completed && m.milestone_date && new Date(m.milestone_date) >= new Date())
     .sort((a, b) => (a.milestone_date || "").localeCompare(b.milestone_date || ""))
     .slice(0, 10);
 
   // KPIs
-  const activeCases = cases.filter(c => (c.case_stage || "").toLowerCase() !== "closed").length;
-  const closedCases = cases.filter(c => (c.case_stage || "").toLowerCase() === "closed").length;
-  const inLitigation = cases.filter(c => (c.case_stage || "").toLowerCase() === "litigation").length;
+  const inLitigation = activeCases.filter(c => (c.case_stage || "").toLowerCase() === "litigation").length;
   const completedMilestones = milestones.filter(m => m.completed).length;
   const pendingMilestones = milestones.filter(m => !m.completed).length;
-  const detainedCases = cases.filter(c => c.detained).length;
+  const detainedCases = activeCases.filter(c => c.detained).length;
 
   return (
     <DashboardLayout title="Legal Department">
       <div className="mb-6"><h1 className="text-2xl font-bold">Legal Dashboard</h1><p className="text-muted-foreground">Immigration case stages, practice areas, attorney assignments, and milestones</p></div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-        <StatCard label="Active Cases" value={String(activeCases)} icon={<Briefcase className="h-5 w-5" />} />
+        <StatCard label="Active Cases" value={String(activeCases.length)} icon={<Briefcase className="h-5 w-5" />} />
         <StatCard label="In Litigation" value={String(inLitigation)} icon={<Scale className="h-5 w-5" />} />
         <StatCard label="Closed Cases" value={String(closedCases)} icon={<CheckCircle className="h-5 w-5" />} />
         <StatCard label="Detained" value={String(detainedCases)} icon={<AlertTriangle className="h-5 w-5" />} />
@@ -113,7 +114,7 @@ const LegalDashboard = () => {
               {attorneyData.map(a => (
                 <div key={a.name} className="flex items-center gap-3">
                   <span className="w-36 truncate text-sm font-medium">{a.name}</span>
-                  <div className="flex-1"><Progress value={cases.length > 0 ? (a.count / cases.length) * 100 : 0} className="h-2" /></div>
+                  <div className="flex-1"><Progress value={activeCases.length > 0 ? (a.count / activeCases.length) * 100 : 0} className="h-2" /></div>
                   <span className="text-sm font-semibold tabular-nums">{a.count}</span>
                 </div>
               ))}
@@ -145,7 +146,7 @@ const LegalDashboard = () => {
             {stageData.map(s => (
               <div key={s.stage} className="flex items-center gap-3">
                 <span className="w-24 text-sm font-medium">{s.stage}</span>
-                <div className="flex-1"><Progress value={cases.length > 0 ? (s.count / cases.length) * 100 : 0} className="h-2" /></div>
+                <div className="flex-1"><Progress value={activeCases.length > 0 ? (s.count / activeCases.length) * 100 : 0} className="h-2" /></div>
                 <span className="text-sm font-semibold tabular-nums">{s.count}</span>
               </div>
             ))}

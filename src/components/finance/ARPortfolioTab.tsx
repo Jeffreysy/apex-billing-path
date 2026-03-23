@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMergedClients } from "@/hooks/useSupabaseData";
+import { useARDashboard } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -12,18 +12,18 @@ import {
 import { Search } from "lucide-react";
 
 const ARPortfolioTab = () => {
-  const { data: clients = [], isLoading } = useMergedClients();
+  const { data: rows = [], isLoading } = useARDashboard();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading AR portfolio...</div>;
 
-  const filtered = clients.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.caseNumber.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+  const filtered = rows.filter((c: any) => {
+    const matchesSearch = (c.client_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (c.case_number || "").toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || (c.contract_status || "").toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
-  }).sort((a, b) => (b.totalOwed - b.totalPaid) - (a.totalOwed - a.totalPaid));
+  }).sort((a: any, b: any) => (Number(b.remaining_balance) || 0) - (Number(a.remaining_balance) || 0));
 
   return (
     <div className="space-y-4">
@@ -36,10 +36,10 @@ const ARPortfolioTab = () => {
           <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="delinquent">Delinquent</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="new">New</SelectItem>
+            <SelectItem value="Active">Active</SelectItem>
+            <SelectItem value="Risk">Risk</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="New">New</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -50,10 +50,10 @@ const ARPortfolioTab = () => {
             <TableRow>
               <TableHead>Client</TableHead>
               <TableHead>Case #</TableHead>
-              <TableHead>Case Type</TableHead>
+              <TableHead>Practice Area</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Total Owed</TableHead>
-              <TableHead>Paid</TableHead>
+              <TableHead>Total Value</TableHead>
+              <TableHead>Collected</TableHead>
               <TableHead>Balance</TableHead>
               <TableHead>Next Due</TableHead>
               <TableHead>Install. Left</TableHead>
@@ -62,36 +62,35 @@ const ARPortfolioTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.slice(0, 100).map(c => {
-              const pct = c.totalOwed > 0 ? Math.round((c.totalPaid / c.totalOwed) * 100) : 0;
-              const paidInstallments = c.downPaymentPaid
-                ? Math.min(c.installmentMonths, Math.floor((c.totalPaid - c.downPayment) / Math.max(1, c.monthlyPayment)))
-                : 0;
-              const remaining = Math.max(0, c.installmentMonths - Math.max(0, paidInstallments));
+            {filtered.slice(0, 100).map((c: any) => {
+              const pct = Number(c.collection_pct) || 0;
+              const remaining = Number(c.installments_remaining) || 0;
+              const status = c.contract_status || "";
+              const daysOut = Number(c.days_past_due) || 0;
               return (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{c.caseNumber}</TableCell>
-                  <TableCell className="text-xs">{c.caseType}</TableCell>
+                <TableRow key={c.contract_id}>
+                  <TableCell className="font-medium">{c.client_name}</TableCell>
+                  <TableCell className="font-mono text-xs">{c.case_number}</TableCell>
+                  <TableCell className="text-xs">{c.practice_area}</TableCell>
                   <TableCell>
-                    <Badge variant={c.status === "delinquent" ? "destructive" : c.status === "completed" ? "secondary" : "default"} className="text-xs capitalize">
-                      {c.status}
+                    <Badge variant={status === "Risk" ? "destructive" : status === "Completed" ? "secondary" : "default"} className="text-xs">
+                      {status}
                     </Badge>
                   </TableCell>
-                  <TableCell>${c.totalOwed.toLocaleString()}</TableCell>
-                  <TableCell>${c.totalPaid.toLocaleString()}</TableCell>
-                  <TableCell className="font-semibold">${(c.totalOwed - c.totalPaid).toLocaleString()}</TableCell>
-                  <TableCell className="text-xs">{c.nextPaymentDue}</TableCell>
+                  <TableCell>${(Number(c.total_contract_value) || 0).toLocaleString()}</TableCell>
+                  <TableCell>${(Number(c.amount_collected) || 0).toLocaleString()}</TableCell>
+                  <TableCell className="font-semibold">${(Number(c.remaining_balance) || 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-xs">{c.next_due_date || "—"}</TableCell>
                   <TableCell className="text-center">{remaining}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Progress value={pct} className="h-2 w-16" />
-                      <span className="text-xs">{pct}%</span>
+                      <span className="text-xs">{Math.round(pct)}%</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {c.daysAging > 0
-                      ? <Badge variant="destructive" className="text-xs">{c.daysAging}d</Badge>
+                    {daysOut > 0
+                      ? <Badge variant="destructive" className="text-xs">{daysOut}d</Badge>
                       : <span className="text-muted-foreground">—</span>}
                   </TableCell>
                 </TableRow>
