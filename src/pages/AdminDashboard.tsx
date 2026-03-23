@@ -2,40 +2,36 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { tasks } from "@/data/mockData";
-import { useMergedClients, usePaymentsData, useCollectionActivities, useCollectors, useCollectionsByAging, computeWeeklyCollections, computeContractAnalytics, computeCaseTypeBilling, useImmigrationCases } from "@/hooks/useSupabaseData";
-import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { useAdminKPI, useCollectionActivities, useCollectors, useCollectionsByAging, usePaymentsData, computeWeeklyCollections } from "@/hooks/useSupabaseData";
+import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(38 92% 50%)", "hsl(152 60% 40%)", "hsl(0 72% 51%)"];
 
 const AdminDashboard = () => {
-  const { data: clients = [], isLoading: cl } = useMergedClients();
+  const { data: kpi, isLoading: kpiLoading } = useAdminKPI();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: agingRaw = [] } = useCollectionsByAging();
-  const { data: immigrationCases = [], isLoading: icl } = useImmigrationCases();
 
-  if (cl || pl || cal || col || icl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
+  if (kpiLoading || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
-  const totalAR = clients.reduce((sum, c) => sum + Math.max(0, c.totalOwed - c.totalPaid), 0);
-  const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
-  const activeClients = clients.filter(c => c.status === "active").length;
-  const delinquent = clients.filter(c => c.status === "delinquent").length;
+  const totalAR = Number(kpi?.total_ar_value) || 0;
+  const totalCollected = Number(kpi?.total_collected) || 0;
+  const activeContracts = Number(kpi?.active_contracts) || 0;
+  const riskContracts = Number(kpi?.risk_contracts) || 0;
+  const totalClients = Number(kpi?.total_clients) || 0;
+  const delinquent = Number(kpi?.delinquent_clients) || 0;
+  const currentClients = Number(kpi?.current_clients) || 0;
+  const activeCases = Number(kpi?.active_cases) || 0;
+  const collectionRate = Number(kpi?.collection_rate_pct) || 0;
+  const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
   const openTasks = tasks.filter(t => t.status !== "completed").length;
   const weeklyData = computeWeeklyCollections(agingRaw);
-  const contractData = computeContractAnalytics(clients);
 
-  // Immigration KPIs
-  const activeImmigrationCases = immigrationCases.filter(c => (c.case_stage || "").toLowerCase() !== "closed").length;
-  const practiceAreaBreakdown = new Map<string, number>();
-  for (const c of immigrationCases.filter(ic => (ic.case_stage || "").toLowerCase() !== "closed")) {
-    const area = c.practice_area || "Unknown";
-    practiceAreaBreakdown.set(area, (practiceAreaBreakdown.get(area) || 0) + 1);
-  }
-  const topPracticeAreas = Array.from(practiceAreaBreakdown, ([area, count]) => ({ area, count })).sort((a, b) => b.count - a.count).slice(0, 4);
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
   const deptData = [
@@ -46,10 +42,10 @@ const AdminDashboard = () => {
   ];
 
   const statusPie = [
-    { name: "Active", value: clients.filter(c => c.status === "active").length },
+    { name: "Active", value: activeContracts },
     { name: "Delinquent", value: delinquent },
-    { name: "Completed", value: clients.filter(c => c.status === "completed").length },
-    { name: "New", value: clients.filter(c => c.status === "new").length },
+    { name: "Risk", value: riskContracts },
+    { name: "Current", value: currentClients },
   ];
 
   return (
@@ -59,18 +55,18 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total AR Outstanding" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Active Clients" value={String(activeClients)} icon={<Users className="h-5 w-5" />} />
-        <StatCard label="Open Tasks" value={String(openTasks)} icon={<AlertTriangle className="h-5 w-5" />} />
-        <StatCard label="Active Imm. Cases" value={String(activeImmigrationCases)} icon={<Briefcase className="h-5 w-5" />} />
+        <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
+        <StatCard label="Active Imm. Cases" value={String(activeCases)} icon={<Briefcase className="h-5 w-5" />} />
+        <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />
       </div>
 
-      {topPracticeAreas.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {topPracticeAreas.map(pa => (
-            <Badge key={pa.area} variant="outline" className="text-xs">{pa.area}: {pa.count}</Badge>
-          ))}
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Badge variant="outline" className="text-xs">Total Clients: {totalClients}</Badge>
+        <Badge variant="outline" className="text-xs">Delinquent: {delinquent}</Badge>
+        <Badge variant="outline" className="text-xs">Risk Contracts: {riskContracts}</Badge>
+        <Badge variant="outline" className="text-xs">Collected This Month: ${collectedThisMonth.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs">Open Tasks: {openTasks}</Badge>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="dashboard-section lg:col-span-2">
@@ -88,7 +84,7 @@ const AdminDashboard = () => {
           </ResponsiveContainer>
         </div>
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold">Client Status</h2>
+          <h2 className="mb-4 text-lg font-semibold">Contract Status</h2>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart><Pie data={statusPie} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">{statusPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart>
           </ResponsiveContainer>
@@ -99,9 +95,9 @@ const AdminDashboard = () => {
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { name: "Collections", icon: Phone, desc: `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
-          { name: "Legal", icon: Scale, desc: `${clients.filter(c => c.caseStage === "litigation").length} in litigation · ${clients.filter(c => c.status === "new").length} new retainers` },
+          { name: "Legal", icon: Scale, desc: `${activeCases} active cases` },
           { name: "Financial Oversight", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
-          { name: "Reporting", icon: TrendingUp, desc: `${contractData.reduce((s, d) => s + d.started, 0)} contracts started this quarter` },
+          { name: "Reporting", icon: TrendingUp, desc: `${Number(kpi?.payments_this_month) || 0} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><dept.icon className="h-4 w-4 text-secondary" />{dept.name}</CardTitle></CardHeader>

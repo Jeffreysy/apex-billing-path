@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
-import { useCollectors, useMergedClients, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
+import { useCollectors, useCollectionsDashboard, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
 import { DollarSign, Phone, Clock, ExternalLink, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,23 +17,20 @@ import { toast } from "sonner";
 const CollectorDashboard = () => {
   const { collectorId } = useParams<{ collectorId: string }>();
   const { data: collectors = [], isLoading: col } = useCollectors();
-  const { data: clients = [], isLoading: cl } = useMergedClients();
+  const { data: allQueue = [], isLoading: ql } = useCollectionsDashboard();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
 
-  if (col || cl || pl || cal) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  if (col || ql || pl || cal) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const collector = collectors.find(c => c.name === decodeURIComponent(collectorId || ""));
   if (!collector) return <DashboardLayout><p className="text-muted-foreground">Collector not found.</p></DashboardLayout>;
 
-  const myClients = clients.filter(c => c.assignedCollector === collector.name);
+  const myQueue = allQueue.filter((c: any) => c.collector === collector.name || c.assigned_collector === collector.name);
   const myPayments = payments.filter(p => p.collectorName === collector.name).sort((a, b) => b.date.localeCompare(a.date));
   const myCalls = callLogs.filter(c => c.collectorName === collector.name).sort((a, b) => b.date.localeCompare(a.date));
-
-  const queue = myClients.filter(c => c.status === "delinquent" || c.status === "active")
-    .sort((a, b) => b.daysAging - a.daysAging || a.nextPaymentDue.localeCompare(b.nextPaymentDue));
 
   const formatDuration = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
@@ -63,7 +60,7 @@ const CollectorDashboard = () => {
             <DialogTrigger asChild><Button><DollarSign className="mr-2 h-4 w-4" />Take Payment</Button></DialogTrigger>
             <DialogContent><DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
               <form onSubmit={handlePayment} className="space-y-4">
-                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myClients.slice(0, 50).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myQueue.slice(0, 50).map((c: any) => <SelectItem key={c.contract_id || c.client_id} value={c.client_id || ""}>{c.client_name}</SelectItem>)}</SelectContent></Select></div>
                 <div><Label>Amount</Label><Input type="number" placeholder="0.00" /></div>
                 <div><Label>Payment Method</Label><Select><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger><SelectContent><SelectItem value="card">Credit Card</SelectItem><SelectItem value="ach">ACH</SelectItem><SelectItem value="check">Check</SelectItem><SelectItem value="cash">Cash</SelectItem></SelectContent></Select></div>
                 <DialogFooter><Button type="submit">Process Payment</Button></DialogFooter>
@@ -74,7 +71,7 @@ const CollectorDashboard = () => {
             <DialogTrigger asChild><Button variant="outline"><Phone className="mr-2 h-4 w-4" />Log Call</Button></DialogTrigger>
             <DialogContent><DialogHeader><DialogTitle>Log Phone Call</DialogTitle></DialogHeader>
               <form onSubmit={handleCallLog} className="space-y-4">
-                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myClients.slice(0, 50).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myQueue.slice(0, 50).map((c: any) => <SelectItem key={c.contract_id || c.client_id} value={c.client_id || ""}>{c.client_name}</SelectItem>)}</SelectContent></Select></div>
                 <div><Label>Duration (min)</Label><Input type="number" placeholder="5" /></div>
                 <div><Label>Outcome</Label><Select><SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger><SelectContent><SelectItem value="payment_taken">Payment Taken</SelectItem><SelectItem value="promise_to_pay">Promise to Pay</SelectItem><SelectItem value="no_answer">No Answer</SelectItem><SelectItem value="left_voicemail">Left Voicemail</SelectItem><SelectItem value="callback_scheduled">Callback Scheduled</SelectItem><SelectItem value="disputed">Disputed</SelectItem></SelectContent></Select></div>
                 <div><Label>Notes</Label><Textarea placeholder="Call notes..." /></div>
@@ -107,14 +104,18 @@ const CollectorDashboard = () => {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
-          <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Client Queue</h2><Badge variant="secondary">{queue.length} pending</Badge></div>
+          <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Client Queue</h2><Badge variant="secondary">{myQueue.length} pending</Badge></div>
           <div className="max-h-[350px] space-y-2 overflow-y-auto">
-            {queue.slice(0, 20).map(c => (
-              <div key={c.id} className="queue-item">
-                <div><p className="font-medium text-sm">{c.name}</p><p className="text-xs text-muted-foreground">{c.phone} · Due: {c.nextPaymentDue}</p>{c.daysAging > 0 && <p className="text-xs text-destructive font-medium">{c.daysAging} days past due</p>}</div>
-                <div className="flex items-center gap-2"><Badge variant={c.status === "delinquent" ? "destructive" : "default"} className="text-xs capitalize">{c.status}</Badge><Button size="sm" variant="outline" className="gap-1 text-xs"><ExternalLink className="h-3 w-3" />CRM</Button></div>
-              </div>
-            ))}
+            {myQueue.slice(0, 20).map((c: any) => {
+              const daysOut = Number(c.days_past_due) || 0;
+              const isDelinquent = (c.delinquency_status || "").toLowerCase() === "delinquent";
+              return (
+                <div key={c.contract_id || c.client_id} className="queue-item">
+                  <div><p className="font-medium text-sm">{c.client_name}</p><p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"}</p>{daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}</div>
+                  <div className="flex items-center gap-2"><Badge variant={isDelinquent ? "destructive" : "default"} className="text-xs">{c.contract_status || "Active"}</Badge><Button size="sm" variant="outline" className="gap-1 text-xs"><ExternalLink className="h-3 w-3" />CRM</Button></div>
+                </div>
+              );
+            })}
           </div>
         </div>
         <div className="dashboard-section">

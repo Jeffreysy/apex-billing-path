@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { usePaymentsData, useMergedClients, computeTransactionsByType } from "@/hooks/useSupabaseData";
+import { usePaymentsClean } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -14,30 +14,46 @@ const PIE_COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(152 60% 40%)", 
 interface Props { dateRange?: DateRange }
 
 const TransactionsTab = ({ dateRange }: Props) => {
-  const { data: payments = [], isLoading: pl } = usePaymentsData();
-  const { data: clients = [], isLoading: cl } = useMergedClients();
+  const { data: payments = [], isLoading } = usePaymentsClean();
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  const transactionTypes = computeTransactionsByType(payments, clients);
+  // Compute transaction type breakdown from payments_clean
+  const transactionTypes = useMemo(() => {
+    const typeMap = new Map<string, { total: number; count: number }>();
+    for (const p of payments) {
+      const type = p.payment_type || "Other";
+      const existing = typeMap.get(type) || { total: 0, count: 0 };
+      existing.total += Number(p.amount) || 0;
+      existing.count += 1;
+      typeMap.set(type, existing);
+    }
+    return Array.from(typeMap, ([label, stats]) => ({
+      type: label,
+      label,
+      total: Math.round(stats.total),
+      count: stats.count,
+    })).sort((a, b) => b.total - a.total);
+  }, [payments]);
+
   const totalTxnAmount = transactionTypes.reduce((s, t) => s + t.total, 0);
 
   const filtered = useMemo(() => {
-    return payments.filter(p => {
-      const matchSearch = p.clientName.toLowerCase().includes(search.toLowerCase());
-      const matchMethod = methodFilter === "all" || p.method === methodFilter;
-      const matchStatus = statusFilter === "all" || p.status === statusFilter;
+    return payments.filter((p: any) => {
+      const matchSearch = (p.client_name || "").toLowerCase().includes(search.toLowerCase());
+      const matchMethod = methodFilter === "all" || (p.payment_method || "") === methodFilter;
+      const matchType = typeFilter === "all" || (p.payment_type || "") === typeFilter;
       let matchDate = true;
       if (dateRange?.from) {
-        const d = new Date(p.date);
+        const d = new Date(p.payment_date);
         matchDate = d >= dateRange.from && (!dateRange.to || d <= dateRange.to);
       }
-      return matchSearch && matchMethod && matchStatus && matchDate;
-    }).sort((a, b) => b.date.localeCompare(a.date));
-  }, [search, methodFilter, statusFilter, dateRange, payments]);
+      return matchSearch && matchMethod && matchType && matchDate;
+    });
+  }, [search, methodFilter, typeFilter, dateRange, payments]);
 
-  if (pl || cl) return <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading transactions...</div>;
 
   return (
     <div className="space-y-6">
@@ -78,19 +94,19 @@ const TransactionsTab = ({ dateRange }: Props) => {
           <SelectTrigger className="w-[140px]"><SelectValue placeholder="Method" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Methods</SelectItem>
-            <SelectItem value="card">Card</SelectItem>
+            <SelectItem value="credit_card">Card</SelectItem>
             <SelectItem value="ach">ACH</SelectItem>
             <SelectItem value="check">Check</SelectItem>
             <SelectItem value="cash">Cash</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="all">All Types</SelectItem>
+            {transactionTypes.map(t => (
+              <SelectItem key={t.type} value={t.type}>{t.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -102,24 +118,22 @@ const TransactionsTab = ({ dateRange }: Props) => {
               <TableHead>Date</TableHead>
               <TableHead>Client</TableHead>
               <TableHead>Amount</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Method</TableHead>
               <TableHead>Collector</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Case #</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.slice(0, 100).map(p => (
+            {filtered.slice(0, 100).map((p: any) => (
               <TableRow key={p.id}>
-                <TableCell className="text-xs">{p.date}</TableCell>
-                <TableCell className="font-medium">{p.clientName}</TableCell>
-                <TableCell className="font-semibold">${p.amount.toLocaleString()}</TableCell>
-                <TableCell className="capitalize text-xs">{p.method}</TableCell>
-                <TableCell className="text-xs">{p.collectorName}</TableCell>
-                <TableCell>
-                  <Badge variant={p.status === "completed" ? "default" : p.status === "failed" ? "destructive" : "secondary"} className="text-xs capitalize">
-                    {p.status}
-                  </Badge>
-                </TableCell>
+                <TableCell className="text-xs">{p.payment_date}</TableCell>
+                <TableCell className="font-medium">{p.client_name}</TableCell>
+                <TableCell className="font-semibold">${(Number(p.amount) || 0).toLocaleString()}</TableCell>
+                <TableCell className="text-xs">{p.payment_type || "—"}</TableCell>
+                <TableCell className="capitalize text-xs">{(p.payment_method || "").replace("_", " ")}</TableCell>
+                <TableCell className="text-xs">{p.collector_name || p.contract_collector || "—"}</TableCell>
+                <TableCell className="font-mono text-xs">{p.case_number || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
