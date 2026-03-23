@@ -45,7 +45,7 @@ function mapOutcome(outcome: string | null): CallLog["outcome"] {
 }
 
 // --- Paginated fetch helper ---
-async function fetchAllRows<T>(table: string, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
+async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
   const allData: T[] = [];
   const pageSize = 1000;
   let from = 0;
