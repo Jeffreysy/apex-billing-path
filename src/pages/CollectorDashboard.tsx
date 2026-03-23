@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { useCollectors, useCollectionsDashboard, usePaymentsData, useCollectionActivities } from "@/hooks/useSupabaseData";
-import { DollarSign, Phone, Clock, ExternalLink, Users } from "lucide-react";
+import { DollarSign, Phone, Clock, ExternalLink, Users, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
