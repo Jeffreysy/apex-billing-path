@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectionsByAging, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
+import { useMergedClients, usePaymentsData, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, LineChart, Line,
