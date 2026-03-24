@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { tasks } from "@/data/mockData";
-import { useAdminKPI, useCollectionActivities, useCollectors, useCollectionsByAging, usePaymentsData, computeWeeklyCollections } from "@/hooks/useSupabaseData";
+import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
