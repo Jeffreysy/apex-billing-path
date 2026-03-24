@@ -473,34 +473,47 @@ export function computeDailyCollections(payments: Payment[]) {
   });
 }
 
-export function computeWeeklyPastCollections(agingData: { week_start: string | null; total_collected: number | null }[]) {
-  return agingData
-    .filter(d => d.week_start && Number(d.total_collected) > 0)
-    .map(d => {
-      const total = Math.round(Number(d.total_collected) || 0);
-      const collector = Math.round(total * 0.65);
-      const crm = total - collector;
-      return {
-        week: format(new Date(d.week_start!), "MMM dd"),
-        collector,
-        crm,
-        total,
-      };
-    })
-    .slice(-12);
+export function computeWeeklyPastCollections(payments: Payment[]) {
+  const weekMap = new Map<string, { collector: number; crm: number }>();
+  for (const p of payments) {
+    if (!p.date) continue;
+    const d = new Date(p.date);
+    const ws = startOfWeek(d, { weekStartsOn: 1 });
+    const key = format(ws, "MMM dd");
+    const entry = weekMap.get(key) || { collector: 0, crm: 0 };
+    if (p.collectorName && p.collectorName !== "CRM") {
+      entry.collector += p.amount;
+    } else {
+      entry.crm += p.amount;
+    }
+    weekMap.set(key, entry);
+  }
+  return Array.from(weekMap, ([week, { collector, crm }]) => ({
+    week,
+    collector: Math.round(collector),
+    crm: Math.round(crm),
+    total: Math.round(collector + crm),
+  })).slice(-12);
 }
 
-export function computeMonthlyPastCollections(agingData: { month_start: string | null; total_collected: number | null }[]) {
-  const monthMap = new Map<string, number>();
-  for (const d of agingData) {
-    if (!d.month_start) continue;
-    const key = format(new Date(d.month_start), "MMM yyyy");
-    monthMap.set(key, (monthMap.get(key) || 0) + (Number(d.total_collected) || 0));
+export function computeMonthlyPastCollections(payments: Payment[]) {
+  const monthMap = new Map<string, { collector: number; crm: number }>();
+  for (const p of payments) {
+    if (!p.date) continue;
+    const d = new Date(p.date);
+    const key = format(d, "MMM yyyy");
+    const entry = monthMap.get(key) || { collector: 0, crm: 0 };
+    if (p.collectorName && p.collectorName !== "CRM") {
+      entry.collector += p.amount;
+    } else {
+      entry.crm += p.amount;
+    }
+    monthMap.set(key, entry);
   }
-  return Array.from(monthMap, ([month, total]) => ({
+  return Array.from(monthMap, ([month, { collector, crm }]) => ({
     month,
-    collector: Math.round(total * 0.65),
-    crm: Math.round(total * 0.35),
-    total: Math.round(total),
+    collector: Math.round(collector),
+    crm: Math.round(crm),
+    total: Math.round(collector + crm),
   })).slice(-6);
 }
