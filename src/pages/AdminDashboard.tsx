@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import { tasks } from "@/data/mockData";
-import { useAdminKPI, useCollectionActivities, useCollectors, useCollectionsByAging, usePaymentsData, computeWeeklyCollections } from "@/hooks/useSupabaseData";
+import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
-  const { data: agingRaw = [] } = useCollectionsByAging();
+  
 
   if (kpiLoading || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
@@ -30,7 +30,7 @@ const AdminDashboard = () => {
   const collectionRate = Number(kpi?.collection_rate_pct) || 0;
   const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
   const openTasks = tasks.filter(t => t.status !== "completed").length;
-  const weeklyData = computeWeeklyCollections(agingRaw);
+  const weeklyData = computeWeeklyCollections(payments);
 
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 

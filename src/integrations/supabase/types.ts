@@ -1822,23 +1822,6 @@ export type Database = {
           },
         ]
       }
-      collections_by_aging: {
-        Row: {
-          days_31_to_60: number | null
-          days_61_to_90: number | null
-          month_start: string | null
-          over_90_days: number | null
-          total_collected: number | null
-          total_transactions: number | null
-          txn_31_to_60: number | null
-          txn_61_to_90: number | null
-          txn_over_90: number | null
-          txn_under_30: number | null
-          under_30_days: number | null
-          week_start: string | null
-        }
-        Relationships: []
-      }
       collections_dashboard: {
         Row: {
           assigned_collector: string | null
@@ -1865,19 +1848,6 @@ export type Database = {
           practice_area: string | null
           preferred_language: string | null
           priority_score: number | null
-        }
-        Relationships: []
-      }
-      collector_performance: {
-        Row: {
-          avg_collected_per_call: number | null
-          collected_calls: number | null
-          collector: string | null
-          conversion_rate_pct: number | null
-          month: string | null
-          total_activities: number | null
-          total_collected: number | null
-          total_commission: number | null
         }
         Relationships: []
       }

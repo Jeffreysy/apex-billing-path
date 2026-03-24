@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectionsByAging, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
+import { useMergedClients, usePaymentsData, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, LineChart, Line,
@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ReportingPage = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
-  const { data: agingRaw = [], isLoading: al } = useCollectionsByAging();
+  const { data: payments = [], isLoading: pl } = usePaymentsData();
 
-  if (cl || al) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
+  if (cl || pl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
 
   const forecastData = computeForecastData(clients);
-  const weeklyData = computeWeeklyCollections(agingRaw);
-  const monthlyData = computeMonthlyCollections(agingRaw);
+  const weeklyData = computeWeeklyCollections(payments);
+  const monthlyData = computeMonthlyCollections(payments);
   const contractData = computeContractAnalytics(clients);
 
   return (

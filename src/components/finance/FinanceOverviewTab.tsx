@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useMergedClients, usePaymentsData, useCollectionsByAging,
+  useMergedClients, usePaymentsData,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
@@ -28,9 +28,8 @@ interface Props { dateRange?: DateRange }
 const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
-  const { data: agingRaw = [], isLoading: al } = useCollectionsByAging();
 
-  const isLoading = cl || pl || al;
+  const isLoading = cl || pl;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
   const totalAR = clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
@@ -58,8 +57,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const agingData = computeARAgingData(clients);
   const transactionTypes = computeTransactionsByType(payments, clients);
   const dailyCollections = computeDailyCollections(payments);
-  const weeklyPast = computeWeeklyPastCollections(agingRaw);
-  const monthlyPast = computeMonthlyPastCollections(agingRaw);
+  const weeklyPast = computeWeeklyPastCollections(payments);
+  const monthlyPast = computeMonthlyPastCollections(payments);
   const contractAnalytics = computeContractAnalytics(clients);
 
   const progressionBuckets = [
