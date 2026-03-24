@@ -13,8 +13,8 @@ const ReportingPage = () => {
   if (cl || pl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
 
   const forecastData = computeForecastData(clients);
-  const weeklyData = computeWeeklyCollections(agingRaw);
-  const monthlyData = computeMonthlyCollections(agingRaw);
+  const weeklyData = computeWeeklyCollections(payments);
+  const monthlyData = computeMonthlyCollections(payments);
   const contractData = computeContractAnalytics(clients);
 
   return (

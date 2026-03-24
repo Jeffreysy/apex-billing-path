@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Client, Payment, CallLog, Collector, CaseStage } from "@/data/mockData";
-import { format, subDays, addWeeks, addMonths } from "date-fns";
+import { format, subDays, addWeeks, addMonths, startOfWeek } from "date-fns";
 
 // --- Status/field mapping helpers ---
 

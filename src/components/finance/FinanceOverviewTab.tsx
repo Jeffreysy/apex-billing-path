@@ -57,8 +57,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const agingData = computeARAgingData(clients);
   const transactionTypes = computeTransactionsByType(payments, clients);
   const dailyCollections = computeDailyCollections(payments);
-  const weeklyPast = computeWeeklyPastCollections(agingRaw);
-  const monthlyPast = computeMonthlyPastCollections(agingRaw);
+  const weeklyPast = computeWeeklyPastCollections(payments);
+  const monthlyPast = computeMonthlyPastCollections(payments);
   const contractAnalytics = computeContractAnalytics(clients);
 
   const progressionBuckets = [

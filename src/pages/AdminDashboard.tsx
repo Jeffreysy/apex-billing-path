@@ -30,7 +30,7 @@ const AdminDashboard = () => {
   const collectionRate = Number(kpi?.collection_rate_pct) || 0;
   const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
   const openTasks = tasks.filter(t => t.status !== "completed").length;
-  const weeklyData = computeWeeklyCollections(agingRaw);
+  const weeklyData = computeWeeklyCollections(payments);
 
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
