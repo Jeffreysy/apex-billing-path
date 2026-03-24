@@ -281,37 +281,6 @@ export function useCollectors() {
   });
 }
 
-export function useCollectionsByAging() {
-  return useQuery({
-    queryKey: ["collections-by-aging"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collections_by_aging")
-        .select("*")
-        .order("week_start", { ascending: true })
-        .limit(52);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useCollectorPerformance() {
-  return useQuery({
-    queryKey: ["collector-performance"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collector_performance")
-        .select("*")
-        .order("month", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
 
 // Helper: extract client name from notes by removing "Filevine: " prefix
 export function extractClientNameFromNotes(notes: string | null): string {
