@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useMergedClients, usePaymentsData, useCollectionsByAging,
+  useMergedClients, usePaymentsData,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
