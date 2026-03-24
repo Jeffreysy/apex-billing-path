@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ReportingPage = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
-  const { data: agingRaw = [], isLoading: al } = useCollectionsByAging();
+  const { data: payments = [], isLoading: pl } = usePaymentsData();
 
-  if (cl || al) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
+  if (cl || pl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
 
   const forecastData = computeForecastData(clients);
   const weeklyData = computeWeeklyCollections(agingRaw);
