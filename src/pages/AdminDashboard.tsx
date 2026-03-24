@@ -15,7 +15,7 @@ const AdminDashboard = () => {
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
-  const { data: agingRaw = [] } = useCollectionsByAging();
+  
 
   if (kpiLoading || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
