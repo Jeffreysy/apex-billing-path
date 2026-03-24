@@ -28,9 +28,8 @@ interface Props { dateRange?: DateRange }
 const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
-  const { data: agingRaw = [], isLoading: al } = useCollectionsByAging();
 
-  const isLoading = cl || pl || al;
+  const isLoading = cl || pl;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
   const totalAR = clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
