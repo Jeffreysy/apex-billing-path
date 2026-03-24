@@ -417,23 +417,29 @@ export function computeMonthlyForecast(clients: Client[]) {
   }));
 }
 
-export function computeWeeklyCollections(agingData: { week_start: string | null; total_collected: number | null }[]) {
-  return agingData
-    .filter(d => d.week_start && d.total_collected)
-    .map(d => ({
-      week: format(new Date(d.week_start!), "MMM dd"),
-      collected: Math.round(Number(d.total_collected) || 0),
-      target: 80000,
-    }))
-    .slice(-12);
+export function computeWeeklyCollections(payments: Payment[]) {
+  const weekMap = new Map<string, number>();
+  for (const p of payments) {
+    if (!p.date) continue;
+    const d = new Date(p.date);
+    const ws = startOfWeek(d, { weekStartsOn: 1 });
+    const key = format(ws, "MMM dd");
+    weekMap.set(key, (weekMap.get(key) || 0) + p.amount);
+  }
+  return Array.from(weekMap, ([week, collected]) => ({
+    week,
+    collected: Math.round(collected),
+    target: 80000,
+  })).slice(-12);
 }
 
-export function computeMonthlyCollections(agingData: { month_start: string | null; total_collected: number | null }[]) {
+export function computeMonthlyCollections(payments: Payment[]) {
   const monthMap = new Map<string, number>();
-  for (const d of agingData) {
-    if (!d.month_start) continue;
-    const key = format(new Date(d.month_start), "MMM yyyy");
-    monthMap.set(key, (monthMap.get(key) || 0) + (Number(d.total_collected) || 0));
+  for (const p of payments) {
+    if (!p.date) continue;
+    const d = new Date(p.date);
+    const key = format(d, "MMM yyyy");
+    monthMap.set(key, (monthMap.get(key) || 0) + p.amount);
   }
   return Array.from(monthMap, ([month, collected]) => ({
     month,
