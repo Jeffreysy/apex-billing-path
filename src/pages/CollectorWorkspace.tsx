@@ -399,32 +399,8 @@ const CollectorWorkspace = () => {
 
       {/* ===== DIALOGS ===== */}
 
-      {/* Log Call */}
-      <Dialog open={callOpen} onOpenChange={setCallOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Log Call Outcome</DialogTitle></DialogHeader>
-          <form onSubmit={handleLogCall} className="space-y-4">
-            <div>
-              <Label>Outcome</Label>
-              <Select value={callOutcome} onValueChange={setCallOutcome}>
-                <SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger>
-                <SelectContent>
-                  {OUTCOMES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Duration (minutes)</Label>
-              <Input type="number" value={callDuration} onChange={e => setCallDuration(e.target.value)} placeholder="5" />
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Call notes..." rows={3} />
-            </div>
-            <DialogFooter><Button type="submit">Save Call</Button></DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Call Documentation */}
+      <CallDocumentationDialog open={callOpen} onOpenChange={setCallOpen} account={account} />
 
       {/* Create Commitment */}
       <Dialog open={commitOpen} onOpenChange={setCommitOpen}>
