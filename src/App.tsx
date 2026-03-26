@@ -39,6 +39,9 @@ const App = () => (
           <Route path="/collections/queue" element={<CallQueuePage />} />
           <Route path="/collections/workspace/:accountId" element={<CollectorWorkspace />} />
           <Route path="/collections/commitments" element={<PaymentCommitmentsPage />} />
+          <Route path="/collections/escalations" element={<EscalationManagementPage />} />
+          <Route path="/collections/kpi" element={<CollectionsKPIPage />} />
+          <Route path="/collections/activity-log" element={<DailyActivityLogPage />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
