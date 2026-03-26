@@ -11,6 +11,7 @@ import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
 import ClientLookup from "./pages/ClientLookup";
+import CallQueuePage from "./pages/CallQueuePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
