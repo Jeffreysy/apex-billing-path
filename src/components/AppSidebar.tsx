@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight,
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered,
 } from "lucide-react";
 import { useState } from "react";
 
