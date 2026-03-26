@@ -31,6 +31,7 @@ const App = () => (
           <Route path="/reporting" element={<ReportingPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/clients" element={<ClientLookup />} />
+          <Route path="/collections/queue" element={<CallQueuePage />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
