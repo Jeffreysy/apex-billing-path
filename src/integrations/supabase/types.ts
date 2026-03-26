@@ -761,6 +761,87 @@ export type Database = {
           },
         ]
       }
+      escalations: {
+        Row: {
+          assigned_to: string | null
+          client_id: string
+          contract_id: string | null
+          created_at: string
+          id: string
+          priority: string
+          raised_by: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string
+          trigger_reason: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id: string
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          priority?: string
+          raised_by: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          trigger_reason: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          priority?: string
+          raised_by?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          trigger_reason?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "escalations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "escalations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "escalations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       firm_settings: {
         Row: {
           address_line1: string | null
@@ -1647,6 +1728,94 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments_clean"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_commitments: {
+        Row: {
+          call_activity_id: string | null
+          client_id: string
+          collector: string
+          contract_id: string
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          notes: string | null
+          promised_amount: number
+          promised_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          call_activity_id?: string | null
+          client_id: string
+          collector: string
+          contract_id: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          promised_amount: number
+          promised_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          call_activity_id?: string | null
+          client_id?: string
+          collector?: string
+          contract_id?: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          promised_amount?: number
+          promised_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_commitments_call_activity_id_fkey"
+            columns: ["call_activity_id"]
+            isOneToOne: false
+            referencedRelation: "collection_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_commitments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_commitments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "payment_commitments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "payment_commitments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "payment_commitments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
         ]
