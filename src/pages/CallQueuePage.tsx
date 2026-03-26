@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useCollectionsDashboard, useCollectionActivities } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ function priorityLabel(score: number | null): { label: string; variant: "destruc
 }
 
 const CallQueuePage = () => {
+  const navigate = useNavigate();
   const { data: queue = [], isLoading: ql } = useCollectionsDashboard();
   const { data: activities = [], isLoading: al } = useCollectionActivities();
 
@@ -279,7 +281,7 @@ const CallQueuePage = () => {
               const itemId = item.contract_id || item.client_id;
               const daysOut = item.days_past_due || 0;
               return (
-                <tr key={itemId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                <tr key={itemId} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => navigate(`/collections/workspace/${itemId}`)}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{item.client_name}</p>
                     <p className="text-xs text-muted-foreground">{item.phone || "—"}</p>
