@@ -2,7 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
   Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered,
-  AlertTriangle, BarChart3, ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -18,10 +17,6 @@ const sections = [
     items: [
       { path: "/collections", label: "Collections", icon: Phone },
       { path: "/collections/queue", label: "Call Queue", icon: ListOrdered },
-      { path: "/collections/commitments", label: "Commitments", icon: DollarSign },
-      { path: "/collections/escalations", label: "Escalations", icon: AlertTriangle },
-      { path: "/collections/activity-log", label: "Activity Log", icon: ClipboardList },
-      { path: "/collections/kpi", label: "Collections KPI", icon: BarChart3 },
       { path: "/legal", label: "Legal", icon: Scale },
       { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
       { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },

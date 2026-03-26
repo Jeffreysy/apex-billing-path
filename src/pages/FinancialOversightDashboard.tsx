@@ -7,6 +7,7 @@ import ARPortfolioTab from "@/components/finance/ARPortfolioTab";
 import TransactionsTab from "@/components/finance/TransactionsTab";
 import ForecastingTab from "@/components/finance/ForecastingTab";
 import ReportBuilderTab from "@/components/finance/ReportBuilderTab";
+import CollectionsKPITab from "@/components/finance/CollectionsKPITab";
 import TaskPanel from "@/components/TaskPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ const FinancialOversightDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Financial Oversight</h1>
           <p className="text-muted-foreground text-sm">
-            Finance command center — AR, revenue, forecasting, and reporting
+            Finance command center — AR, revenue, forecasting, collections KPIs, and reporting
           </p>
           <div className="mt-1.5 flex gap-2">
             <Badge variant="outline" className="text-[10px] gap-1">
@@ -63,12 +64,13 @@ const FinancialOversightDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="weekly">Weekly Revenue</TabsTrigger>
           <TabsTrigger value="portfolio">AR Portfolio</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="forecasting">Forecasting</TabsTrigger>
+          <TabsTrigger value="collections-kpi">Collections KPI</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -86,6 +88,9 @@ const FinancialOversightDashboard = () => {
         </TabsContent>
         <TabsContent value="forecasting">
           <ForecastingTab />
+        </TabsContent>
+        <TabsContent value="collections-kpi">
+          <CollectionsKPITab />
         </TabsContent>
         <TabsContent value="reports">
           <ReportBuilderTab />
