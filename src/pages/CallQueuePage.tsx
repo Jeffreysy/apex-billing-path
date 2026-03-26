@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useCollectionsDashboard, useCollectionActivities } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
