@@ -33,6 +33,7 @@ const App = () => (
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/clients" element={<ClientLookup />} />
           <Route path="/collections/queue" element={<CallQueuePage />} />
+          <Route path="/collections/workspace/:accountId" element={<CollectorWorkspace />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
