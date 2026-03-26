@@ -14,6 +14,9 @@ import ClientLookup from "./pages/ClientLookup";
 import CallQueuePage from "./pages/CallQueuePage";
 import CollectorWorkspace from "./pages/CollectorWorkspace";
 import PaymentCommitmentsPage from "./pages/PaymentCommitmentsPage";
+import EscalationManagementPage from "./pages/EscalationManagementPage";
+import CollectionsKPIPage from "./pages/CollectionsKPIPage";
+import DailyActivityLogPage from "./pages/DailyActivityLogPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
