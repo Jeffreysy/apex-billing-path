@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, DollarSign, AlertTriangle, Calendar,
@@ -35,16 +36,8 @@ function priorityLabel(score: number | null) {
   return { label: "Low", variant: "outline" as const };
 }
 
-const OUTCOMES = [
-  { value: "payment_taken", label: "Payment Taken" },
-  { value: "promise_to_pay", label: "Promise to Pay" },
-  { value: "no_answer", label: "No Answer" },
-  { value: "left_voicemail", label: "Left Voicemail" },
-  { value: "callback_scheduled", label: "Callback Scheduled" },
-  { value: "disputed", label: "Disputed" },
-  { value: "wrong_number", label: "Wrong Number" },
-  { value: "client_satisfied", label: "Client Satisfied" },
-];
+
+
 
 const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
 
@@ -94,10 +87,7 @@ const CollectorWorkspace = () => {
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
 
-  // Form state
-  const [callOutcome, setCallOutcome] = useState("");
-  const [callNotes, setCallNotes] = useState("");
-  const [callDuration, setCallDuration] = useState("");
+  // Call form state removed — now handled by CallDocumentationDialog
 
   const [commitAmount, setCommitAmount] = useState("");
   const [commitDate, setCommitDate] = useState("");
@@ -128,31 +118,7 @@ const CollectorWorkspace = () => {
   const openEscalations = escalations.filter((e: any) => e.status === "open" || e.status === "in_progress");
   const latestCommitment = commitments.length > 0 ? commitments[0] : null;
 
-  // --- Action handlers ---
-  const handleLogCall = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!callOutcome) { toast.error("Select an outcome"); return; }
-    try {
-      const { error } = await supabase.from("collection_activities").insert({
-        client_id: account?.client_id || null,
-        client_name: account?.client_name || "Unknown",
-        collector: account?.collector || account?.assigned_collector || "Unknown",
-        activity_date: new Date().toISOString().split("T")[0],
-        activity_type: "outbound_call",
-        outcome: callOutcome,
-        duration_minutes: Number(callDuration) || null,
-        notes: callNotes || null,
-      });
-      if (error) throw error;
-      toast.success("Call outcome logged");
-      setCallOpen(false);
-      setCallOutcome("");
-      setCallNotes("");
-      setCallDuration("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to log call");
-    }
-  };
+  // handleLogCall removed — now handled by CallDocumentationDialog
 
   const handleCreateCommitment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -425,32 +391,8 @@ const CollectorWorkspace = () => {
 
       {/* ===== DIALOGS ===== */}
 
-      {/* Log Call */}
-      <Dialog open={callOpen} onOpenChange={setCallOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Log Call Outcome</DialogTitle></DialogHeader>
-          <form onSubmit={handleLogCall} className="space-y-4">
-            <div>
-              <Label>Outcome</Label>
-              <Select value={callOutcome} onValueChange={setCallOutcome}>
-                <SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger>
-                <SelectContent>
-                  {OUTCOMES.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Duration (minutes)</Label>
-              <Input type="number" value={callDuration} onChange={e => setCallDuration(e.target.value)} placeholder="5" />
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea value={callNotes} onChange={e => setCallNotes(e.target.value)} placeholder="Call notes..." rows={3} />
-            </div>
-            <DialogFooter><Button type="submit">Save Call</Button></DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Call Documentation */}
+      <CallDocumentationDialog open={callOpen} onOpenChange={setCallOpen} account={account} />
 
       {/* Create Commitment */}
       <Dialog open={commitOpen} onOpenChange={setCommitOpen}>
