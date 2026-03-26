@@ -542,6 +542,78 @@ export type Database = {
           },
         ]
       }
+      consultations: {
+        Row: {
+          amount_paid: number | null
+          card_last_four: string | null
+          client_id: string | null
+          converted_at: string | null
+          converted_to_client: boolean | null
+          created_at: string | null
+          email: string | null
+          id: string
+          lawpay_transaction_id: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          phone: string | null
+          potential_client_name: string | null
+          raw_payload: Json | null
+          status: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          card_last_four?: string | null
+          client_id?: string | null
+          converted_at?: string | null
+          converted_to_client?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lawpay_transaction_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          potential_client_name?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          card_last_four?: string | null
+          client_id?: string | null
+          converted_at?: string | null
+          converted_to_client?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lawpay_transaction_id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          potential_client_name?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consultations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           case_number: string | null
@@ -1134,6 +1206,280 @@ export type Database = {
           },
         ]
       }
+      lawpay_backfill_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          id: string
+          last_page: number | null
+          started_at: string | null
+          total_consultations: number | null
+          total_duplicates: number | null
+          total_inserted: number | null
+          total_pages: number | null
+          total_unmatched: number | null
+          updated_at: string | null
+          workers_completed: number | null
+          workers_dispatched: number | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          last_page?: number | null
+          started_at?: string | null
+          total_consultations?: number | null
+          total_duplicates?: number | null
+          total_inserted?: number | null
+          total_pages?: number | null
+          total_unmatched?: number | null
+          updated_at?: string | null
+          workers_completed?: number | null
+          workers_dispatched?: number | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          last_page?: number | null
+          started_at?: string | null
+          total_consultations?: number | null
+          total_duplicates?: number | null
+          total_inserted?: number | null
+          total_pages?: number | null
+          total_unmatched?: number | null
+          updated_at?: string | null
+          workers_completed?: number | null
+          workers_dispatched?: number | null
+        }
+        Relationships: []
+      }
+      lawpay_transactions: {
+        Row: {
+          amount: number
+          card_brand: string | null
+          card_last_four: string | null
+          client_id: string | null
+          contract_id: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string
+          lawpay_charge_id: string | null
+          lawpay_customer_id: string | null
+          lawpay_payment_method_id: string | null
+          lawpay_transaction_id: string | null
+          match_confidence: string | null
+          matched_to_payment: boolean | null
+          payment_date: string | null
+          payment_id: string | null
+          payment_method: string | null
+          processed_at: string | null
+          raw_payload: Json | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          client_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          lawpay_charge_id?: string | null
+          lawpay_customer_id?: string | null
+          lawpay_payment_method_id?: string | null
+          lawpay_transaction_id?: string | null
+          match_confidence?: string | null
+          matched_to_payment?: boolean | null
+          payment_date?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          card_brand?: string | null
+          card_last_four?: string | null
+          client_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          lawpay_charge_id?: string | null
+          lawpay_customer_id?: string | null
+          lawpay_payment_method_id?: string | null
+          lawpay_transaction_id?: string | null
+          match_confidence?: string | null
+          matched_to_payment?: boolean | null
+          payment_date?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawpay_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_transactions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments_clean"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lawpay_validation_log: {
+        Row: {
+          client_id: string | null
+          contract_id: string | null
+          created_at: string | null
+          difference: number | null
+          id: string
+          issue_type: string
+          lawpay_amount: number | null
+          lawpay_data: Json | null
+          lawpay_txn_id: string | null
+          resolution: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          supabase_amount: number | null
+          supabase_data: Json | null
+        }
+        Insert: {
+          client_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          difference?: number | null
+          id?: string
+          issue_type: string
+          lawpay_amount?: number | null
+          lawpay_data?: Json | null
+          lawpay_txn_id?: string | null
+          resolution?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          supabase_amount?: number | null
+          supabase_data?: Json | null
+        }
+        Update: {
+          client_id?: string | null
+          contract_id?: string | null
+          created_at?: string | null
+          difference?: number | null
+          id?: string
+          issue_type?: string
+          lawpay_amount?: number | null
+          lawpay_data?: Json | null
+          lawpay_txn_id?: string | null
+          resolution?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          supabase_amount?: number | null
+          supabase_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lawpay_validation_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_lawpay_txn_id_fkey"
+            columns: ["lawpay_txn_id"]
+            isOneToOne: false
+            referencedRelation: "lawpay_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lawpay_validation_log_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matters: {
         Row: {
           a_number: string | null
@@ -1386,6 +1732,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments_negative_backup: {
+        Row: {
+          aging_bucket: string | null
+          amount: number | null
+          client_id: string | null
+          collector_name: string | null
+          commission: number | null
+          created_at: string | null
+          delinquency_days: number | null
+          deposit_to_trust: boolean | null
+          id: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_number: string | null
+          payment_type: string | null
+          received_by: string | null
+          reference_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aging_bucket?: string | null
+          amount?: number | null
+          client_id?: string | null
+          collector_name?: string | null
+          commission?: number | null
+          created_at?: string | null
+          delinquency_days?: number | null
+          deposit_to_trust?: boolean | null
+          id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_number?: string | null
+          payment_type?: string | null
+          received_by?: string | null
+          reference_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aging_bucket?: string | null
+          amount?: number | null
+          client_id?: string | null
+          collector_name?: string | null
+          commission?: number | null
+          created_at?: string | null
+          delinquency_days?: number | null
+          deposit_to_trust?: boolean | null
+          id?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_number?: string | null
+          payment_type?: string | null
+          received_by?: string | null
+          reference_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1726,6 +2132,77 @@ export type Database = {
           },
         ]
       }
+      unmatched_payments: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string
+          matched_client_id: string | null
+          name_in_notes: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_id: string | null
+          payment_number: string | null
+          reference_number: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string
+          matched_client_id?: string | null
+          name_in_notes?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_id?: string | null
+          payment_number?: string | null
+          reference_number?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string
+          matched_client_id?: string | null
+          name_in_notes?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_id?: string | null
+          payment_number?: string | null
+          reference_number?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unmatched_payments_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unmatched_payments_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "unmatched_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unmatched_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments_clean"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       utbms_codes: {
         Row: {
           category: string | null
@@ -1903,6 +2380,10 @@ export type Database = {
       }
     }
     Functions: {
+      call_lawpay_orchestrator: {
+        Args: { p_payload: Json }
+        Returns: undefined
+      }
       current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1916,7 +2397,25 @@ export type Database = {
         }[]
       }
       is_active_user: { Args: never; Returns: boolean }
+      lawpay_match_client: {
+        Args: { p_invoice_ref?: string; p_payor_name: string }
+        Returns: {
+          match_confidence: string
+          matched_client_id: string
+          matched_contract_id: string
+          similarity_score: number
+        }[]
+      }
       mark_overdue_invoices: { Args: never; Returns: number }
+      resolve_lawpay_unmatched_clients: {
+        Args: never
+        Returns: {
+          resolved_count: number
+          still_unresolved: number
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       billing_type:
