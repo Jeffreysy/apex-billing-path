@@ -39,6 +39,7 @@ function priorityLabel(score: number | null): { label: string; variant: "destruc
 }
 
 const CallQueuePage = () => {
+  const navigate = useNavigate();
   const { data: queue = [], isLoading: ql } = useCollectionsDashboard();
   const { data: activities = [], isLoading: al } = useCollectionActivities();
 
