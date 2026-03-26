@@ -21,7 +21,18 @@ function fmt(n: number) {
 }
 
 const CollectionsKPIPage = () => {
-  const { data: activities = [] } = useCollectionActivities();
+  const { data: activities = [] } = useQuery({
+    queryKey: ["kpi-activities"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collection_activities")
+        .select("*")
+        .order("activity_date", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: commitments = [] } = useQuery({
     queryKey: ["kpi-commitments"],

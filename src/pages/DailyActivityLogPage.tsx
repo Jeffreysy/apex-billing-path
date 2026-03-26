@@ -35,7 +35,18 @@ function fmt(n: number | null) {
 }
 
 const DailyActivityLogPage = () => {
-  const { data: activities = [], isLoading } = useCollectionActivities();
+  const { data: activities = [], isLoading } = useQuery({
+    queryKey: ["daily-activity-log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collection_activities")
+        .select("*")
+        .order("activity_date", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const [search, setSearch] = useState("");
   const [filterCollector, setFilterCollector] = useState("all");
