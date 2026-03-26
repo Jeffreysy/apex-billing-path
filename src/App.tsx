@@ -13,6 +13,7 @@ import CollectorDashboard from "./pages/CollectorDashboard";
 import ClientLookup from "./pages/ClientLookup";
 import CallQueuePage from "./pages/CallQueuePage";
 import CollectorWorkspace from "./pages/CollectorWorkspace";
+import PaymentCommitmentsPage from "./pages/PaymentCommitmentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/clients" element={<ClientLookup />} />
           <Route path="/collections/queue" element={<CallQueuePage />} />
           <Route path="/collections/workspace/:accountId" element={<CollectorWorkspace />} />
+          <Route path="/collections/commitments" element={<PaymentCommitmentsPage />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
