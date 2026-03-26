@@ -36,16 +36,8 @@ function priorityLabel(score: number | null) {
   return { label: "Low", variant: "outline" as const };
 }
 
-const OUTCOMES = [
-  { value: "payment_taken", label: "Payment Taken" },
-  { value: "promise_to_pay", label: "Promise to Pay" },
-  { value: "no_answer", label: "No Answer" },
-  { value: "left_voicemail", label: "Left Voicemail" },
-  { value: "callback_scheduled", label: "Callback Scheduled" },
-  { value: "disputed", label: "Disputed" },
-  { value: "wrong_number", label: "Wrong Number" },
-  { value: "client_satisfied", label: "Client Satisfied" },
-];
+
+
 
 const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
 
