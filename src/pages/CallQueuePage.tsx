@@ -281,7 +281,7 @@ const CallQueuePage = () => {
               const itemId = item.contract_id || item.client_id;
               const daysOut = item.days_past_due || 0;
               return (
-                <tr key={itemId} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                <tr key={itemId} className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => navigate(`/collections/workspace/${itemId}`)}>
                   <td className="px-4 py-3">
                     <p className="font-medium">{item.client_name}</p>
                     <p className="text-xs text-muted-foreground">{item.phone || "—"}</p>
