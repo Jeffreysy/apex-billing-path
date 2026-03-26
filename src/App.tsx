@@ -11,6 +11,7 @@ import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
 import ClientLookup from "./pages/ClientLookup";
+import CallQueuePage from "./pages/CallQueuePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/reporting" element={<ReportingPage />} />
           <Route path="/contracts" element={<ContractsPage />} />
           <Route path="/clients" element={<ClientLookup />} />
+          <Route path="/collections/queue" element={<CallQueuePage />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight,
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -16,6 +16,7 @@ const sections = [
     label: "Departments",
     items: [
       { path: "/collections", label: "Collections", icon: Phone },
+      { path: "/collections/queue", label: "Call Queue", icon: ListOrdered },
       { path: "/legal", label: "Legal", icon: Scale },
       { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
       { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
