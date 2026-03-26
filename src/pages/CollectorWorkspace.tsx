@@ -95,10 +95,7 @@ const CollectorWorkspace = () => {
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
 
-  // Form state
-  const [callOutcome, setCallOutcome] = useState("");
-  const [callNotes, setCallNotes] = useState("");
-  const [callDuration, setCallDuration] = useState("");
+  // Call form state removed — now handled by CallDocumentationDialog
 
   const [commitAmount, setCommitAmount] = useState("");
   const [commitDate, setCommitDate] = useState("");
