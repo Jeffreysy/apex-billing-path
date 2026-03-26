@@ -126,31 +126,7 @@ const CollectorWorkspace = () => {
   const openEscalations = escalations.filter((e: any) => e.status === "open" || e.status === "in_progress");
   const latestCommitment = commitments.length > 0 ? commitments[0] : null;
 
-  // --- Action handlers ---
-  const handleLogCall = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!callOutcome) { toast.error("Select an outcome"); return; }
-    try {
-      const { error } = await supabase.from("collection_activities").insert({
-        client_id: account?.client_id || null,
-        client_name: account?.client_name || "Unknown",
-        collector: account?.collector || account?.assigned_collector || "Unknown",
-        activity_date: new Date().toISOString().split("T")[0],
-        activity_type: "outbound_call",
-        outcome: callOutcome,
-        duration_minutes: Number(callDuration) || null,
-        notes: callNotes || null,
-      });
-      if (error) throw error;
-      toast.success("Call outcome logged");
-      setCallOpen(false);
-      setCallOutcome("");
-      setCallNotes("");
-      setCallDuration("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to log call");
-    }
-  };
+  // handleLogCall removed — now handled by CallDocumentationDialog
 
   const handleCreateCommitment = async (e: React.FormEvent) => {
     e.preventDefault();
