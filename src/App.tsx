@@ -13,6 +13,7 @@ import CollectorDashboard from "./pages/CollectorDashboard";
 import ClientLookup from "./pages/ClientLookup";
 import CallQueuePage from "./pages/CallQueuePage";
 import CollectorWorkspace from "./pages/CollectorWorkspace";
+import PaymentCommitmentsPage from "./pages/PaymentCommitmentsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
