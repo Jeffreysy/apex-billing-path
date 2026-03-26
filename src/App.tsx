@@ -14,6 +14,9 @@ import ClientLookup from "./pages/ClientLookup";
 import CallQueuePage from "./pages/CallQueuePage";
 import CollectorWorkspace from "./pages/CollectorWorkspace";
 import PaymentCommitmentsPage from "./pages/PaymentCommitmentsPage";
+import EscalationManagementPage from "./pages/EscalationManagementPage";
+import CollectionsKPIPage from "./pages/CollectionsKPIPage";
+import DailyActivityLogPage from "./pages/DailyActivityLogPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +39,9 @@ const App = () => (
           <Route path="/collections/queue" element={<CallQueuePage />} />
           <Route path="/collections/workspace/:accountId" element={<CollectorWorkspace />} />
           <Route path="/collections/commitments" element={<PaymentCommitmentsPage />} />
+          <Route path="/collections/escalations" element={<EscalationManagementPage />} />
+          <Route path="/collections/kpi" element={<CollectionsKPIPage />} />
+          <Route path="/collections/activity-log" element={<DailyActivityLogPage />} />
           <Route path="/collector/:collectorId" element={<CollectorDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
