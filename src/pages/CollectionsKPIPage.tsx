@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCollectionActivities } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
