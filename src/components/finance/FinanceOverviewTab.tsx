@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import StatCard from "@/components/StatCard";
+import ARGrowthVsCollectionsChart from "./ARGrowthVsCollectionsChart";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
