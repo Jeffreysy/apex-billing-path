@@ -90,6 +90,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
         <StatCard label="Variance (Week)" value={`${varianceWeek > 0 ? "+" : ""}${varianceWeek}%`} icon={<Activity className="h-5 w-5" />} />
       </div>
 
+      <ARGrowthVsCollectionsChart />
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Revenue by Transaction Type</h2>
