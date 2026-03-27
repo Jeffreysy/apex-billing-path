@@ -927,6 +927,7 @@ export type Database = {
           matter_id: string | null
           mycase_case_id: string | null
           nationality: string | null
+          needs_review: boolean | null
           next_steps: string | null
           notes: string | null
           open_date: string | null
@@ -963,6 +964,7 @@ export type Database = {
           matter_id?: string | null
           mycase_case_id?: string | null
           nationality?: string | null
+          needs_review?: boolean | null
           next_steps?: string | null
           notes?: string | null
           open_date?: string | null
@@ -999,6 +1001,7 @@ export type Database = {
           matter_id?: string | null
           mycase_case_id?: string | null
           nationality?: string | null
+          needs_review?: boolean | null
           next_steps?: string | null
           notes?: string | null
           open_date?: string | null
@@ -1685,6 +1688,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mycase_staging: {
+        Row: {
+          billing_contact: string | null
+          case_number: string
+          case_stage: string | null
+          closed_date: string | null
+          flat_fee: number | null
+          is_closed: boolean | null
+          lead_attorney: string | null
+          open_date: string | null
+          practice_area: string | null
+        }
+        Insert: {
+          billing_contact?: string | null
+          case_number: string
+          case_stage?: string | null
+          closed_date?: string | null
+          flat_fee?: number | null
+          is_closed?: boolean | null
+          lead_attorney?: string | null
+          open_date?: string | null
+          practice_area?: string | null
+        }
+        Update: {
+          billing_contact?: string | null
+          case_number?: string
+          case_stage?: string | null
+          closed_date?: string | null
+          flat_fee?: number | null
+          is_closed?: boolean | null
+          lead_attorney?: string | null
+          open_date?: string | null
+          practice_area?: string | null
+        }
+        Relationships: []
       }
       payment_allocations: {
         Row: {
