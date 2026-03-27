@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import StatCard from "@/components/StatCard";
+import ARGrowthVsCollectionsChart from "./ARGrowthVsCollectionsChart";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -88,6 +89,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
         <StatCard label="Fully Paid" value={String(completedContracts)} icon={<CheckCircle className="h-5 w-5" />} />
         <StatCard label="Variance (Week)" value={`${varianceWeek > 0 ? "+" : ""}${varianceWeek}%`} icon={<Activity className="h-5 w-5" />} />
       </div>
+
+      <ARGrowthVsCollectionsChart />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
