@@ -19,9 +19,9 @@ const AdminDashboard = () => {
 
   if (kpiLoading || pl || cal || col) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
-  const totalAR = Number(kpi?.total_ar_value) || 0;
+  const totalAR = Number(kpi?.total_remaining) || 0;
   const totalCollected = Number(kpi?.total_collected) || 0;
-  const activeContracts = Number(kpi?.active_contracts) || 0;
+  const activeContracts = Number(kpi?.total_contracts) || 0;
   const riskContracts = Number(kpi?.risk_contracts) || 0;
   const totalClients = Number(kpi?.total_clients) || 0;
   const delinquent = Number(kpi?.delinquent_clients) || 0;
