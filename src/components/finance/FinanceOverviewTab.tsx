@@ -35,11 +35,16 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const isLoading = cl || pl;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
-  const totalAR = clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  const totalAR = Number(kpi?.total_ar_value) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const overdueAR = clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
-  const totalCollected = payments.reduce((s, p) => s + p.amount, 0);
-  const weekCollected = payments.slice(0, 15).reduce((s, p) => s + p.amount, 0);
-  const monthCollected = payments.slice(0, 40).reduce((s, p) => s + p.amount, 0);
+  const totalCollectedAll = Number(kpi?.total_collected) || payments.reduce((s, p) => s + p.amount, 0);
+
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const monthStart = startOfMonth(now);
+  const weekCollected = payments.filter(p => p.date && isAfter(new Date(p.date), weekStart)).reduce((s, p) => s + p.amount, 0);
+  const monthCollected = Number(kpi?.collected_this_month) || payments.filter(p => p.date && isAfter(new Date(p.date), monthStart)).reduce((s, p) => s + p.amount, 0);
+
   const forecastWeek = Math.round(weekCollected * 1.08);
   const forecastMonth = Math.round(monthCollected * 1.05);
   const varianceWeek = forecastWeek > 0 ? Math.round(((weekCollected - forecastWeek) / forecastWeek) * 100) : 0;
@@ -50,12 +55,12 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     ? Math.round(delinquentClients.reduce((s, c) => s + c.daysAging, 0) / delinquentClients.length) : 0;
 
   const completedContracts = clients.filter(c => c.status === "completed").length;
-  const activeContracts = clients.filter(c => c.status === "active" || c.status === "delinquent").length;
+  const activeContracts = Number(kpi?.active_contracts) || clients.filter(c => c.status === "active" || c.status === "delinquent").length;
   const completionRate = activeContracts + completedContracts > 0
     ? Math.round((completedContracts / (activeContracts + completedContracts)) * 100) : 0;
   const totalOwedAll = clients.reduce((s, c) => s + c.totalOwed, 0);
   const totalPaidAll = clients.reduce((s, c) => s + c.totalPaid, 0);
-  const collectionEffectiveness = totalOwedAll > 0 ? Math.round((totalPaidAll / totalOwedAll) * 100) : 0;
+  const collectionEffectiveness = Number(kpi?.collection_rate_pct) || (totalOwedAll > 0 ? Math.round((totalPaidAll / totalOwedAll) * 100) : 0);
 
   const agingData = computeARAgingData(clients);
   const transactionTypes = computeTransactionsByType(payments, clients);
