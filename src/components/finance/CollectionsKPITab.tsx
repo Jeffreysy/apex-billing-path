@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { fetchAllRows } from "@/hooks/useSupabaseData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -21,16 +22,14 @@ function fmt(n: number) {
 
 const CollectionsKPITab = () => {
   const { data: activities = [] } = useQuery({
-    queryKey: ["kpi-activities"],
+    queryKey: ["kpi-activities-all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collection_activities")
-        .select("*")
-        .order("activity_date", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return data || [];
+      return fetchAllRows<any>("collection_activities", {
+        orderBy: "activity_date",
+        ascending: false,
+      });
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: commitments = [] } = useQuery({

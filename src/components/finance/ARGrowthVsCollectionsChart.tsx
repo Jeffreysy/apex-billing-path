@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/hooks/useSupabaseData";
 import StatCard from "@/components/StatCard";
 import { TrendingUp, TrendingDown, BarChart3, Percent } from "lucide-react";
 import {
@@ -20,33 +20,26 @@ function useARGrowthVsCollections() {
   return useQuery({
     queryKey: ["ar-growth-vs-collections"],
     queryFn: async () => {
-      const [contractsRes, paymentsRes, activitiesRes] = await Promise.all([
-        supabase
-          .from("contracts")
-          .select("start_date, value")
-          .not("start_date", "is", null),
-        supabase
-          .from("payments")
-          .select("payment_date, amount")
-          .not("payment_date", "is", null),
-        supabase
-          .from("collection_activities")
-          .select("activity_date, collected_amount")
-          .gt("collected_amount", 0),
+      const [contracts, payments, activities] = await Promise.all([
+        fetchAllRows<any>("contracts"),
+        fetchAllRows<any>("payments_clean"),
+        fetchAllRows<any>("collection_activities", {
+          filter: (q: any) => q.gt("collected_amount", 0),
+        }),
       ]);
 
       const arByMonth: Record<string, number> = {};
-      (contractsRes.data || []).forEach((c: any) => {
+      contracts.forEach((c: any) => {
         const m = c.start_date?.substring(0, 7);
         if (m) arByMonth[m] = (arByMonth[m] || 0) + Number(c.value || 0);
       });
 
       const collByMonth: Record<string, number> = {};
-      (paymentsRes.data || []).forEach((p: any) => {
+      payments.forEach((p: any) => {
         const m = p.payment_date?.substring(0, 7);
         if (m) collByMonth[m] = (collByMonth[m] || 0) + Number(p.amount || 0);
       });
-      (activitiesRes.data || []).forEach((a: any) => {
+      activities.forEach((a: any) => {
         const m = a.activity_date?.substring(0, 7);
         if (m) collByMonth[m] = (collByMonth[m] || 0) + Number(a.collected_amount || 0);
       });
@@ -68,13 +61,13 @@ function useARGrowthVsCollections() {
       const coverage = totalAR > 0 ? Math.round((totalColl / totalAR) * 100) : 0;
       const netChange = totalAR - totalColl;
 
-      // Growth rate: compare last 3 months AR vs prior 3 months
       const recent3 = data.slice(-3).reduce((s, d) => s + d.arAdded, 0);
       const prior3 = data.slice(-6, -3).reduce((s, d) => s + d.arAdded, 0);
       const growthRate = prior3 > 0 ? Math.round(((recent3 - prior3) / prior3) * 100) : 0;
 
       return { data, totalAR, totalColl, coverage, netChange, growthRate };
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

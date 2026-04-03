@@ -45,7 +45,7 @@ function mapOutcome(outcome: string | null): CallLog["outcome"] {
 }
 
 // --- Paginated fetch helper ---
-async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
+export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
   const allData: T[] = [];
   const pageSize = 1000;
   let from = 0;
@@ -187,19 +187,15 @@ export function usePaymentsData() {
   return useQuery({
     queryKey: ["payments-data"],
     queryFn: async () => {
-      const [paymentsRes, clientsRes] = await Promise.all([
-        supabase.from("payments").select("*").order("payment_date", { ascending: false }).limit(1000),
-        supabase.from("clients").select("id, name").range(0, 4999),
-      ]);
-      if (paymentsRes.error) throw paymentsRes.error;
-      if (clientsRes.error) throw clientsRes.error;
+      const rows = await fetchAllRows<any>("payments_clean", {
+        orderBy: "payment_date",
+        ascending: false,
+      });
 
-      const clientsMap = new Map((clientsRes.data || []).map(c => [c.id, c.name]));
-
-      return (paymentsRes.data || []).map((p): Payment => ({
+      return rows.map((p): Payment => ({
         id: p.id,
         clientId: p.client_id || "",
-        clientName: p.client_id ? (clientsMap.get(p.client_id) || "Unknown") : "Unknown",
+        clientName: p.client_name || "Unknown",
         amount: Number(p.amount) || 0,
         date: p.payment_date,
         method: mapPaymentMethod(p.payment_method),
@@ -239,24 +235,23 @@ export function useCollectionActivities() {
   });
 }
 
-/** 6. Collectors — aggregated from collection_activities (replaces team_performance) */
+/** 6. Collectors — from collector_performance view */
 export function useCollectors() {
   return useQuery({
     queryKey: ["collectors-aggregated"],
     queryFn: async () => {
-      const allActivities = await fetchAllRows<any>("collection_activities");
+      const rows = await fetchAllRows<any>("collector_performance");
 
       const knownCollectors = new Set(["Alejandro A", "Patricio D", "Maritza V"]);
       const collectorMap = new Map<string, { totalCollected: number; totalCommission: number; callsMade: number; paymentsTaken: number }>();
-      for (const row of allActivities) {
+
+      for (const row of rows) {
         if (!row.collector || !knownCollectors.has(row.collector)) continue;
         const existing = collectorMap.get(row.collector) || { totalCollected: 0, totalCommission: 0, callsMade: 0, paymentsTaken: 0 };
-        existing.callsMade += 1;
-        existing.totalCollected += Number(row.collected_amount) || 0;
-        existing.totalCommission += Number(row.commission) || 0;
-        if ((Number(row.collected_amount) || 0) > 0) {
-          existing.paymentsTaken += 1;
-        }
+        existing.totalCollected += Number(row.total_collected) || 0;
+        existing.totalCommission += Number(row.total_commission) || 0;
+        existing.callsMade += Number(row.total_activities) || 0;
+        existing.paymentsTaken += Number(row.collected_calls) || 0;
         collectorMap.set(row.collector, existing);
       }
 
