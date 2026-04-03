@@ -187,19 +187,15 @@ export function usePaymentsData() {
   return useQuery({
     queryKey: ["payments-data"],
     queryFn: async () => {
-      const [paymentsRes, clientsRes] = await Promise.all([
-        supabase.from("payments").select("*").order("payment_date", { ascending: false }).limit(1000),
-        supabase.from("clients").select("id, name").range(0, 4999),
-      ]);
-      if (paymentsRes.error) throw paymentsRes.error;
-      if (clientsRes.error) throw clientsRes.error;
+      const rows = await fetchAllRows<any>("payments_clean", {
+        orderBy: "payment_date",
+        ascending: false,
+      });
 
-      const clientsMap = new Map((clientsRes.data || []).map(c => [c.id, c.name]));
-
-      return (paymentsRes.data || []).map((p): Payment => ({
+      return rows.map((p): Payment => ({
         id: p.id,
         clientId: p.client_id || "",
-        clientName: p.client_id ? (clientsMap.get(p.client_id) || "Unknown") : "Unknown",
+        clientName: p.client_name || "Unknown",
         amount: Number(p.amount) || 0,
         date: p.payment_date,
         method: mapPaymentMethod(p.payment_method),
