@@ -466,6 +466,7 @@ export type Database = {
           end_time: string | null
           escalated_to: string | null
           id: string
+          is_junk: boolean | null
           next_payment_expected: string | null
           notes: string | null
           origin: string | null
@@ -491,6 +492,7 @@ export type Database = {
           end_time?: string | null
           escalated_to?: string | null
           id?: string
+          is_junk?: boolean | null
           next_payment_expected?: string | null
           notes?: string | null
           origin?: string | null
@@ -516,6 +518,7 @@ export type Database = {
           end_time?: string | null
           escalated_to?: string | null
           id?: string
+          is_junk?: boolean | null
           next_payment_expected?: string | null
           notes?: string | null
           origin?: string | null
@@ -626,8 +629,10 @@ export type Database = {
           delinquency_status: string | null
           down_payment: number | null
           down_payment_paid: boolean | null
+          excel_status: string | null
           id: string
           installments_paid: number | null
+          invoice_number: string | null
           matter_id: string | null
           maturity_date: string | null
           monthly_installment: number | null
@@ -651,8 +656,10 @@ export type Database = {
           delinquency_status?: string | null
           down_payment?: number | null
           down_payment_paid?: boolean | null
+          excel_status?: string | null
           id?: string
           installments_paid?: number | null
+          invoice_number?: string | null
           matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
@@ -676,8 +683,10 @@ export type Database = {
           delinquency_status?: string | null
           down_payment?: number | null
           down_payment_paid?: boolean | null
+          excel_status?: string | null
           id?: string
           installments_paid?: number | null
+          invoice_number?: string | null
           matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
@@ -713,6 +722,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contracts_backup_20260403: {
+        Row: {
+          case_number: string | null
+          client: string | null
+          client_id: string | null
+          collected: number | null
+          collector: string | null
+          created_at: string | null
+          days_out: number | null
+          delinquency_status: string | null
+          down_payment: number | null
+          down_payment_paid: boolean | null
+          id: string
+          installments_paid: number | null
+          matter_id: string | null
+          maturity_date: string | null
+          monthly_installment: number | null
+          next_due_date: string | null
+          notes: string | null
+          phone: string | null
+          practice_area: string | null
+          start_date: string | null
+          status: string | null
+          total_installments: number | null
+          value: number | null
+        }
+        Insert: {
+          case_number?: string | null
+          client?: string | null
+          client_id?: string | null
+          collected?: number | null
+          collector?: string | null
+          created_at?: string | null
+          days_out?: number | null
+          delinquency_status?: string | null
+          down_payment?: number | null
+          down_payment_paid?: boolean | null
+          id: string
+          installments_paid?: number | null
+          matter_id?: string | null
+          maturity_date?: string | null
+          monthly_installment?: number | null
+          next_due_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          practice_area?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_installments?: number | null
+          value?: number | null
+        }
+        Update: {
+          case_number?: string | null
+          client?: string | null
+          client_id?: string | null
+          collected?: number | null
+          collector?: string | null
+          created_at?: string | null
+          days_out?: number | null
+          delinquency_status?: string | null
+          down_payment?: number | null
+          down_payment_paid?: boolean | null
+          id?: string
+          installments_paid?: number | null
+          matter_id?: string | null
+          maturity_date?: string | null
+          monthly_installment?: number | null
+          next_due_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          practice_area?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_installments?: number | null
+          value?: number | null
+        }
+        Relationships: []
       }
       custom_field_definitions: {
         Row: {
@@ -1859,6 +1946,39 @@ export type Database = {
           },
         ]
       }
+      payment_plan_staging: {
+        Row: {
+          amount_due: number | null
+          case_name: string | null
+          contact: string
+          created_at: string | null
+          id: number
+          installment_amount: number | null
+          paid: number | null
+          total: number | null
+        }
+        Insert: {
+          amount_due?: number | null
+          case_name?: string | null
+          contact: string
+          created_at?: string | null
+          id?: number
+          installment_amount?: number | null
+          paid?: number | null
+          total?: number | null
+        }
+        Update: {
+          amount_due?: number | null
+          case_name?: string | null
+          contact?: string
+          created_at?: string | null
+          id?: number
+          installment_amount?: number | null
+          paid?: number | null
+          total?: number | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           aging_bucket: string | null
@@ -1941,66 +2061,6 @@ export type Database = {
           },
         ]
       }
-      payments_negative_backup: {
-        Row: {
-          aging_bucket: string | null
-          amount: number | null
-          client_id: string | null
-          collector_name: string | null
-          commission: number | null
-          created_at: string | null
-          delinquency_days: number | null
-          deposit_to_trust: boolean | null
-          id: string | null
-          notes: string | null
-          payment_date: string | null
-          payment_method: Database["public"]["Enums"]["payment_method"] | null
-          payment_number: string | null
-          payment_type: string | null
-          received_by: string | null
-          reference_number: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          aging_bucket?: string | null
-          amount?: number | null
-          client_id?: string | null
-          collector_name?: string | null
-          commission?: number | null
-          created_at?: string | null
-          delinquency_days?: number | null
-          deposit_to_trust?: boolean | null
-          id?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          payment_number?: string | null
-          payment_type?: string | null
-          received_by?: string | null
-          reference_number?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          aging_bucket?: string | null
-          amount?: number | null
-          client_id?: string | null
-          collector_name?: string | null
-          commission?: number | null
-          created_at?: string | null
-          delinquency_days?: number | null
-          deposit_to_trust?: boolean | null
-          id?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          payment_number?: string | null
-          payment_type?: string | null
-          received_by?: string | null
-          reference_number?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2046,6 +2106,168 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recon_change_log: {
+        Row: {
+          applied_at: string | null
+          change_source: string | null
+          contract_id: string | null
+          field_name: string
+          id: number
+          new_value: string | null
+          old_value: string | null
+          recon_staging_id: number | null
+        }
+        Insert: {
+          applied_at?: string | null
+          change_source?: string | null
+          contract_id?: string | null
+          field_name: string
+          id?: number
+          new_value?: string | null
+          old_value?: string | null
+          recon_staging_id?: number | null
+        }
+        Update: {
+          applied_at?: string | null
+          change_source?: string | null
+          contract_id?: string | null
+          field_name?: string
+          id?: number
+          new_value?: string | null
+          old_value?: string | null
+          recon_staging_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recon_change_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "recon_change_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "recon_change_log_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recon_change_log_recon_staging_id_fkey"
+            columns: ["recon_staging_id"]
+            isOneToOne: false
+            referencedRelation: "recon_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recon_staging: {
+        Row: {
+          created_at: string | null
+          delta_collected: number | null
+          delta_status: string | null
+          delta_value: number | null
+          excel_aging_bucket: string | null
+          excel_amount_paid: number | null
+          excel_balance_owed: number | null
+          excel_client_name: string
+          excel_collection_pct: number | null
+          excel_days_aging: number | null
+          excel_due_date: string | null
+          excel_invoice_number: string | null
+          excel_invoice_total: number | null
+          excel_notes: string | null
+          excel_source: string | null
+          excel_status: string | null
+          id: number
+          match_confidence: number | null
+          match_method: string | null
+          matched_contract_id: string | null
+          processed_at: string | null
+          recon_notes: string | null
+          recon_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delta_collected?: number | null
+          delta_status?: string | null
+          delta_value?: number | null
+          excel_aging_bucket?: string | null
+          excel_amount_paid?: number | null
+          excel_balance_owed?: number | null
+          excel_client_name: string
+          excel_collection_pct?: number | null
+          excel_days_aging?: number | null
+          excel_due_date?: string | null
+          excel_invoice_number?: string | null
+          excel_invoice_total?: number | null
+          excel_notes?: string | null
+          excel_source?: string | null
+          excel_status?: string | null
+          id?: number
+          match_confidence?: number | null
+          match_method?: string | null
+          matched_contract_id?: string | null
+          processed_at?: string | null
+          recon_notes?: string | null
+          recon_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delta_collected?: number | null
+          delta_status?: string | null
+          delta_value?: number | null
+          excel_aging_bucket?: string | null
+          excel_amount_paid?: number | null
+          excel_balance_owed?: number | null
+          excel_client_name?: string
+          excel_collection_pct?: number | null
+          excel_days_aging?: number | null
+          excel_due_date?: string | null
+          excel_invoice_number?: string | null
+          excel_invoice_total?: number | null
+          excel_notes?: string | null
+          excel_source?: string | null
+          excel_status?: string | null
+          id?: number
+          match_confidence?: number | null
+          match_method?: string | null
+          matched_contract_id?: string | null
+          processed_at?: string | null
+          recon_notes?: string | null
+          recon_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recon_staging_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "recon_staging_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "recon_staging_matched_contract_id_fkey"
+            columns: ["matched_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_performance: {
         Row: {
@@ -2507,6 +2729,23 @@ export type Database = {
           },
         ]
       }
+      collections_by_aging: {
+        Row: {
+          days_31_to_60: number | null
+          days_61_to_90: number | null
+          month_start: string | null
+          over_90_days: number | null
+          total_collected: number | null
+          total_transactions: number | null
+          txn_31_to_60: number | null
+          txn_61_to_90: number | null
+          txn_over_90: number | null
+          txn_under_30: number | null
+          under_30_days: number | null
+          week_start: string | null
+        }
+        Relationships: []
+      }
       collections_dashboard: {
         Row: {
           assigned_collector: string | null
@@ -2533,6 +2772,19 @@ export type Database = {
           practice_area: string | null
           preferred_language: string | null
           priority_score: number | null
+        }
+        Relationships: []
+      }
+      collector_performance: {
+        Row: {
+          avg_collected_per_call: number | null
+          collected_calls: number | null
+          collector: string | null
+          conversion_rate_pct: number | null
+          month: string | null
+          total_activities: number | null
+          total_collected: number | null
+          total_commission: number | null
         }
         Relationships: []
       }
