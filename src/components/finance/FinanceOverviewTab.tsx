@@ -4,7 +4,7 @@ import ARGrowthVsCollectionsChart from "./ARGrowthVsCollectionsChart";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useMergedClients, usePaymentsData,
+  useAdminKPI, useMergedClients, usePaymentsData,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DateRange } from "react-day-picker";
+import { startOfWeek, startOfMonth, isAfter } from "date-fns";
 
 const PIE_COLORS = [
   "hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(152 60% 40%)",
@@ -27,6 +28,7 @@ const PIE_COLORS = [
 interface Props { dateRange?: DateRange }
 
 const FinanceOverviewTab = ({ dateRange }: Props) => {
+  const { data: kpi } = useAdminKPI();
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
 
