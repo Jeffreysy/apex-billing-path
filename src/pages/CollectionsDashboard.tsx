@@ -53,11 +53,11 @@ const CollectionsDashboard = () => {
     },
   });
 
-  if (ql || pl || cal || col) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
-
   const filteredPayments = useMemo(() => filterByMonth(payments, "date", month), [payments, month]);
   const filteredCalls = useMemo(() => filterByMonth(callLogs, "date", month), [callLogs, month]);
   const filteredActivities = useMemo(() => filterByMonth(activities, "activity_date", month), [activities, month]);
+
+  if (ql || pl || cal || col) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const totalCollected = filteredPayments.reduce((s, p) => s + p.amount, 0);
   const totalCalls = filteredCalls.length;
