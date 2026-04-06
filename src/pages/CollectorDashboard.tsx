@@ -77,9 +77,12 @@ const CollectorDashboard = () => {
   const isLead = collectorName === LEAD_COLLECTOR;
   const avatar = collectorName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
-  // Aggregate stats from collection_activities
+  // Filter activities by selected month
+  const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
+
+  // Aggregate stats from filtered activities
   const buildStats = (name: string) => {
-    const rows = allActivities.filter(a => a.collector === name);
+    const rows = monthActivities.filter(a => a.collector === name);
     return {
       totalCollected: rows.reduce((s, a) => s + (Number(a.collected_amount) || 0), 0),
       totalCommission: rows.reduce((s, a) => s + (Number(a.commission) || 0), 0),
