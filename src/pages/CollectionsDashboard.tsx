@@ -55,15 +55,19 @@ const CollectionsDashboard = () => {
 
   if (ql || pl || cal || col) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
-  const totalCollected = payments.reduce((s, p) => s + p.amount, 0);
-  const totalCalls = callLogs.length;
-  const promiseToPay = callLogs.filter(c => c.outcome === "promise_to_pay").length;
+  const filteredPayments = useMemo(() => filterByMonth(payments, "date", month), [payments, month]);
+  const filteredCalls = useMemo(() => filterByMonth(callLogs, "date", month), [callLogs, month]);
+  const filteredActivities = useMemo(() => filterByMonth(activities, "activity_date", month), [activities, month]);
+
+  const totalCollected = filteredPayments.reduce((s, p) => s + p.amount, 0);
+  const totalCalls = filteredCalls.length;
+  const promiseToPay = filteredCalls.filter(c => c.outcome === "promise_to_pay").length;
   const delinquent = queue.filter((c: any) => (c.delinquency_status || "").toLowerCase() === "delinquent").length;
   const openEscalations = escalations.filter(e => e.status === "open" || e.status === "in_progress").length;
   const pendingCommitments = commitments.filter(c => c.status === "pending").length;
 
-  const recentCalls = [...callLogs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
-  const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  const recentCalls = [...filteredCalls].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+  const recentPayments = [...filteredPayments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
   const outcomeColors: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
     payment_taken: "default", promise_to_pay: "secondary", no_answer: "outline",
