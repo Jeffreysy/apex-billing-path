@@ -175,7 +175,7 @@ const CollectionsDashboard = () => {
           {/* Activity Log */}
           <TabsContent value="activity">
             <div className="dashboard-section">
-              <h2 className="mb-4 text-lg font-semibold">All Activity ({activities.length} records)</h2>
+              <h2 className="mb-4 text-lg font-semibold">All Activity ({filteredActivities.length} records)</h2>
               <div className="rounded-lg border bg-card overflow-auto max-h-[500px]">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-card">
