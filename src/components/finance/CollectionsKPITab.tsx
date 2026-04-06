@@ -81,7 +81,7 @@ const CollectionsKPITab = () => {
 
   const weeklyData = useMemo(() => {
     const weeks: Record<string, { calls: number; collected: number }> = {};
-    activities.forEach(a => {
+    filtered.forEach(a => {
       if (!a.activity_date) return;
       const d = new Date(a.activity_date);
       const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay());
