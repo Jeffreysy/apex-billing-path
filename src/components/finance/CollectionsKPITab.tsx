@@ -91,7 +91,7 @@ const CollectionsKPITab = () => {
     });
     return Object.entries(weeks).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 8).reverse()
       .map(([week, s]) => ({ week: week.slice(5), ...s }));
-  }, [activities]);
+  }, [filtered]);
 
   const kpis = useMemo(() => {
     const totalCalls = activities.length;
