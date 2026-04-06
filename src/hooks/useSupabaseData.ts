@@ -209,17 +209,39 @@ export function usePaymentsData() {
 }
 
 export function useCollectionActivities(monthStart?: string) {
-  const start = monthStart || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+  const currentMonthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+  const start = monthStart || currentMonthStart;
   return useQuery({
     queryKey: ["collection-activities", start],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try requested month first
+      let { data, error } = await supabase
         .from("collection_activities")
         .select("*")
         .gte("activity_date", start)
         .order("activity_date", { ascending: false })
         .limit(5000);
       if (error) throw error;
+
+      // If current month is empty, fall back to most recent month with data
+      if ((!data || data.length === 0) && start === currentMonthStart) {
+        const { data: latest } = await supabase
+          .from("collection_activities")
+          .select("activity_date")
+          .order("activity_date", { ascending: false })
+          .limit(1);
+        if (latest && latest.length > 0) {
+          const latestDate = new Date(latest[0].activity_date);
+          const fallbackStart = format(new Date(latestDate.getFullYear(), latestDate.getMonth(), 1), "yyyy-MM-dd");
+          const res = await supabase
+            .from("collection_activities")
+            .select("*")
+            .gte("activity_date", fallbackStart)
+            .order("activity_date", { ascending: false })
+            .limit(5000);
+          if (!res.error) data = res.data;
+        }
+      }
 
       return (data || []).map((a): CallLog => ({
         id: a.id,
@@ -237,17 +259,35 @@ export function useCollectionActivities(monthStart?: string) {
   });
 }
 
-/** 6. Collectors — from collector_performance view, current month only */
+/** 6. Collectors — from collector_performance view, current month (falls back to latest) */
 export function useCollectors(monthStart?: string) {
-  const start = monthStart || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+  const currentMonthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+  const start = monthStart || currentMonthStart;
   return useQuery({
     queryKey: ["collectors-aggregated", start],
     queryFn: async () => {
-      const { data: rows, error } = await supabase
+      let { data: rows, error } = await supabase
         .from("collector_performance")
         .select("*")
         .gte("month", start);
       if (error) throw error;
+
+      // Fall back to latest month if current month is empty
+      if ((!rows || rows.length === 0) && start === currentMonthStart) {
+        const res = await supabase
+          .from("collector_performance")
+          .select("*")
+          .order("month", { ascending: false })
+          .limit(10);
+        if (!res.error && res.data && res.data.length > 0) {
+          const latestMonth = res.data[0].month;
+          const fallback = await supabase
+            .from("collector_performance")
+            .select("*")
+            .eq("month", latestMonth);
+          if (!fallback.error) rows = fallback.data;
+        }
+      }
 
       const knownCollectors = new Set(["Alejandro A", "Patricio D", "Maritza V"]);
       const collectorMap = new Map<string, { totalCollected: number; totalCommission: number; callsMade: number; paymentsTaken: number }>();
