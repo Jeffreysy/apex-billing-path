@@ -23,6 +23,8 @@ function fmt(n: number) {
 }
 
 const CollectionsKPITab = () => {
+  const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
+
   const { data: activities = [] } = useQuery({
     queryKey: ["kpi-activities-all"],
     queryFn: async () => {
