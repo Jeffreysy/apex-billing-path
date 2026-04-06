@@ -208,15 +208,17 @@ export function usePaymentsData() {
   });
 }
 
-export function useCollectionActivities() {
+export function useCollectionActivities(monthStart?: string) {
+  const start = monthStart || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
   return useQuery({
-    queryKey: ["collection-activities"],
+    queryKey: ["collection-activities", start],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collection_activities")
         .select("*")
+        .gte("activity_date", start)
         .order("activity_date", { ascending: false })
-        .limit(1000);
+        .limit(5000);
       if (error) throw error;
 
       return (data || []).map((a): CallLog => ({
@@ -235,17 +237,22 @@ export function useCollectionActivities() {
   });
 }
 
-/** 6. Collectors — from collector_performance view */
-export function useCollectors() {
+/** 6. Collectors — from collector_performance view, current month only */
+export function useCollectors(monthStart?: string) {
+  const start = monthStart || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
   return useQuery({
-    queryKey: ["collectors-aggregated"],
+    queryKey: ["collectors-aggregated", start],
     queryFn: async () => {
-      const rows = await fetchAllRows<any>("collector_performance");
+      const { data: rows, error } = await supabase
+        .from("collector_performance")
+        .select("*")
+        .gte("month", start);
+      if (error) throw error;
 
       const knownCollectors = new Set(["Alejandro A", "Patricio D", "Maritza V"]);
       const collectorMap = new Map<string, { totalCollected: number; totalCommission: number; callsMade: number; paymentsTaken: number }>();
 
-      for (const row of rows) {
+      for (const row of (rows || [])) {
         if (!row.collector || !knownCollectors.has(row.collector)) continue;
         const existing = collectorMap.get(row.collector) || { totalCollected: 0, totalCommission: 0, callsMade: 0, paymentsTaken: 0 };
         existing.totalCollected += Number(row.total_collected) || 0;
