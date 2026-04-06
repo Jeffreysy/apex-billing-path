@@ -111,10 +111,10 @@ const CollectorDashboard = () => {
   // Queue filtered to this collector
   const myQueue = allQueue.filter((c: any) => c.collector === collectorName || c.assigned_collector === collectorName);
 
-  // Recent payments from collection_activities where collected_amount > 0
+  // Recent payments from filtered activities where collected_amount > 0
   const recentPayments = (isLead
-    ? allActivities.filter(a => KNOWN_COLLECTORS.includes(a.collector) && (Number(a.collected_amount) || 0) > 0)
-    : allActivities.filter(a => a.collector === collectorName && (Number(a.collected_amount) || 0) > 0)
+    ? monthActivities.filter(a => KNOWN_COLLECTORS.includes(a.collector) && (Number(a.collected_amount) || 0) > 0)
+    : monthActivities.filter(a => a.collector === collectorName && (Number(a.collected_amount) || 0) > 0)
   )
     .sort((a, b) => `${b.activity_date}${b.start_time || ""}`.localeCompare(`${a.activity_date}${a.start_time || ""}`))
     .slice(0, 15);
