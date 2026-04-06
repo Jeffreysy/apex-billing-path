@@ -63,6 +63,7 @@ const CollectorDashboard = () => {
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
+  const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
 
   if (loadingAct || loadingQueue) {
     return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
