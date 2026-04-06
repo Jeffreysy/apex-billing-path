@@ -94,15 +94,15 @@ const CollectionsKPITab = () => {
   }, [filtered]);
 
   const kpis = useMemo(() => {
-    const totalCalls = activities.length;
-    const totalCollected = activities.reduce((s, a) => s + (a.collected_amount || 0), 0);
-    const totalCommission = activities.reduce((s, a) => s + (a.commission || 0), 0);
-    const pendingCommitments = commitments.filter(c => c.status === "pending").length;
-    const keptRate = commitments.length > 0
-      ? Math.round((commitments.filter(c => c.status === "kept").length / commitments.length) * 100) : 0;
-    const openEscalations = escalations.filter(e => e.status === "open" || e.status === "in_progress").length;
+    const totalCalls = filtered.length;
+    const totalCollected = filtered.reduce((s, a) => s + (a.collected_amount || 0), 0);
+    const totalCommission = filtered.reduce((s, a) => s + (a.commission || 0), 0);
+    const pendingCommitments = filteredCommitments.filter(c => c.status === "pending").length;
+    const keptRate = filteredCommitments.length > 0
+      ? Math.round((filteredCommitments.filter(c => c.status === "kept").length / filteredCommitments.length) * 100) : 0;
+    const openEscalations = filteredEscalations.filter(e => e.status === "open" || e.status === "in_progress").length;
     return { totalCalls, totalCollected, totalCommission, pendingCommitments, keptRate, openEscalations };
-  }, [activities, commitments, escalations]);
+  }, [filtered, filteredCommitments, filteredEscalations]);
 
   return (
     <div className="space-y-4">
