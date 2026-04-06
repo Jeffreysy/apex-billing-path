@@ -27,6 +27,7 @@ const CollectionsDashboard = () => {
   const { data: collectors = [], isLoading: col } = useCollectors();
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
+  const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
 
   const { data: escalations = [] } = useQuery({
     queryKey: ["collections-escalations"],
