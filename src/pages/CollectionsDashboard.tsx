@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import MonthFilter, { filterByMonth } from "@/components/MonthFilter";
 
 const CollectionsDashboard = () => {
   const navigate = useNavigate();
