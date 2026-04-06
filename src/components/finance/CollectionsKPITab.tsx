@@ -71,7 +71,7 @@ const CollectionsKPITab = () => {
       name, ...s,
       contactRate: s.calls > 0 ? Math.round((s.contacts / s.calls) * 100) : 0,
     })).sort((a, b) => b.collected - a.collected);
-  }, [activities]);
+  }, [filtered]);
 
   const outcomeData = useMemo(() => {
     const map: Record<string, number> = {};
