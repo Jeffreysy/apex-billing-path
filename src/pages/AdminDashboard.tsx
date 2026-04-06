@@ -41,11 +41,11 @@ const AdminDashboard = () => {
     { name: "Admin", tasks: tasks.filter(t => t.targetDepartment === "admin" && t.status !== "completed").length },
   ];
 
+  const lateClients = Number(kpi?.late_clients) || 0;
   const statusPie = [
-    { name: "Active", value: activeContracts },
-    { name: "Delinquent", value: delinquent },
-    { name: "Risk", value: riskContracts },
     { name: "Current", value: currentClients },
+    { name: "Late", value: lateClients },
+    { name: "Delinquent", value: delinquent },
   ];
 
   return (
