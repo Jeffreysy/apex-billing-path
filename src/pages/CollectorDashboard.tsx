@@ -132,7 +132,8 @@ const CollectorDashboard = () => {
             <p className="text-muted-foreground">Collections Agent Dashboard</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <MonthFilter value={month} onChange={setMonth} />
           <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
             <DialogTrigger asChild><Button><DollarSign className="mr-2 h-4 w-4" />Take Payment</Button></DialogTrigger>
             <DialogContent><DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
