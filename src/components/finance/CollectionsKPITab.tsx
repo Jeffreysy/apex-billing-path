@@ -75,9 +75,9 @@ const CollectionsKPITab = () => {
 
   const outcomeData = useMemo(() => {
     const map: Record<string, number> = {};
-    activities.forEach(a => { const o = a.outcome || "unknown"; map[o] = (map[o] || 0) + 1; });
+    filtered.forEach(a => { const o = a.outcome || "unknown"; map[o] = (map[o] || 0) + 1; });
     return Object.entries(map).map(([name, value]) => ({ name: name.replace(/_/g, " "), value })).sort((a, b) => b.value - a.value);
-  }, [activities]);
+  }, [filtered]);
 
   const weeklyData = useMemo(() => {
     const weeks: Record<string, { calls: number; collected: number }> = {};
