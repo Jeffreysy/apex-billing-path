@@ -189,7 +189,7 @@ const CollectionsDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {activities.slice(0, 200).map(row => (
+                    {filteredActivities.slice(0, 200).map(row => (
                       <tr key={row.id} className="border-b hover:bg-muted/30">
                         <td className="px-3 py-2">{row.activity_date}</td>
                         <td className="px-3 py-2 font-medium">{row.collector}</td>
