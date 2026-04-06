@@ -65,20 +65,19 @@ const CollectorDashboard = () => {
   const [callOpen, setCallOpen] = useState(false);
   const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
 
+  const isLead = collectorName === LEAD_COLLECTOR;
+  const avatar = collectorName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
+  // Filter activities by selected month — must be before early returns to respect hook order
+  const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
+
   if (loadingAct || loadingQueue) {
     return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
   }
 
-  // Check collector exists
   if (!KNOWN_COLLECTORS.includes(collectorName)) {
     return <DashboardLayout><p className="text-muted-foreground p-8">Collector "{collectorName}" not found.</p></DashboardLayout>;
   }
-
-  const isLead = collectorName === LEAD_COLLECTOR;
-  const avatar = collectorName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-
-  // Filter activities by selected month
-  const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
 
   // Aggregate stats from filtered activities
   const buildStats = (name: string) => {
