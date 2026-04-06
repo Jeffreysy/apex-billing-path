@@ -106,6 +106,10 @@ const CollectionsKPITab = () => {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Collections KPI</h2>
+        <MonthFilter value={month} onChange={setMonth} />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <KpiCard icon={Phone} label="Total Calls" value={kpis.totalCalls.toLocaleString()} />
         <KpiCard icon={DollarSign} label="Total Collected" value={fmt(kpis.totalCollected)} />
