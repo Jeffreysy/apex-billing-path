@@ -52,9 +52,13 @@ const CollectionsKPITab = () => {
     },
   });
 
+  const filtered = useMemo(() => filterByMonth(activities, "activity_date", month), [activities, month]);
+  const filteredCommitments = useMemo(() => filterByMonth(commitments, "promised_date", month), [commitments, month]);
+  const filteredEscalations = useMemo(() => filterByMonth(escalations, "created_at", month), [escalations, month]);
+
   const collectorStats = useMemo(() => {
     const map: Record<string, { calls: number; collected: number; contacts: number; minutes: number; commission: number }> = {};
-    activities.forEach(a => {
+    filtered.forEach(a => {
       const c = a.collector || "Unknown";
       if (!map[c]) map[c] = { calls: 0, collected: 0, contacts: 0, minutes: 0, commission: 0 };
       map[c].calls++;
