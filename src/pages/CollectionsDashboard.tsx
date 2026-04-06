@@ -81,7 +81,8 @@ const CollectionsDashboard = () => {
     <DashboardLayout title="Collections — Admin View">
       <div className="mb-6 flex items-center justify-between">
         <div><h1 className="text-2xl font-bold">Collections Operations</h1><p className="text-muted-foreground">Admin & management overview — all teams, all data</p></div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <MonthFilter value={month} onChange={setMonth} />
           <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
             <DialogTrigger asChild><Button><DollarSign className="mr-2 h-4 w-4" />Take Payment</Button></DialogTrigger>
             <DialogContent><DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
