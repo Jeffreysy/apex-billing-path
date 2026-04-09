@@ -851,47 +851,75 @@ export type Database = {
       escalations: {
         Row: {
           assigned_to: string | null
+          call_activity_id: string | null
           client_id: string
           contract_id: string | null
           created_at: string
+          follow_up_date: string | null
+          handoff_queue: string | null
+          handoff_target: string | null
           id: string
+          notes: string | null
+          outcome_snapshot: string | null
           priority: string
           raised_by: string
           resolution_notes: string | null
           resolved_at: string | null
+          source_context: string | null
           status: string
           trigger_reason: string
           updated_at: string
         }
         Insert: {
           assigned_to?: string | null
+          call_activity_id?: string | null
           client_id: string
           contract_id?: string | null
           created_at?: string
+          follow_up_date?: string | null
+          handoff_queue?: string | null
+          handoff_target?: string | null
           id?: string
+          notes?: string | null
+          outcome_snapshot?: string | null
           priority?: string
           raised_by: string
           resolution_notes?: string | null
           resolved_at?: string | null
+          source_context?: string | null
           status?: string
           trigger_reason: string
           updated_at?: string
         }
         Update: {
           assigned_to?: string | null
+          call_activity_id?: string | null
           client_id?: string
           contract_id?: string | null
           created_at?: string
+          follow_up_date?: string | null
+          handoff_queue?: string | null
+          handoff_target?: string | null
           id?: string
+          notes?: string | null
+          outcome_snapshot?: string | null
           priority?: string
           raised_by?: string
           resolution_notes?: string | null
           resolved_at?: string | null
+          source_context?: string | null
           status?: string
           trigger_reason?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "escalations_call_activity_id_fkey"
+            columns: ["call_activity_id"]
+            isOneToOne: false
+            referencedRelation: "collection_activities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "escalations_client_id_fkey"
             columns: ["client_id"]
@@ -2269,6 +2297,39 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          collections_notice: string | null
+          created_at: string
+          id: number
+          legal_notice: string | null
+          privacy_warning: string | null
+          security_notice: string | null
+          support_email: string | null
+          updated_at: string
+        }
+        Insert: {
+          collections_notice?: string | null
+          created_at?: string
+          id?: number
+          legal_notice?: string | null
+          privacy_warning?: string | null
+          security_notice?: string | null
+          support_email?: string | null
+          updated_at?: string
+        }
+        Update: {
+          collections_notice?: string | null
+          created_at?: string
+          id?: number
+          legal_notice?: string | null
+          privacy_warning?: string | null
+          security_notice?: string | null
+          support_email?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_performance: {
         Row: {
           avg_per_call: number | null
@@ -2668,10 +2729,12 @@ export type Database = {
           active_contracts: number | null
           closed_cases: number | null
           collected_this_month: number | null
+          collected_this_week: number | null
           collection_rate_pct: number | null
           current_clients: number | null
           delinquent_clients: number | null
           late_clients: number | null
+          overdue_ar: number | null
           payments_this_month: number | null
           risk_contracts: number | null
           total_ar_value: number | null
@@ -2788,6 +2851,27 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_kpi: {
+        Row: {
+          active_cases: number | null
+          approved_cases: number | null
+          attorney_caseloads: Json | null
+          closed_cases: number | null
+          detained_cases: number | null
+          filed_with_uscis: number | null
+          intakes_last_month: number | null
+          intakes_this_month: number | null
+          monthly_intake_trend: Json | null
+          pending_decision: number | null
+          pending_rfe: number | null
+          practice_breakdown: Json | null
+          receipts_biometrics: number | null
+          removal_defense: number | null
+          stage_breakdown: Json | null
+          total_cases: number | null
+        }
+        Relationships: []
+      }
       payments_clean: {
         Row: {
           aging_bucket: string | null
@@ -2840,6 +2924,89 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_system_settings: {
+        Args: never
+        Returns: {
+          collections_notice: string | null
+          created_at: string
+          id: number
+          legal_notice: string | null
+          privacy_warning: string | null
+          security_notice: string | null
+          support_email: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "system_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_user_access: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          last_sign_in_at: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
+      admin_update_system_settings: {
+        Args: {
+          p_collections_notice: string
+          p_legal_notice: string
+          p_privacy_warning: string
+          p_security_notice: string
+          p_support_email: string
+        }
+        Returns: {
+          collections_notice: string | null
+          created_at: string
+          id: number
+          legal_notice: string | null
+          privacy_warning: string | null
+          security_notice: string | null
+          support_email: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "system_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_update_user_access: {
+        Args: {
+          p_full_name?: string
+          p_is_active: boolean
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_user_id: string
+        }
+        Returns: {
+          avatar_url: string | null
+          bar_number: string | null
+          created_at: string
+          default_hourly_rate: number | null
+          email: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["user_role"]
+          timekeeper_type: Database["public"]["Enums"]["timekeeper_type"] | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       call_lawpay_orchestrator: {
         Args: { p_payload: Json }
         Returns: undefined
@@ -2856,6 +3023,7 @@ export type Database = {
           total_amount: number
         }[]
       }
+      get_legal_kpi: { Args: { p_year?: number }; Returns: Json }
       is_active_user: { Args: never; Returns: boolean }
       lawpay_match_client: {
         Args: { p_invoice_ref?: string; p_payor_name: string }
@@ -2867,6 +3035,8 @@ export type Database = {
         }[]
       }
       mark_overdue_invoices: { Args: never; Returns: number }
+      normalize_case_stage: { Args: { raw_stage: string }; Returns: string }
+      normalize_practice_area: { Args: { raw_area: string }; Returns: string }
       resolve_lawpay_unmatched_clients: {
         Args: never
         Returns: {

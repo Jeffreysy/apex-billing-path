@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import StatCard from "@/components/StatCard";
 import ARGrowthVsCollectionsChart from "./ARGrowthVsCollectionsChart";
+import LawPayValidationPanel from "./LawPayValidationPanel";
+import FilevineValidationPanel from "./FilevineValidationPanel";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useAdminKPI, useMergedClients, usePaymentsData,
+  useAdminKPI, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
@@ -18,7 +20,7 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DateRange } from "react-day-picker";
-import { startOfWeek, startOfMonth, isAfter } from "date-fns";
+import { endOfDay, isWithinInterval, startOfMonth, startOfWeek } from "date-fns";
 
 const PIE_COLORS = [
   "hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(152 60% 40%)",
@@ -27,23 +29,84 @@ const PIE_COLORS = [
 
 interface Props { dateRange?: DateRange }
 
+const isExplicitFilevinePayment = (payment: {
+  notes?: string | null;
+  payment_type?: string | null;
+  reference_number?: string | null;
+}) => {
+  const notes = (payment.notes || "").toLowerCase();
+  const paymentType = (payment.payment_type || "").toLowerCase();
+  const reference = (payment.reference_number || "").toLowerCase();
+  return notes.startsWith("filevine:") || paymentType.includes("filevine") || reference.startsWith("fv-");
+};
+
 const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: kpi } = useAdminKPI();
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
+  const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
+  const { data: activityRows = [], isLoading: al } = useCollectionActivityRows();
 
-  const isLoading = cl || pl;
+  const isLoading = cl || pl || prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
-  const totalAR = Number(kpi?.total_ar_value) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
-  const overdueAR = clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  const totalAR = Number(kpi?.total_remaining) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  const overdueAR = Number(kpi?.overdue_ar) || clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const totalCollectedAll = Number(kpi?.total_collected) || payments.reduce((s, p) => s + p.amount, 0);
 
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const monthStart = startOfMonth(now);
-  const weekCollected = payments.filter(p => p.date && isAfter(new Date(p.date), weekStart)).reduce((s, p) => s + p.amount, 0);
-  const monthCollected = Number(kpi?.collected_this_month) || payments.filter(p => p.date && isAfter(new Date(p.date), monthStart)).reduce((s, p) => s + p.amount, 0);
+  const nowEnd = endOfDay(now);
+
+  const currentPeriodPayments = paymentRows.filter((payment) => {
+    if (!payment.payment_date || !payment.amount) return false;
+    const paymentDate = new Date(payment.payment_date);
+    return !Number.isNaN(paymentDate.getTime()) && isWithinInterval(paymentDate, { start: monthStart, end: nowEnd });
+  });
+
+  const weekCollected = paymentRows
+    .filter((payment) => {
+      if (!payment.payment_date || !payment.amount) return false;
+      const paymentDate = new Date(payment.payment_date);
+      return !Number.isNaN(paymentDate.getTime()) && isWithinInterval(paymentDate, { start: weekStart, end: nowEnd });
+    })
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const monthCollected = currentPeriodPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const weekCollectorLogged = activityRows
+    .filter((activity) => {
+      if (!activity.activity_date || !activity.collected_amount) return false;
+      const activityDate = new Date(activity.activity_date);
+      return !Number.isNaN(activityDate.getTime()) && isWithinInterval(activityDate, { start: weekStart, end: nowEnd });
+    })
+    .reduce((sum, activity) => sum + Number(activity.collected_amount || 0), 0);
+
+  const monthCollectorLogged = activityRows
+    .filter((activity) => {
+      if (!activity.activity_date || !activity.collected_amount) return false;
+      const activityDate = new Date(activity.activity_date);
+      return !Number.isNaN(activityDate.getTime()) && isWithinInterval(activityDate, { start: monthStart, end: nowEnd });
+    })
+    .reduce((sum, activity) => sum + Number(activity.collected_amount || 0), 0);
+
+  const weekFilevineTagged = currentPeriodPayments
+    .filter((payment) => {
+      if (!payment.payment_date) return false;
+      const paymentDate = new Date(payment.payment_date);
+      return !Number.isNaN(paymentDate.getTime())
+        && isWithinInterval(paymentDate, { start: weekStart, end: nowEnd })
+        && isExplicitFilevinePayment(payment);
+    })
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const monthFilevineTagged = currentPeriodPayments
+    .filter(isExplicitFilevinePayment)
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+  const latestBookedPaymentDate = paymentRows.find((payment) => payment.payment_date)?.payment_date || null;
+  const latestCollectorActivityDate = activityRows.find((activity) => activity.activity_date)?.activity_date || null;
 
   const forecastWeek = Math.round(weekCollected * 1.08);
   const forecastMonth = Math.round(monthCollected * 1.05);
@@ -68,6 +131,14 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const weeklyPast = computeWeeklyPastCollections(payments);
   const monthlyPast = computeMonthlyPastCollections(payments);
   const contractAnalytics = computeContractAnalytics(clients);
+  const paymentDeltaMonth = Math.round(monthCollectorLogged - monthCollected);
+  const paymentDeltaWeek = Math.round(weekCollectorLogged - weekCollected);
+  const paymentFreshness = latestBookedPaymentDate
+    ? `Booked through ${new Date(latestBookedPaymentDate).toLocaleDateString()}`
+    : "No booked payments this period";
+  const collectorFreshness = latestCollectorActivityDate
+    ? `Collector logs through ${new Date(latestCollectorActivityDate).toLocaleDateString()}`
+    : "No collector activity imported";
 
   const progressionBuckets = [
     { label: "0-25%", count: clients.filter(c => { const p = c.totalOwed > 0 ? c.totalPaid / c.totalOwed : 0; return p < 0.25; }).length },
@@ -82,8 +153,18 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
         <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Overdue AR" value={`$${overdueAR.toLocaleString()}`} icon={<AlertTriangle className="h-5 w-5" />} />
-        <StatCard label="Cash This Week" value={`$${weekCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Cash This Month" value={`$${monthCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard
+          label="Cash This Week"
+          value={`$${weekCollected.toLocaleString()}`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          caption={`Booked payments only • Collector logs $${weekCollectorLogged.toLocaleString()}`}
+        />
+        <StatCard
+          label="Cash This Month"
+          value={`$${monthCollected.toLocaleString()}`}
+          icon={<TrendingUp className="h-5 w-5" />}
+          caption={`Booked payments only • Collector logs $${monthCollectorLogged.toLocaleString()}`}
+        />
         <StatCard label="Forecast (Week)" value={`$${forecastWeek.toLocaleString()}`} icon={<Target className="h-5 w-5" />} />
         <StatCard label="Forecast (Month)" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} />
       </div>
@@ -98,6 +179,85 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       </div>
 
       <ARGrowthVsCollectionsChart />
+
+      <div className="dashboard-section space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Cash Validation</h2>
+            <p className="text-sm text-muted-foreground">
+              Compares booked payment rows against imported collector logs and explicit Filevine-tagged payments.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={paymentDeltaMonth === 0 ? "outline" : "secondary"}>
+              Month delta {paymentDeltaMonth >= 0 ? "+" : ""}${paymentDeltaMonth.toLocaleString()}
+            </Badge>
+            <Badge variant={paymentDeltaWeek === 0 ? "outline" : "secondary"}>
+              Week delta {paymentDeltaWeek >= 0 ? "+" : ""}${paymentDeltaWeek.toLocaleString()}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">This Week</p>
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>Booked payments</span>
+                <span className="font-semibold">${weekCollected.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Collector logs</span>
+                <span className="font-semibold">${weekCollectorLogged.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Explicit Filevine tags</span>
+                <span className="font-semibold">${weekFilevineTagged.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">This Month</p>
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>Booked payments</span>
+                <span className="font-semibold">${monthCollected.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Collector logs</span>
+                <span className="font-semibold">${monthCollectorLogged.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Explicit Filevine tags</span>
+                <span className="font-semibold">${monthFilevineTagged.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Freshness</p>
+            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <p>{paymentFreshness}</p>
+              <p>{collectorFreshness}</p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">What This Means</p>
+            <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <p>Cash cards now reflect current-period booked payments only.</p>
+              <p>Collector log totals help spot payment feed lag or missing syncs.</p>
+              <p>Filevine totals only count payments explicitly tagged as Filevine.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <LawPayValidationPanel />
+        <FilevineValidationPanel />
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">

@@ -9,6 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  ESCALATION_HANDOFF_QUEUES,
+  ESCALATION_PRIORITIES,
+  ESCALATION_SOURCE_CONTEXTS,
+  formatEscalationValue,
+  getDefaultHandoffQueue,
+} from "@/lib/escalations";
 import { toast } from "sonner";
 import {
   Phone, DollarSign, AlertTriangle, Calendar, CheckCircle, ArrowRight,
@@ -24,9 +31,6 @@ const OUTCOMES = [
   { value: "wrong_number", label: "Wrong Number / Disconnected" },
   { value: "client_satisfied", label: "Client Satisfied" },
 ];
-
-const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
-
 type Step = "call" | "commitment" | "escalation" | "done";
 
 interface Props {
@@ -52,6 +56,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
   const [escalationNeeded, setEscalationNeeded] = useState(false);
   const [followUpRequired, setFollowUpRequired] = useState(false);
   const [followUpDate, setFollowUpDate] = useState("");
+  const [savedActivityId, setSavedActivityId] = useState<string | null>(null);
 
   // Commitment fields
   const [commitAmount, setCommitAmount] = useState("");
@@ -63,6 +68,11 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
   const [escReason, setEscReason] = useState("");
   const [escPriority, setEscPriority] = useState("medium");
   const [escAssign, setEscAssign] = useState("");
+  const [escQueue, setEscQueue] = useState("management");
+  const [escSourceContext, setEscSourceContext] = useState("outbound_call");
+  const [escOutcomeSnapshot, setEscOutcomeSnapshot] = useState("");
+  const [escFollowUpDate, setEscFollowUpDate] = useState("");
+  const [escNotes, setEscNotes] = useState("");
 
   const collector = account?.collector || account?.assigned_collector || "Unknown";
 
@@ -79,6 +89,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
     setEscalationNeeded(false);
     setFollowUpRequired(false);
     setFollowUpDate("");
+    setSavedActivityId(null);
     setCommitAmount("");
     setCommitDate("");
     setCommitFollowUp("");
@@ -86,6 +97,11 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
     setEscReason("");
     setEscPriority("medium");
     setEscAssign("");
+    setEscQueue("management");
+    setEscSourceContext("outbound_call");
+    setEscOutcomeSnapshot("");
+    setEscFollowUpDate("");
+    setEscNotes("");
     setSaving(false);
   };
 
@@ -108,7 +124,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
         followUpRequired && followUpDate ? `[Follow-up: ${followUpDate}]` : "",
       ].filter(Boolean).join(" ");
 
-      const { error } = await supabase.from("collection_activities").insert({
+      const { data, error } = await supabase.from("collection_activities").insert({
         client_id: account?.client_id || null,
         client_name: account?.client_name || "Unknown",
         collector,
@@ -119,8 +135,9 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
         duration_minutes: Number(callDuration) || null,
         notes: notes || null,
         next_payment_expected: followUpRequired ? followUpDate : null,
-      });
+      }).select("id").single();
       if (error) throw error;
+      setSavedActivityId(data?.id || null);
 
       // Invalidate activities so workspace refreshes
       qc.invalidateQueries({ queryKey: ["collection-activities"] });
@@ -180,13 +197,23 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
       const { error } = await supabase.from("escalations").insert({
         client_id: account?.client_id,
         contract_id: account?.contract_id || null,
+        call_activity_id: savedActivityId,
         raised_by: collector,
         assigned_to: escAssign || null,
+        handoff_queue: escQueue,
+        handoff_target: escAssign || null,
+        source_context: escSourceContext,
+        outcome_snapshot: escOutcomeSnapshot || callOutcome || null,
+        follow_up_date: escFollowUpDate || followUpDate || null,
+        notes: escNotes || callNotes || null,
         trigger_reason: escReason,
         priority: escPriority,
       });
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["escalations", account?.contract_id || account?.client_id] });
+      qc.invalidateQueries({ queryKey: ["escalations"] });
+      qc.invalidateQueries({ queryKey: ["all-escalations"] });
+      qc.invalidateQueries({ queryKey: ["collections-escalations"] });
       toast.success("Escalation created");
       setStep("done");
     } catch (err: any) {
@@ -199,11 +226,16 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
   // Auto-set outcome hints
   const onOutcomeChange = (v: string) => {
     setCallOutcome(v);
+    setEscOutcomeSnapshot(v);
     if (v === "promise_to_pay") setPromiseMade(true);
     if (v === "wrong_number") { setWrongNumber(true); setContactReached(false); }
     if (v === "no_answer" || v === "left_voicemail") setContactReached(false);
     if (v === "callback_scheduled") setFollowUpRequired(true);
-    if (v === "disputed") setEscalationNeeded(true);
+    if (v === "disputed") {
+      setEscalationNeeded(true);
+      setEscQueue("legal");
+      setEscAssign("Attorney");
+    }
   };
 
   return (
@@ -411,24 +443,69 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
                   <Select value={escPriority} onValueChange={setEscPriority}>
                     <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low" className="text-xs">Low</SelectItem>
-                      <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                      <SelectItem value="high" className="text-xs">High</SelectItem>
-                      <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                      {ESCALATION_PRIORITIES.map((value) => (
+                        <SelectItem key={value} value={value} className="text-xs capitalize">{value}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Assign To</Label>
-                  <Select value={escAssign} onValueChange={setEscAssign}>
+                  <Label className="text-xs">Handoff Queue</Label>
+                  <Select value={escQueue} onValueChange={setEscQueue}>
+                    <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ESCALATION_HANDOFF_QUEUES.map((value) => (
+                        <SelectItem key={value} value={value} className="text-xs capitalize">{formatEscalationValue(value)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Source Context</Label>
+                  <Select value={escSourceContext} onValueChange={setEscSourceContext}>
+                    <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ESCALATION_SOURCE_CONTEXTS.map((value) => (
+                        <SelectItem key={value} value={value} className="text-xs capitalize">{formatEscalationValue(value)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Specific Target</Label>
+                  <Select value={escAssign} onValueChange={(value) => {
+                    setEscAssign(value);
+                    setEscQueue(getDefaultHandoffQueue(value));
+                  }}>
                     <SelectTrigger className="text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
-                      {COLLECTORS.map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}
+                      <SelectItem value="Attorney" className="text-xs">Attorney</SelectItem>
+                      <SelectItem value="Case Manager/Paralegal" className="text-xs">Case Manager/Paralegal</SelectItem>
+                      <SelectItem value="Compliance" className="text-xs">Compliance</SelectItem>
+                      <SelectItem value="CC/Nidiana" className="text-xs">CC/Nidiana</SelectItem>
+                      <SelectItem value="Stephen/Jeffrey" className="text-xs">Stephen/Jeffrey</SelectItem>
+                      <SelectItem value="Sales" className="text-xs">Sales</SelectItem>
                       <SelectItem value="Management" className="text-xs">Management</SelectItem>
                       <SelectItem value="Legal" className="text-xs">Legal</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Outcome Snapshot</Label>
+                  <Input value={escOutcomeSnapshot} onChange={e => setEscOutcomeSnapshot(e.target.value)} className="text-xs" placeholder="Info provided with fup" />
+                </div>
+                <div>
+                  <Label className="text-xs">Follow-Up Date</Label>
+                  <Input type="date" value={escFollowUpDate || followUpDate} onChange={e => setEscFollowUpDate(e.target.value)} className="text-xs" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Escalation Notes</Label>
+                <Textarea value={escNotes} onChange={e => setEscNotes(e.target.value)} placeholder="What does the receiving team need to know?" rows={3} className="text-xs" maxLength={1500} />
               </div>
             </div>
 

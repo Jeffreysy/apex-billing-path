@@ -1,7 +1,8 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
-import { useCollectionsDashboard, usePaymentsData, useCollectionActivities, useCollectors } from "@/hooks/useSupabaseData";
+import { useCollectionsDashboard, usePaymentsData, useCollectionActivities, useCollectors, useEscalations } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { DollarSign, Phone, Clock, Users, ExternalLink, AlertTriangle, Target, CheckCircle } from "lucide-react";
@@ -25,6 +26,7 @@ const CollectionsDashboard = () => {
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
+  const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
@@ -57,7 +59,7 @@ const CollectionsDashboard = () => {
   const filteredCalls = useMemo(() => filterByMonth(callLogs, "date", month), [callLogs, month]);
   const filteredActivities = useMemo(() => filterByMonth(activities, "activity_date", month), [activities, month]);
 
-  if (ql || pl || cal || col) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  if (ql || pl || cal || col || escalationsLoading) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const totalCollected = filteredPayments.reduce((s, p) => s + p.amount, 0);
   const totalCalls = filteredCalls.length;
@@ -117,6 +119,16 @@ const CollectionsDashboard = () => {
         <StatCard label="Delinquent" value={String(delinquent)} icon={<AlertTriangle className="h-5 w-5" />} />
         <StatCard label="Open Escalations" value={String(openEscalations)} icon={<AlertTriangle className="h-5 w-5" />} />
         <StatCard label="Pending Commits" value={String(pendingCommitments)} icon={<CheckCircle className="h-5 w-5" />} />
+      </div>
+
+      <div className="mt-6">
+        <EscalationInboxPanel
+          escalations={unresolvedEscalations}
+          inbox="all"
+          title="Unresolved Escalations Requiring Follow-Up"
+          maxItems={5}
+          emptyMessage="No unresolved escalations in the queue right now."
+        />
       </div>
 
       {/* Tabbed view for all sections */}

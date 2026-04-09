@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useCollectionsDashboard, useCollectionActivities } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
+import { ESCALATION_HANDOFF_QUEUES, formatEscalationStatus, formatEscalationValue, getDefaultHandoffQueue } from "@/lib/escalations";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, DollarSign, AlertTriangle, Calendar,
@@ -44,6 +45,7 @@ const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
 const CollectorWorkspace = () => {
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   // Queue data for this account
   const { data: queue = [], isLoading: ql } = useCollectionsDashboard();
@@ -97,6 +99,10 @@ const CollectorWorkspace = () => {
   const [escReason, setEscReason] = useState("");
   const [escPriority, setEscPriority] = useState("medium");
   const [escAssign, setEscAssign] = useState("");
+  const [escQueue, setEscQueue] = useState("management");
+  const [escFollowUpDate, setEscFollowUpDate] = useState("");
+  const [escOutcomeSnapshot, setEscOutcomeSnapshot] = useState("");
+  const [escSourceContext, setEscSourceContext] = useState("admin_follow_up");
   const [escNotes, setEscNotes] = useState("");
 
   const [followUpDate, setFollowUpDate] = useState("");
@@ -154,15 +160,28 @@ const CollectorWorkspace = () => {
         contract_id: account?.contract_id || null,
         raised_by: account?.collector || account?.assigned_collector || "Unknown",
         assigned_to: escAssign || null,
+        handoff_queue: escQueue,
+        handoff_target: escAssign || null,
+        source_context: escSourceContext,
+        outcome_snapshot: escOutcomeSnapshot || null,
+        follow_up_date: escFollowUpDate || null,
+        notes: escNotes || null,
         trigger_reason: escReason,
         priority: escPriority,
       });
       if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["escalations"] });
+      qc.invalidateQueries({ queryKey: ["all-escalations"] });
+      qc.invalidateQueries({ queryKey: ["collections-escalations"] });
       toast.success("Escalation created");
       setEscalateOpen(false);
       setEscReason("");
       setEscPriority("medium");
       setEscAssign("");
+      setEscQueue("management");
+      setEscFollowUpDate("");
+      setEscOutcomeSnapshot("");
+      setEscSourceContext("admin_follow_up");
       setEscNotes("");
     } catch (err: any) {
       toast.error(err.message || "Failed to create escalation");
@@ -372,7 +391,7 @@ const CollectorWorkspace = () => {
                         variant={esc.status === "open" ? "destructive" : esc.status === "resolved" ? "default" : "secondary"}
                         className="text-xs capitalize"
                       >
-                        {esc.status.replace(/_/g, " ")}
+                        {formatEscalationStatus(esc.status)}
                       </Badge>
                     </div>
                   </div>
@@ -443,14 +462,62 @@ const CollectorWorkspace = () => {
             </div>
             <div>
               <Label>Assign To</Label>
-              <Select value={escAssign} onValueChange={setEscAssign}>
+              <Select value={escAssign} onValueChange={(value) => {
+                setEscAssign(value);
+                setEscQueue(getDefaultHandoffQueue(value));
+              }}>
                 <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Attorney">Attorney</SelectItem>
+                  <SelectItem value="Case Manager/Paralegal">Case Manager/Paralegal</SelectItem>
+                  <SelectItem value="Compliance">Compliance</SelectItem>
+                  <SelectItem value="CC/Nidiana">CC/Nidiana</SelectItem>
+                  <SelectItem value="Stephen/Jeffrey">Stephen/Jeffrey</SelectItem>
                   {COLLECTORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   <SelectItem value="Management">Management</SelectItem>
                   <SelectItem value="Legal">Legal</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Handoff Queue</Label>
+              <Select value={escQueue} onValueChange={setEscQueue}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ESCALATION_HANDOFF_QUEUES.map(value => (
+                    <SelectItem key={value} value={value}>{formatEscalationValue(value)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Source Context</Label>
+                <Select value={escSourceContext} onValueChange={setEscSourceContext}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin_follow_up">Admin follow up</SelectItem>
+                    <SelectItem value="pending_task">Pending task</SelectItem>
+                    <SelectItem value="inbound_call">Inbound call</SelectItem>
+                    <SelectItem value="outbound_call">Outbound call</SelectItem>
+                    <SelectItem value="attorney_request">Attorney request</SelectItem>
+                    <SelectItem value="refund_follow_up">Refund follow up</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Follow-Up Date</Label>
+                <Input type="date" value={escFollowUpDate} onChange={e => setEscFollowUpDate(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Outcome Snapshot</Label>
+              <Input value={escOutcomeSnapshot} onChange={e => setEscOutcomeSnapshot(e.target.value)} placeholder="Info provided with fup" />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={escNotes} onChange={e => setEscNotes(e.target.value)} placeholder="Receiving team context..." rows={3} />
             </div>
             <DialogFooter><Button type="submit">Create Escalation</Button></DialogFooter>
           </form>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Client, Payment, CallLog, Collector, CaseStage } from "@/data/mockData";
 import { format, subDays, addWeeks, addMonths, startOfWeek } from "date-fns";
+import { ESCALATION_STATUSES, isEscalationUnresolved } from "@/lib/escalations";
 
 // --- Status/field mapping helpers ---
 
@@ -84,6 +85,19 @@ export function useAdminKPI() {
   });
 }
 
+/** Legal KPI — normalized pipeline stages, practice areas, attorney loads. Optional year filter. */
+export function useLegalKPI(year?: number) {
+  return useQuery({
+    queryKey: ["legal-kpi", year ?? "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_legal_kpi", { p_year: year ?? null });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** 2. AR Dashboard view — for AR Portfolio tab */
 export function useARDashboard() {
   return useQuery({
@@ -120,6 +134,76 @@ export function usePaymentsClean() {
   });
 }
 
+export function useEscalations(unresolvedOnly = false) {
+  return useQuery({
+    queryKey: ["escalations", unresolvedOnly ? "unresolved" : "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("escalations")
+        .select("*")
+        .in("status", unresolvedOnly ? ESCALATION_STATUSES.filter(isEscalationUnresolved) : [...ESCALATION_STATUSES])
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useLawPayReconciliationSummary() {
+  return useQuery({
+    queryKey: ["lawpay-reconciliation-summary"],
+    queryFn: async () => {
+      const sb = supabase as any;
+      const { data, error } = await sb.rpc("admin_lawpay_reconciliation_summary");
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] || null : data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useFilevineReconciliationSummary() {
+  return useQuery({
+    queryKey: ["filevine-reconciliation-summary"],
+    queryFn: async () => {
+      const sb = supabase as any;
+      const { data, error } = await sb.rpc("admin_filevine_reconciliation_summary");
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] || null : data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useFilevineCaseReconciliationSummary() {
+  return useQuery({
+    queryKey: ["filevine-case-reconciliation-summary"],
+    queryFn: async () => {
+      const sb = supabase as any;
+      const { data, error } = await sb.rpc("admin_filevine_case_reconciliation_summary");
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] || null : data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useFilevineCaseReconciliationCandidates(limit = 50) {
+  return useQuery({
+    queryKey: ["filevine-case-reconciliation-candidates", limit],
+    queryFn: async () => {
+      const sb = supabase as any;
+      const { data, error } = await sb.rpc("admin_filevine_case_reconciliation_candidates", {
+        p_limit: limit,
+      });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 // ========================
 // TABLE-BASED HOOKS (kept for components that still need them)
 // ========================
@@ -128,54 +212,44 @@ export function useMergedClients() {
   return useQuery({
     queryKey: ["merged-clients"],
     queryFn: async () => {
-      const [contractsRes, clientsRes] = await Promise.all([
-        supabase.from("contracts").select("*").range(0, 4999),
-        supabase.from("clients").select("*").range(0, 4999),
-      ]);
-      if (contractsRes.error) throw contractsRes.error;
-      if (clientsRes.error) throw clientsRes.error;
+      const rawRows = await fetchAllRows<any>("ar_dashboard");
+      // Exclude "Paid" contracts — these have bad remaining balances and aren't collectible
+      const rows = rawRows.filter((r) => r.delinquency_status !== "Paid");
 
-      const clientsById = new Map((clientsRes.data || []).map(c => [c.id, c]));
-      const clientsByName = new Map((clientsRes.data || []).map(c => [c.name?.toLowerCase().trim(), c]));
-
-      return (contractsRes.data || []).map((contract): Client => {
-        const client = contract.client_id
-          ? clientsById.get(contract.client_id)
-          : clientsByName.get(contract.client?.toLowerCase().trim());
-
-        const totalOwed = Number(contract.value) || 0;
-        const totalPaid = Number(contract.collected) || 0;
-        const downPayment = Number(contract.down_payment) || 0;
-        const monthlyPayment = Number(contract.monthly_installment) || 0;
-        const installmentMonths = contract.total_installments || 18;
-        const daysAging = contract.days_out || 0;
+      return rows.map((row): Client => {
+        const totalOwed = Number(row.total_contract_value) || 0;
+        const totalPaid = Number(row.amount_collected) || 0;
+        const downPayment = Number(row.down_payment) || 0;
+        const monthlyPayment = Number(row.monthly_installment) || 0;
+        const installmentMonths = row.total_installments || 18;
+        const daysAging = row.days_past_due || 0;
 
         return {
-          id: contract.id,
-          name: contract.client || client?.name || "Unknown",
-          email: client?.email || "",
-          phone: contract.phone || client?.phone || "",
-          contractStart: contract.start_date || "",
-          contractEnd: contract.maturity_date || "",
+          id: row.contract_id,
+          name: row.client_name || "Unknown",
+          email: row.email || "",
+          phone: row.phone || "",
+          contractStart: row.start_date || "",
+          contractEnd: "",
           totalOwed,
           totalPaid,
           monthlyPayment,
           downPayment,
           installmentMonths,
-          status: mapStatus(contract.status, contract.delinquency_status),
-          assignedCollector: contract.collector || client?.assigned_collector || "",
+          status: mapStatus(row.contract_status, row.delinquency_status),
+          assignedCollector: row.collector || "",
           lastContact: "",
-          nextPaymentDue: contract.next_due_date || client?.next_payment_date || "",
-          caseNumber: contract.case_number || client?.client_number || "",
-          caseType: contract.practice_area || client?.practice_area || "",
-          caseStage: mapCaseStage(client?.case_stage),
+          nextPaymentDue: row.next_due_date || "",
+          caseNumber: row.case_number || "",
+          caseType: row.practice_area || "",
+          caseStage: mapCaseStage(row.case_stage),
           daysAging,
           tags: [],
           notes: [],
-          retainerDate: contract.start_date || "",
-          downPaymentPaid: contract.down_payment_paid || false,
-          filevineId: client?.filevine_project_id || undefined,
-          mycaseId: client?.mycase_id ? Number(client.mycase_id) : undefined,
+          retainerDate: row.start_date || "",
+          downPaymentPaid: row.down_payment_paid || false,
+          filevineId: undefined,
+          mycaseId: undefined,
         };
       });
     },
@@ -254,6 +328,19 @@ export function useCollectionActivities(monthStart?: string) {
         outcome: mapOutcome(a.outcome),
         notes: a.notes || "",
       }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCollectionActivityRows() {
+  return useQuery({
+    queryKey: ["collection-activity-rows"],
+    queryFn: async () => {
+      return fetchAllRows<any>("collection_activities", {
+        orderBy: "activity_date",
+        ascending: false,
+      });
     },
     staleTime: 5 * 60 * 1000,
   });

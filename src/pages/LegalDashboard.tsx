@@ -1,157 +1,296 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
-import { useImmigrationCases, useCaseMilestones } from "@/hooks/useSupabaseData";
-import { Scale, AlertTriangle, CheckCircle, Briefcase, TrendingUp, Users, Calendar } from "lucide-react";
+import { useEscalations, useLegalKPI } from "@/hooks/useSupabaseData";
+import {
+  Scale, AlertTriangle, CheckCircle, Briefcase, TrendingUp, Users,
+  FileText, Shield, ShieldAlert, Gavel, FolderOpen, ArrowUpRight, ArrowDownRight,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Button } from "@/components/ui/button";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area,
+} from "recharts";
 
-const COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(38 92% 50%)", "hsl(152 60% 40%)", "hsl(0 72% 51%)", "hsl(262 60% 50%)"];
+const COLORS = [
+  "hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(38 92% 50%)",
+  "hsl(152 60% 40%)", "hsl(0 72% 51%)", "hsl(262 60% 50%)",
+  "hsl(200 60% 45%)", "hsl(320 60% 45%)", "hsl(90 50% 40%)",
+  "hsl(30 80% 50%)", "hsl(280 50% 55%)", "hsl(10 70% 50%)",
+];
+
+const PIPELINE_ORDER = [
+  "Intake", "Forms & Compliance", "Declaration", "Evidence Gathering",
+  "Attorney Review", "Filed with USCIS", "Receipts & Biometrics",
+  "Pending Decision", "EAD Issued", "Approved", "RFE / Resubmission", "Closed / On Hold",
+];
+
+const PIPELINE_COLORS: Record<string, string> = {
+  "Intake": "hsl(220 70% 50%)",
+  "Forms & Compliance": "hsl(200 60% 45%)",
+  "Declaration": "hsl(174 60% 40%)",
+  "Evidence Gathering": "hsl(152 60% 40%)",
+  "Attorney Review": "hsl(38 92% 50%)",
+  "Filed with USCIS": "hsl(262 60% 50%)",
+  "Receipts & Biometrics": "hsl(220 70% 22%)",
+  "Pending Decision": "hsl(30 80% 50%)",
+  "EAD Issued": "hsl(174 80% 35%)",
+  "Approved": "hsl(152 70% 35%)",
+  "RFE / Resubmission": "hsl(0 72% 51%)",
+  "Closed / On Hold": "hsl(220 10% 50%)",
+};
+
+const YEAR_OPTIONS = [
+  { label: "All Time", value: undefined },
+  { label: "2022", value: 2022 },
+  { label: "2023", value: 2023 },
+  { label: "2024", value: 2024 },
+  { label: "2025", value: 2025 },
+  { label: "2026", value: 2026 },
+];
 
 const LegalDashboard = () => {
-  // Fetch active cases only (is_closed = false)
-  const { data: activeCases = [], isLoading: casesLoading } = useImmigrationCases(true);
-  // Fetch all cases for total counts
-  const { data: allCases = [], isLoading: allCasesLoading } = useImmigrationCases(false);
-  const { data: milestones = [], isLoading: milestonesLoading } = useCaseMilestones();
+  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
+  const { data: kpi, isLoading } = useLegalKPI(selectedYear);
+  const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
 
-  if (casesLoading || allCasesLoading || milestonesLoading) return <DashboardLayout title="Legal Department"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
-
-  const closedCases = allCases.filter(c => c.is_closed === true).length;
-
-  // Case stage distribution from active cases
-  const stageMap = new Map<string, number>();
-  for (const c of activeCases) {
-    const stage = c.case_stage || "Unknown";
-    stageMap.set(stage, (stageMap.get(stage) || 0) + 1);
+  if (isLoading || escalationsLoading || !kpi) {
+    return (
+      <DashboardLayout title="Legal Department">
+        <div className="p-8 text-center text-muted-foreground">Loading legal dashboard...</div>
+      </DashboardLayout>
+    );
   }
-  const stageData = Array.from(stageMap, ([stage, count]) => ({ stage, count })).sort((a, b) => b.count - a.count);
 
-  // Practice area breakdown
-  const practiceAreaMap = new Map<string, number>();
-  for (const c of activeCases) {
-    const area = c.practice_area || "Unknown";
-    practiceAreaMap.set(area, (practiceAreaMap.get(area) || 0) + 1);
-  }
-  const practiceAreaData = Array.from(practiceAreaMap, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const stageData = (kpi.stage_breakdown || [])
+    .filter((s: any) => s.pipeline_stage !== "Other")
+    .sort((a: any, b: any) => PIPELINE_ORDER.indexOf(a.pipeline_stage) - PIPELINE_ORDER.indexOf(b.pipeline_stage));
 
-  // Attorney assignments
-  const attorneyMap = new Map<string, number>();
-  for (const c of activeCases) {
-    const attorney = c.lead_attorney || "Unassigned";
-    attorneyMap.set(attorney, (attorneyMap.get(attorney) || 0) + 1);
-  }
-  const attorneyData = Array.from(attorneyMap, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  const practiceData = (kpi.practice_breakdown || [])
+    .filter((p: any) => p.practice_group !== "Other" && p.active_cnt > 0)
+    .sort((a: any, b: any) => b.active_cnt - a.active_cnt);
 
-  // Upcoming milestones
-  const upcomingMilestones = milestones
-    .filter(m => !m.completed && m.milestone_date && new Date(m.milestone_date) >= new Date())
-    .sort((a, b) => (a.milestone_date || "").localeCompare(b.milestone_date || ""))
-    .slice(0, 10);
+  const attorneyData = (kpi.attorney_caseloads || []).slice(0, 12);
+  const maxAttorneyCases = attorneyData.length > 0 ? attorneyData[0].active_cases : 1;
 
-  // KPIs
-  const inLitigation = activeCases.filter(c => (c.case_stage || "").toLowerCase() === "litigation").length;
-  const completedMilestones = milestones.filter(m => m.completed).length;
-  const pendingMilestones = milestones.filter(m => !m.completed).length;
-  const detainedCases = activeCases.filter(c => c.detained).length;
+  const intakeTrend = (kpi.monthly_intake_trend || [])
+    .sort((a: any, b: any) => a.intake_month.localeCompare(b.intake_month))
+    .map((m: any) => ({
+      ...m,
+      label: new Date(m.intake_month + "-01").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+    }));
+
+  const intakeChange = kpi.intakes_last_month > 0
+    ? Math.round(((kpi.intakes_this_month - kpi.intakes_last_month) / kpi.intakes_last_month) * 100)
+    : 0;
 
   return (
     <DashboardLayout title="Legal Department">
-      <div className="mb-6"><h1 className="text-2xl font-bold">Legal Dashboard</h1><p className="text-muted-foreground">Immigration case stages, practice areas, attorney assignments, and milestones</p></div>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
-        <StatCard label="Active Cases" value={String(activeCases.length)} icon={<Briefcase className="h-5 w-5" />} />
-        <StatCard label="In Litigation" value={String(inLitigation)} icon={<Scale className="h-5 w-5" />} />
-        <StatCard label="Closed Cases" value={String(closedCases)} icon={<CheckCircle className="h-5 w-5" />} />
-        <StatCard label="Detained" value={String(detainedCases)} icon={<AlertTriangle className="h-5 w-5" />} />
-        <StatCard label="Milestones Done" value={String(completedMilestones)} icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Milestones Pending" value={String(pendingMilestones)} icon={<Calendar className="h-5 w-5" />} />
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Legal Dashboard</h1>
+          <p className="text-muted-foreground text-sm">Immigration case pipeline, practice areas, attorney caseloads, and intake trends</p>
+          <div className="mt-1.5 flex gap-2">
+            <Badge variant="outline" className="text-[10px] gap-1">
+              <Scale className="h-3 w-3" /> Immigration Law — Full Lifecycle Tracking
+            </Badge>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border p-1 bg-muted/30">
+          {YEAR_OPTIONS.map(opt => (
+            <Button
+              key={opt.label}
+              variant={selectedYear === opt.value ? "default" : "ghost"}
+              size="sm"
+              className="h-8 px-3 text-xs"
+              onClick={() => setSelectedYear(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI Row 1 */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+        <StatCard label="Active Cases" value={kpi.active_cases.toLocaleString()} icon={<Briefcase className="h-5 w-5" />} />
+        <StatCard label="Filed with USCIS" value={kpi.filed_with_uscis.toLocaleString()} icon={<FileText className="h-5 w-5" />} />
+        <StatCard label="Receipts & Bio" value={kpi.receipts_biometrics.toLocaleString()} icon={<Shield className="h-5 w-5" />} />
+        <StatCard label="Pending Decision" value={kpi.pending_decision.toLocaleString()} icon={<Scale className="h-5 w-5" />} />
+        <StatCard label="Approved" value={kpi.approved_cases.toLocaleString()} icon={<CheckCircle className="h-5 w-5" />} />
+        <StatCard label="Closed" value={kpi.closed_cases.toLocaleString()} icon={<FolderOpen className="h-5 w-5" />} />
+      </div>
+
+      {/* KPI Row 2 */}
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+        <StatCard
+          label="Intakes This Month"
+          value={String(kpi.intakes_this_month)}
+          icon={<TrendingUp className="h-5 w-5" />}
+        />
+        <StatCard
+          label="Intakes Last Month"
+          value={String(kpi.intakes_last_month)}
+          icon={intakeChange >= 0
+            ? <ArrowUpRight className="h-5 w-5 text-green-500" />
+            : <ArrowDownRight className="h-5 w-5 text-red-500" />}
+        />
+        <StatCard label="Pending RFEs" value={String(kpi.pending_rfe)} icon={<AlertTriangle className="h-5 w-5" />} />
+        <StatCard label="Removal Defense" value={String(kpi.removal_defense)} icon={<Gavel className="h-5 w-5" />} />
+        <StatCard label="Detained" value={String(kpi.detained_cases)} icon={<ShieldAlert className="h-5 w-5" />} />
+        <StatCard label="Total Cases" value={kpi.total_cases.toLocaleString()} icon={<FolderOpen className="h-5 w-5" />} />
+      </div>
+
+      {/* Case Pipeline */}
+      <div className="mt-6 dashboard-section">
+        <h2 className="mb-4 text-lg font-semibold">Case Pipeline — Active Cases by Stage</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={stageData} margin={{ bottom: 60 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis
+              dataKey="pipeline_stage"
+              tick={{ fontSize: 10 }}
+              stroke="hsl(var(--muted-foreground))"
+              angle={-35}
+              textAnchor="end"
+              interval={0}
+              height={80}
+            />
+            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+            <Tooltip formatter={(v: number) => v.toLocaleString()} />
+            <Bar dataKey="cnt" name="Cases" radius={[4, 4, 0, 0]}>
+              {stageData.map((s: any, i: number) => (
+                <Cell key={i} fill={PIPELINE_COLORS[s.pipeline_stage] || COLORS[i % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Practice Area Breakdown */}
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold">Cases by Stage</h2>
+          <h2 className="mb-4 text-lg font-semibold">Practice Area Distribution</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={practiceData}
+                cx="50%" cy="50%"
+                innerRadius={55} outerRadius={90}
+                paddingAngle={2}
+                dataKey="active_cnt"
+                nameKey="practice_group"
+                label={({ practice_group, percent }) =>
+                  percent > 0.04 ? `${practice_group} ${(percent * 100).toFixed(0)}%` : ""
+                }
+                labelLine={false}
+              >
+                {practiceData.map((_: any, i: number) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(v: number) => v.toLocaleString()} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="mt-2 grid grid-cols-2 gap-1">
+            {practiceData.map((d: any, i: number) => (
+              <div key={d.practice_group} className="flex items-center gap-2 text-xs">
+                <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                <span className="truncate">{d.practice_group}: {d.active_cnt.toLocaleString()}</span>
+              </div>
+            ))}
+            {kpi.uncategorized_cases > 0 && (
+              <div className="col-span-2 mt-1 text-[10px] text-muted-foreground">
+                + {Number(kpi.uncategorized_cases).toLocaleString()} cases without practice area data
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Intake Trend */}
+        <div className="dashboard-section">
+          <h2 className="mb-4 text-lg font-semibold">Monthly New Intakes (Last 12 Months)</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={stageData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
-              <XAxis dataKey="stage" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="count" fill="hsl(220 70% 22%)" radius={[4, 4, 0, 0]} name="Cases" />
-            </BarChart>
+            <AreaChart data={intakeTrend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+              <Tooltip formatter={(v: number) => v.toLocaleString()} />
+              <Area
+                type="monotone"
+                dataKey="new_cases"
+                stroke="hsl(220 70% 22%)"
+                fill="hsl(220 70% 22% / 0.15)"
+                strokeWidth={2}
+                name="New Cases"
+                dot={{ r: 3 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold">Practice Area Breakdown</h2>
-          {practiceAreaData.length === 0 ? <p className="text-sm text-muted-foreground">No data.</p> : (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={practiceAreaData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                    {practiceAreaData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="mt-2 grid grid-cols-2 gap-1">
-                {practiceAreaData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-2 text-xs">
-                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="truncate">{d.name}: {d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Attorney Caseloads */}
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2"><Users className="h-4 w-4" />Attorney Assignments</h2>
-          {attorneyData.length === 0 ? <p className="text-sm text-muted-foreground">No attorney data.</p> : (
-            <div className="space-y-3">
-              {attorneyData.map(a => (
-                <div key={a.name} className="flex items-center gap-3">
-                  <span className="w-36 truncate text-sm font-medium">{a.name}</span>
-                  <div className="flex-1"><Progress value={activeCases.length > 0 ? (a.count / activeCases.length) * 100 : 0} className="h-2" /></div>
-                  <span className="text-sm font-semibold tabular-nums">{a.count}</span>
+          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" /> Attorney Caseloads
+          </h2>
+          <div className="space-y-2.5 max-h-[380px] overflow-y-auto">
+            {attorneyData.map((a: any) => (
+              <div key={a.lead_attorney} className="flex items-center gap-3">
+                <span className="w-40 truncate text-sm font-medium">{a.lead_attorney}</span>
+                <div className="flex-1">
+                  <Progress value={(a.active_cases / maxAttorneyCases) * 100} className="h-2.5" />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2"><Calendar className="h-4 w-4" />Upcoming Milestones</h2>
-          {upcomingMilestones.length === 0 ? <p className="text-sm text-muted-foreground">No upcoming milestones.</p> : (
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {upcomingMilestones.map(m => (
-                <div key={m.id} className="flex items-center justify-between rounded-md border px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium">{m.milestone_type}</p>
-                    <p className="text-xs text-muted-foreground">{m.notes || "No notes"}</p>
-                  </div>
-                  <Badge variant="outline" className="text-xs">{m.milestone_date}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive" />Case Stage Progress</h2>
-          <div className="space-y-3">
-            {stageData.map(s => (
-              <div key={s.stage} className="flex items-center gap-3">
-                <span className="w-24 text-sm font-medium">{s.stage}</span>
-                <div className="flex-1"><Progress value={activeCases.length > 0 ? (s.count / activeCases.length) * 100 : 0} className="h-2" /></div>
-                <span className="text-sm font-semibold tabular-nums">{s.count}</span>
+                <span className="text-sm font-semibold tabular-nums w-12 text-right">{a.active_cases.toLocaleString()}</span>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Stage Progress Breakdown */}
+        <div className="dashboard-section">
+          <h2 className="mb-4 text-lg font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" /> Pipeline Stage Breakdown
+          </h2>
+          <div className="space-y-2.5 max-h-[380px] overflow-y-auto">
+            {stageData.map((s: any) => {
+              const pct = kpi.active_cases > 0 ? (s.cnt / kpi.active_cases) * 100 : 0;
+              return (
+                <div key={s.pipeline_stage} className="flex items-center gap-3">
+                  <span className="w-40 truncate text-sm font-medium">{s.pipeline_stage}</span>
+                  <div className="flex-1 relative">
+                    <div
+                      className="h-2.5 rounded-full"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: PIPELINE_COLORS[s.pipeline_stage] || "hsl(var(--primary))",
+                        minWidth: pct > 0 ? "4px" : "0",
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums w-16 text-right">
+                    {s.cnt.toLocaleString()} <span className="text-xs text-muted-foreground">({pct.toFixed(1)}%)</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <EscalationInboxPanel
+          escalations={unresolvedEscalations}
+          inbox="legal"
+          title="Legal Escalation Inbox"
+          emptyMessage="No unresolved legal escalations right now."
+        />
         <TaskPanel department="legal" />
       </div>
     </DashboardLayout>

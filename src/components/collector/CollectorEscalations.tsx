@@ -7,28 +7,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  ESCALATION_ASSIGNEES,
+  ESCALATION_STATUSES,
+  formatEscalationStatus,
+  getEscalationPriorityBadgeVariant,
+  getEscalationStatusBadgeVariant,
+} from "@/lib/escalations";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle, Clock, Shield } from "lucide-react";
 
-const STATUSES = ["open", "in_progress", "resolved", "dismissed"];
-const ASSIGNEES = ["Alejandro A", "Patricio D", "Maritza V", "Management", "Legal"];
-
 function priorityBadge(p: string) {
-  switch (p) {
-    case "urgent": return <Badge variant="destructive" className="text-xs">Urgent</Badge>;
-    case "high": return <Badge className="bg-amber-500 text-white text-xs">High</Badge>;
-    case "medium": return <Badge variant="secondary" className="text-xs">Medium</Badge>;
-    default: return <Badge variant="outline" className="text-xs">Low</Badge>;
-  }
+  if (p === "high") return <Badge className="bg-amber-500 text-white text-xs">High</Badge>;
+  return <Badge variant={getEscalationPriorityBadgeVariant(p)} className="text-xs capitalize">{p}</Badge>;
 }
 
 function statusBadge(s: string) {
-  switch (s) {
-    case "resolved": return <Badge className="bg-green-600 text-white text-xs">Resolved</Badge>;
-    case "in_progress": return <Badge className="bg-blue-500 text-white text-xs">In Progress</Badge>;
-    case "dismissed": return <Badge variant="outline" className="text-xs">Dismissed</Badge>;
-    default: return <Badge variant="destructive" className="text-xs">Open</Badge>;
-  }
+  if (s === "resolved") return <Badge className="bg-green-600 text-white text-xs">Resolved</Badge>;
+  if (s === "in_progress") return <Badge className="bg-blue-500 text-white text-xs">In Progress</Badge>;
+  return <Badge variant={getEscalationStatusBadgeVariant(s)} className="text-xs capitalize">{formatEscalationStatus(s)}</Badge>;
 }
 
 interface Props {
@@ -59,7 +56,7 @@ const CollectorEscalations = ({ collectorName, isLead }: Props) => {
   const stats = useMemo(() => ({
     open: escalations.filter(e => e.status === "open").length,
     inProgress: escalations.filter(e => e.status === "in_progress").length,
-    urgent: escalations.filter(e => e.priority === "urgent" && e.status !== "resolved" && e.status !== "dismissed").length,
+    urgent: escalations.filter(e => e.priority === "urgent" && e.status !== "resolved" && e.status !== "closed").length,
     resolved: escalations.filter(e => e.status === "resolved").length,
   }), [escalations]);
 
@@ -71,7 +68,7 @@ const CollectorEscalations = ({ collectorName, isLead }: Props) => {
       if (newStatus) updates.status = newStatus;
       if (newAssignee) updates.assigned_to = newAssignee;
       if (resNotes) updates.resolution_notes = resNotes;
-      if (newStatus === "resolved" || newStatus === "dismissed") updates.resolved_at = new Date().toISOString();
+      if (newStatus === "resolved" || newStatus === "closed") updates.resolved_at = new Date().toISOString();
       const { error } = await supabase.from("escalations").update(updates).eq("id", editing.id);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["collector-escalations"] });
@@ -151,13 +148,13 @@ const CollectorEscalations = ({ collectorName, isLead }: Props) => {
             <div><Label className="text-xs">Status</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="text-xs capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                <SelectContent>{ESCALATION_STATUSES.map(s => <SelectItem key={s} value={s} className="text-xs capitalize">{formatEscalationStatus(s)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="text-xs">Assign To</Label>
               <Select value={newAssignee} onValueChange={setNewAssignee}>
                 <SelectTrigger className="text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{ASSIGNEES.map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}</SelectContent>
+                <SelectContent>{ESCALATION_ASSIGNEES.map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="text-xs">Notes</Label>
