@@ -335,17 +335,41 @@ const CollectorDashboard = () => {
           </div>
           <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-3 font-medium">Client</th>{isLead && <th className="pb-3 font-medium">Collector</th>}<th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Date</th></tr></thead>
+              <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-3 font-medium">Client</th>{isLead && <th className="pb-3 font-medium">Collector</th>}<th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium text-right">Actions</th></tr></thead>
               <tbody>
                 {recentPayments.map(p => (
                   <tr key={p.id} className="border-b last:border-0">
-                    <td className="py-2 font-medium text-sm">{p.client_name}</td>
+                    <td className="py-2 font-medium text-sm">
+                      {p.contract_id || p.client_id ? (
+                        <button
+                          onClick={() => navigate(`/collections/workspace/${p.contract_id || p.client_id}`)}
+                          className="text-primary hover:underline text-left"
+                          title="Open in workspace"
+                        >
+                          {p.client_name}
+                        </button>
+                      ) : (
+                        p.client_name
+                      )}
+                    </td>
                     {isLead && <td className="py-2 text-sm">{p.collector}</td>}
                     <td className="py-2 font-mono text-sm">{fmt(Number(p.collected_amount))}</td>
                     <td className="py-2 text-muted-foreground text-sm">{p.activity_date}</td>
+                    <td className="py-2 text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="Take payment"
+                        disabled={!p.client_id && !p.contract_id}
+                        onClick={() => openPaymentFor(p)}
+                      >
+                        <CreditCard className="h-3 w-3" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
-                {recentPayments.length === 0 && <tr><td colSpan={isLead ? 4 : 3} className="py-4 text-center text-muted-foreground">No collections recorded in this month</td></tr>}
+                {recentPayments.length === 0 && <tr><td colSpan={isLead ? 5 : 4} className="py-4 text-center text-muted-foreground">No collections recorded in this month</td></tr>}
               </tbody>
             </table>
           </div>

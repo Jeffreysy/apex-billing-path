@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { DollarSign, CheckCircle, XCircle, Clock, AlertTriangle, CreditCard, ExternalLink } from "lucide-react";
+import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 
 const STATUSES = ["pending", "kept", "broken", "partial", "rescheduled"];
 
@@ -33,6 +35,29 @@ interface Props {
 
 const CollectorCommitments = ({ collectorName, isLead }: Props) => {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [payOpen, setPayOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
+
+  const goToWorkspace = (row: any) => {
+    const id = row.contract_id || row.client_id;
+    if (!id) return;
+    navigate(`/collections/workspace/${id}`);
+  };
+
+  const openPayment = (row: any) => {
+    setPayTarget({
+      clientId: row.client_id || null,
+      contractId: row.contract_id || null,
+      clientName: row.client_name || "Client",
+      email: null,
+      invoiceNumber: null,
+      caseNumber: null,
+      defaultAmount: Number(row.promised_amount) || 0,
+      collectorName: row.collector || collectorName,
+    });
+    setPayOpen(true);
+  };
 
   const { data: commitments = [], isLoading } = useQuery({
     queryKey: ["collector-commitments", isLead ? "all" : collectorName],
@@ -139,9 +164,31 @@ const CollectorCommitments = ({ collectorName, isLead }: Props) => {
                   <td className="px-2 py-1.5">{row.follow_up_date || "—"}</td>
                   <td className="px-2 py-1.5">{statusBadge(row.status)}</td>
                   <td className="px-2 py-1.5">
-                    <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => {
-                      setEditing(row); setNewStatus(row.status); setNotes(row.notes || "");
-                    }}>Update</Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="Take payment"
+                        disabled={!row.client_id && !row.contract_id}
+                        onClick={() => openPayment(row)}
+                      >
+                        <CreditCard className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        title="Open workspace"
+                        disabled={!row.client_id && !row.contract_id}
+                        onClick={() => goToWorkspace(row)}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => {
+                        setEditing(row); setNewStatus(row.status); setNotes(row.notes || "");
+                      }}>Update</Button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -171,6 +218,8 @@ const CollectorCommitments = ({ collectorName, isLead }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TakePaymentDialog open={payOpen} onOpenChange={setPayOpen} target={payTarget} />
     </div>
   );
 };
