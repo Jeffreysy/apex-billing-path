@@ -144,6 +144,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
       qc.invalidateQueries({ queryKey: ["collection-activity-rows"] });
       qc.invalidateQueries({ queryKey: ["collector-all-activities"] });
       qc.invalidateQueries({ queryKey: ["collector-activity-log"] });
+      qc.invalidateQueries({ queryKey: ["collections-dashboard"] });
 
       toast.success("Call documented successfully");
 
@@ -178,6 +179,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
       });
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["commitments", account?.contract_id || account?.client_id] });
+      qc.invalidateQueries({ queryKey: ["collector-commitments"] });
       toast.success("Payment commitment created");
 
       if (escalationNeeded) {
@@ -217,6 +219,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
       qc.invalidateQueries({ queryKey: ["escalations"] });
       qc.invalidateQueries({ queryKey: ["all-escalations"] });
       qc.invalidateQueries({ queryKey: ["collections-escalations"] });
+      qc.invalidateQueries({ queryKey: ["collector-escalations"] });
       toast.success("Escalation created");
       setStep("done");
     } catch (err: any) {

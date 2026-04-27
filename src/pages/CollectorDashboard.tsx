@@ -59,8 +59,8 @@ const CollectorDashboard = () => {
       }
       return allData;
     },
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
     refetchOnWindowFocus: true,
   });
 
@@ -95,11 +95,13 @@ const CollectorDashboard = () => {
   // Filter activities by selected month — must be before early returns to respect hook order
   const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
 
-  // Only outbound calls logged by each known collector (all-time, for "worked clients" set)
+  const CALL_TYPES = ["outbound_call", "inbound_call"];
+
+  // Outbound + inbound calls logged by each known collector (all-time, for "worked clients" set)
   const workedClientsByCollector = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     for (const a of allActivities) {
-      if (a.activity_type !== "outbound_call") continue;
+      if (!CALL_TYPES.includes(a.activity_type)) continue;
       const norm = normalizeCollectorName(a.collector);
       const matched = KNOWN_COLLECTORS.find(c => normalizeCollectorName(c) === norm);
       if (!matched || !a.client_id) continue;
@@ -109,11 +111,11 @@ const CollectorDashboard = () => {
     return map;
   }, [allActivities]);
 
-  // Collector's own outbound call entries (all months — drives latestActivity + lastCalledMap)
+  // Collector's own call entries — outbound + inbound (all months — drives latestActivity + lastCalledMap)
   const myOutboundCalls = useMemo(
     () => allActivities.filter(
       a => normalizeCollectorName(a.collector) === normalizeCollectorName(collectorName)
-        && a.activity_type === "outbound_call"
+        && CALL_TYPES.includes(a.activity_type)
     ),
     [allActivities, collectorName]
   );
@@ -145,7 +147,7 @@ const CollectorDashboard = () => {
     const workedClients = workedClientsByCollector[name] || new Set<string>();
 
     const ownRows = monthActivities.filter(a =>
-      normalizeCollectorName(a.collector) === normName && a.activity_type === "outbound_call"
+      normalizeCollectorName(a.collector) === normName && CALL_TYPES.includes(a.activity_type)
     );
 
     // System entries: not logged by any known collector, has payment amount, client was worked by this collector

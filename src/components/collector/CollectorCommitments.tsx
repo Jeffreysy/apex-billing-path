@@ -68,6 +68,9 @@ const CollectorCommitments = ({ collectorName, isLead }: Props) => {
       if (error) throw error;
       return data || [];
     },
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const [editing, setEditing] = useState<any>(null);

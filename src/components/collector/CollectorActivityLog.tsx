@@ -67,7 +67,7 @@ const CollectorActivityLog = ({ collectorName, isLead }: Props) => {
       let query = supabase
         .from("collection_activities")
         .select("*")
-        .eq("activity_type", "outbound_call")
+        .in("activity_type", ["outbound_call", "inbound_call"])
         .order("activity_date", { ascending: false })
         .limit(500);
       if (!isLead) query = query.eq("collector", collectorName);
