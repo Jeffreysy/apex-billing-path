@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,29 @@ const ClientLookup = () => {
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep-link support: ?clientId=... or ?contractId=... selects a client on load
+  useEffect(() => {
+    if (clients.length === 0) return;
+    const cid = searchParams.get("clientId");
+    const contractId = searchParams.get("contractId");
+    const name = searchParams.get("name");
+    let match: any = null;
+    if (cid) match = clients.find(c => c.id === cid);
+    if (!match && contractId) match = clients.find(c => (c as any).contractId === contractId);
+    if (!match && name) match = clients.find(c => c.name.toLowerCase() === name.toLowerCase());
+    if (match) setSelectedClientId(match.id);
+  }, [clients, searchParams]);
+
+  // Keep URL in sync when user picks a client manually
+  useEffect(() => {
+    if (!selectedClientId) return;
+    if (searchParams.get("clientId") === selectedClientId) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("clientId", selectedClientId);
+    setSearchParams(next, { replace: true });
+  }, [selectedClientId]);
 
   const filteredClients = useMemo(() => {
     if (!search.trim()) return [];
