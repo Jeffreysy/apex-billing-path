@@ -118,6 +118,18 @@ const CollectorDashboard = () => {
     [allActivities, collectorName]
   );
 
+  // Last-called date per client (contract_id or client_id key) — outbound calls only.
+  // Must be declared before any early return to keep hook order stable.
+  const lastCalledMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const a of myOutboundCalls) {
+      const key = a.contract_id || a.client_id;
+      if (!key) continue;
+      if (!map[key] || a.activity_date > map[key]) map[key] = a.activity_date;
+    }
+    return map;
+  }, [myOutboundCalls]);
+
   if (loadingAct || loadingQueue) {
     return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
   }
@@ -206,17 +218,6 @@ const CollectorDashboard = () => {
       .sort((a, b) => `${b.activity_date}${b.start_time || ""}`.localeCompare(`${a.activity_date}${a.start_time || ""}`))
       .slice(0, 15);
   })();
-
-  // Last-called date per client (contract_id or client_id key) — outbound calls only
-  const lastCalledMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const a of myOutboundCalls) {
-      const key = a.contract_id || a.client_id;
-      if (!key) continue;
-      if (!map[key] || a.activity_date > map[key]) map[key] = a.activity_date;
-    }
-    return map;
-  }, [myOutboundCalls]);
 
   const openCallFor = (account: any) => {
     setCallAccount(account);
