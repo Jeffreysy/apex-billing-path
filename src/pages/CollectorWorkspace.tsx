@@ -220,7 +220,7 @@ const CollectorWorkspace = () => {
     try {
       const { error } = await supabase
         .from("contracts")
-        .update({ next_payment_date: followUpDate })
+        .update({ next_due_date: followUpDate })
         .eq("id", account?.contract_id);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["collections-dashboard"] });

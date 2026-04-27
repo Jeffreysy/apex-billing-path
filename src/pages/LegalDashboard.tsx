@@ -55,7 +55,8 @@ const YEAR_OPTIONS = [
 
 const LegalDashboard = () => {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
-  const { data: kpi, isLoading } = useLegalKPI(selectedYear);
+  const { data: kpiRaw, isLoading } = useLegalKPI(selectedYear);
+  const kpi = kpiRaw as any;
   const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
 
   if (isLoading || escalationsLoading || !kpi) {
