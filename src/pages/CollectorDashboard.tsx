@@ -323,7 +323,12 @@ const CollectorDashboard = () => {
                     <Button size="sm" variant="outline" onClick={() => openCallFor(c)} className="gap-1 text-xs h-7">
                       <Phone className="h-3 w-3" />Call
                     </Button>
-                    <Button size="sm" onClick={() => navigate(`/collections/workspace/${c.contract_id || c.client_id}`)} className="gap-1 text-xs h-7">
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(`/clients?${c.client_id ? `clientId=${c.client_id}` : `contractId=${c.contract_id}`}`)}
+                      className="gap-1 text-xs h-7"
+                      disabled={!c.client_id && !c.contract_id}
+                    >
                       Work
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => openPaymentFor(c)} className="gap-1 text-xs h-7">
