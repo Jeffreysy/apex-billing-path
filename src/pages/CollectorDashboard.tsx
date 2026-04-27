@@ -1,28 +1,31 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useCollectionsDashboard } from "@/hooks/useSupabaseData";
-import { DollarSign, Phone, Clock, ExternalLink, Users, Percent } from "lucide-react";
+import { DollarSign, Phone, Clock, Users, Percent, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import MonthFilter, { filterByMonth } from "@/components/MonthFilter";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
 import CollectorActivityLog from "@/components/collector/CollectorActivityLog";
 import CollectorEscalations from "@/components/collector/CollectorEscalations";
 import CollectorCommitments from "@/components/collector/CollectorCommitments";
+import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
+import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
 const KNOWN_COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
 const LEAD_COLLECTOR = "Alejandro A";
+
+function normalizeCollectorName(value: string | null | undefined) {
+  return (value || "").trim().toLowerCase();
+}
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -57,19 +60,63 @@ const CollectorDashboard = () => {
       return allData;
     },
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: allQueue = [], isLoading: loadingQueue } = useCollectionsDashboard();
 
-  const [paymentOpen, setPaymentOpen] = useState(false);
+  const navigate = useNavigate();
+  const [payOpen, setPayOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSelected, setPickerSelected] = useState("");
+  const [callAccount, setCallAccount] = useState<any>(null);
   const [callOpen, setCallOpen] = useState(false);
   const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
+
+  const openPaymentFor = (account: any) => {
+    setPayTarget({
+      clientId: account?.client_id || null,
+      contractId: account?.contract_id || null,
+      clientName: account?.client_name || "Unknown",
+      email: account?.email || null,
+      invoiceNumber: account?.invoice_number || null,
+      caseNumber: account?.case_number || null,
+      defaultAmount: Number(account?.balance_remaining) || 0,
+      collectorName: account?.collector || account?.assigned_collector || collectorName,
+    });
+    setPayOpen(true);
+  };
 
   const isLead = collectorName === LEAD_COLLECTOR;
   const avatar = collectorName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
   // Filter activities by selected month — must be before early returns to respect hook order
   const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
+
+  // Only outbound calls logged by each known collector (all-time, for "worked clients" set)
+  const workedClientsByCollector = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    for (const a of allActivities) {
+      if (a.activity_type !== "outbound_call") continue;
+      const norm = normalizeCollectorName(a.collector);
+      const matched = KNOWN_COLLECTORS.find(c => normalizeCollectorName(c) === norm);
+      if (!matched || !a.client_id) continue;
+      if (!map[matched]) map[matched] = new Set<string>();
+      map[matched].add(a.client_id);
+    }
+    return map;
+  }, [allActivities]);
+
+  // Collector's own outbound call entries (all months — drives latestActivity + lastCalledMap)
+  const myOutboundCalls = useMemo(
+    () => allActivities.filter(
+      a => normalizeCollectorName(a.collector) === normalizeCollectorName(collectorName)
+        && a.activity_type === "outbound_call"
+    ),
+    [allActivities, collectorName]
+  );
 
   if (loadingAct || loadingQueue) {
     return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
@@ -80,17 +127,35 @@ const CollectorDashboard = () => {
   }
 
   // Aggregate stats from filtered activities
+  // Rule: count own outbound calls + system/non-collector payment entries for clients they've worked
   const buildStats = (name: string) => {
-    const rows = monthActivities.filter(a => a.collector === name);
+    const normName = normalizeCollectorName(name);
+    const workedClients = workedClientsByCollector[name] || new Set<string>();
+
+    const ownRows = monthActivities.filter(a =>
+      normalizeCollectorName(a.collector) === normName && a.activity_type === "outbound_call"
+    );
+
+    // System entries: not logged by any known collector, has payment amount, client was worked by this collector
+    const systemPaymentRows = monthActivities.filter(a => {
+      if ((Number(a.collected_amount) || 0) <= 0) return false;
+      const isKnownCollector = KNOWN_COLLECTORS.some(c => normalizeCollectorName(c) === normalizeCollectorName(a.collector));
+      return !isKnownCollector && !!a.client_id && workedClients.has(a.client_id);
+    });
+
+    const allCountedRows = [...ownRows, ...systemPaymentRows];
     return {
-      totalCollected: rows.reduce((s, a) => s + (Number(a.collected_amount) || 0), 0),
-      totalCommission: rows.reduce((s, a) => s + (Number(a.commission) || 0), 0),
-      callsMade: rows.length,
-      paymentsTaken: rows.filter(a => (Number(a.collected_amount) || 0) > 0).length,
+      totalCollected: allCountedRows.reduce((s, a) => s + (Number(a.collected_amount) || 0), 0),
+      totalCommission: ownRows.reduce((s, a) => s + (Number(a.commission) || 0), 0),
+      callsMade: ownRows.length,
+      paymentsTaken: allCountedRows.filter(a => (Number(a.collected_amount) || 0) > 0).length,
     };
   };
 
   const myStats = buildStats(collectorName);
+  const latestActivity = myOutboundCalls
+    .slice()
+    .sort((a, b) => `${b.activity_date}${b.start_time || ""}`.localeCompare(`${a.activity_date}${a.start_time || ""}`))[0];
 
   // Team stats for lead
   const teamStats = isLead
@@ -108,18 +173,55 @@ const CollectorDashboard = () => {
     : null;
 
   // Queue filtered to this collector
-  const myQueue = allQueue.filter((c: any) => c.collector === collectorName || c.assigned_collector === collectorName);
+  const myQueue = allQueue.filter(
+    (c: any) =>
+      normalizeCollectorName(c.collector) === normalizeCollectorName(collectorName) ||
+      normalizeCollectorName(c.assigned_collector) === normalizeCollectorName(collectorName)
+  );
 
-  // Recent payments from filtered activities where collected_amount > 0
-  const recentPayments = (isLead
-    ? monthActivities.filter(a => KNOWN_COLLECTORS.includes(a.collector) && (Number(a.collected_amount) || 0) > 0)
-    : monthActivities.filter(a => a.collector === collectorName && (Number(a.collected_amount) || 0) > 0)
-  )
-    .sort((a, b) => `${b.activity_date}${b.start_time || ""}`.localeCompare(`${a.activity_date}${a.start_time || ""}`))
-    .slice(0, 15);
+  const recentPayments = (() => {
+    const hasPayment = (a: any) => (Number(a.collected_amount) || 0) > 0;
+    const isKnownCollector = (a: any) => KNOWN_COLLECTORS.some(c => normalizeCollectorName(c) === normalizeCollectorName(a.collector));
 
-  const handlePayment = (e: React.FormEvent) => { e.preventDefault(); toast.success("Payment recorded!"); setPaymentOpen(false); };
-  const handleCallLog = (e: React.FormEvent) => { e.preventDefault(); toast.success("Call logged!"); setCallOpen(false); };
+    let rows: any[];
+    if (isLead) {
+      // Own outbound-call entries with payment, plus system entries for any collector's worked clients
+      rows = monthActivities.filter(a => {
+        if (!hasPayment(a)) return false;
+        if (isKnownCollector(a)) return a.activity_type === "outbound_call";
+        // system entry — include if any collector has worked this client
+        return !!a.client_id && KNOWN_COLLECTORS.some(c => (workedClientsByCollector[c] || new Set()).has(a.client_id));
+      });
+    } else {
+      const workedClients = workedClientsByCollector[collectorName] || new Set<string>();
+      rows = monthActivities.filter(a => {
+        if (!hasPayment(a)) return false;
+        if (normalizeCollectorName(a.collector) === normalizeCollectorName(collectorName))
+          return a.activity_type === "outbound_call";
+        // system entry for a client this collector has worked
+        return !isKnownCollector(a) && !!a.client_id && workedClients.has(a.client_id);
+      });
+    }
+    return rows
+      .sort((a, b) => `${b.activity_date}${b.start_time || ""}`.localeCompare(`${a.activity_date}${a.start_time || ""}`))
+      .slice(0, 15);
+  })();
+
+  // Last-called date per client (contract_id or client_id key) — outbound calls only
+  const lastCalledMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const a of myOutboundCalls) {
+      const key = a.contract_id || a.client_id;
+      if (!key) continue;
+      if (!map[key] || a.activity_date > map[key]) map[key] = a.activity_date;
+    }
+    return map;
+  }, [myAllActivities]);
+
+  const openCallFor = (account: any) => {
+    setCallAccount(account);
+    setCallOpen(true);
+  };
 
   return (
     <DashboardLayout title={collectorName}>
@@ -128,34 +230,20 @@ const CollectorDashboard = () => {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">{avatar}</div>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">{collectorName}{isLead && <Badge variant="secondary">Lead Collector</Badge>}</h1>
-            <p className="text-muted-foreground">Collections Agent Dashboard</p>
+            <p className="text-muted-foreground">
+              Collections Agent Dashboard
+              {latestActivity && ` · Latest activity: ${latestActivity.activity_date}${latestActivity.start_time ? ` ${String(latestActivity.start_time).slice(0, 5)}` : ""}`}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <MonthFilter value={month} onChange={setMonth} />
-          <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
-            <DialogTrigger asChild><Button><DollarSign className="mr-2 h-4 w-4" />Take Payment</Button></DialogTrigger>
-            <DialogContent><DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
-              <form onSubmit={handlePayment} className="space-y-4">
-                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myQueue.slice(0, 50).map((c: any) => <SelectItem key={c.contract_id || c.client_id} value={c.client_id || ""}>{c.client_name}</SelectItem>)}</SelectContent></Select></div>
-                <div><Label>Amount</Label><Input type="number" placeholder="0.00" /></div>
-                <div><Label>Payment Method</Label><Select><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger><SelectContent><SelectItem value="card">Credit Card</SelectItem><SelectItem value="ach">ACH</SelectItem><SelectItem value="check">Check</SelectItem><SelectItem value="cash">Cash</SelectItem></SelectContent></Select></div>
-                <DialogFooter><Button type="submit">Process Payment</Button></DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={callOpen} onOpenChange={setCallOpen}>
-            <DialogTrigger asChild><Button variant="outline"><Phone className="mr-2 h-4 w-4" />Log Call</Button></DialogTrigger>
-            <DialogContent><DialogHeader><DialogTitle>Log Phone Call</DialogTitle></DialogHeader>
-              <form onSubmit={handleCallLog} className="space-y-4">
-                <div><Label>Client</Label><Select><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger><SelectContent>{myQueue.slice(0, 50).map((c: any) => <SelectItem key={c.contract_id || c.client_id} value={c.client_id || ""}>{c.client_name}</SelectItem>)}</SelectContent></Select></div>
-                <div><Label>Duration (min)</Label><Input type="number" placeholder="5" /></div>
-                <div><Label>Outcome</Label><Select><SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger><SelectContent><SelectItem value="payment_taken">Payment Taken</SelectItem><SelectItem value="promise_to_pay">Promise to Pay</SelectItem><SelectItem value="no_answer">No Answer</SelectItem><SelectItem value="left_voicemail">Left Voicemail</SelectItem><SelectItem value="callback_scheduled">Callback Scheduled</SelectItem><SelectItem value="disputed">Disputed</SelectItem></SelectContent></Select></div>
-                <div><Label>Notes</Label><Textarea placeholder="Call notes..." /></div>
-                <DialogFooter><Button type="submit">Save Call Log</Button></DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => openPaymentFor(myQueue[0] || {})} disabled={myQueue.length === 0}>
+            <CreditCard className="mr-2 h-4 w-4" />Take Payment
+          </Button>
+          <Button variant="outline" onClick={() => setPickerOpen(true)}>
+            <Phone className="mr-2 h-4 w-4" />Log Call
+          </Button>
         </div>
       </div>
 
@@ -207,10 +295,28 @@ const CollectorDashboard = () => {
             {myQueue.slice(0, 20).map((c: any) => {
               const daysOut = Number(c.days_past_due) || 0;
               const isDelinquent = (c.delinquency_status || "").toLowerCase() === "delinquent";
+              const key = c.contract_id || c.client_id;
+              const lastCalled = lastCalledMap[key];
               return (
-                <div key={c.contract_id || c.client_id} className="queue-item">
-                  <div><p className="font-medium text-sm">{c.client_name}</p><p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"}</p>{daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}</div>
-                  <div className="flex items-center gap-2"><Badge variant={isDelinquent ? "destructive" : "default"} className="text-xs">{c.contract_status || "Active"}</Badge><Button size="sm" variant="outline" className="gap-1 text-xs"><ExternalLink className="h-3 w-3" />CRM</Button></div>
+                <div key={key} className="queue-item">
+                  <div>
+                    <p className="font-medium text-sm">{c.client_name}</p>
+                    <p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"}</p>
+                    {daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}
+                    {lastCalled && <p className="text-xs text-muted-foreground">Last called: {lastCalled}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={isDelinquent ? "destructive" : "default"} className="text-xs">{c.contract_status || "Active"}</Badge>
+                    <Button size="sm" variant="outline" onClick={() => openCallFor(c)} className="gap-1 text-xs h-7">
+                      <Phone className="h-3 w-3" />Call
+                    </Button>
+                    <Button size="sm" onClick={() => navigate(`/collections/workspace/${c.contract_id || c.client_id}`)} className="gap-1 text-xs h-7">
+                      Work
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => openPaymentFor(c)} className="gap-1 text-xs h-7">
+                      <CreditCard className="h-3 w-3" />Pay
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -218,7 +324,15 @@ const CollectorDashboard = () => {
           </div>
         </div>
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold">{isLead ? "Team Recent Collections" : "My Recent Collections"}</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">{isLead ? "Team Recent Payments" : "My Recent Payments"}</h2>
+              <p className="text-xs text-muted-foreground">
+                Payment rows only. Latest logged activity: {latestActivity ? latestActivity.activity_date : "No activity yet"}
+              </p>
+            </div>
+            <Badge variant="outline">{month}</Badge>
+          </div>
           <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-3 font-medium">Client</th>{isLead && <th className="pb-3 font-medium">Collector</th>}<th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Date</th></tr></thead>
@@ -231,7 +345,7 @@ const CollectorDashboard = () => {
                     <td className="py-2 text-muted-foreground text-sm">{p.activity_date}</td>
                   </tr>
                 ))}
-                {recentPayments.length === 0 && <tr><td colSpan={isLead ? 4 : 3} className="py-4 text-center text-muted-foreground">No collections yet</td></tr>}
+                {recentPayments.length === 0 && <tr><td colSpan={isLead ? 4 : 3} className="py-4 text-center text-muted-foreground">No collections recorded in this month</td></tr>}
               </tbody>
             </table>
           </div>
@@ -266,6 +380,48 @@ const CollectorDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Client picker for Log Call from header button */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Select Client to Log Call</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Client</Label>
+              <Select value={pickerSelected} onValueChange={setPickerSelected}>
+                <SelectTrigger><SelectValue placeholder="Select client…" /></SelectTrigger>
+                <SelectContent>
+                  {myQueue.slice(0, 50).map((c: any) => (
+                    <SelectItem key={c.contract_id || c.client_id} value={c.contract_id || c.client_id || ""}>
+                      {c.client_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPickerOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!pickerSelected}
+              onClick={() => {
+                const acct = myQueue.find((c: any) => (c.contract_id || c.client_id) === pickerSelected);
+                if (acct) { setCallAccount(acct); setCallOpen(true); }
+                setPickerOpen(false);
+                setPickerSelected("");
+              }}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Call documentation */}
+      <CallDocumentationDialog open={callOpen} onOpenChange={setCallOpen} account={callAccount} />
+
+      {/* Take Payment (LawPay hand-off) */}
+      <TakePaymentDialog open={payOpen} onOpenChange={setPayOpen} target={payTarget} />
     </DashboardLayout>
   );
 };

@@ -72,6 +72,32 @@ export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) 
 // VIEW-BASED HOOKS
 // ========================
 
+/** Firm settings (LawPay URLs, defaults, branding). Single-row table. */
+export type FirmSettings = {
+  id: string;
+  firm_name: string;
+  lawpay_enabled: boolean;
+  lawpay_operating_url: string | null;
+  lawpay_trust_url: string | null;
+  lawpay_default_account: "operating" | "trust";
+};
+
+export function useFirmSettings() {
+  return useQuery<FirmSettings | null>({
+    queryKey: ["firm-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("firm_settings")
+        .select("id, firm_name, lawpay_enabled, lawpay_operating_url, lawpay_trust_url, lawpay_default_account")
+        .limit(1);
+      if (error) throw error;
+      if (!data || data.length === 0) return null;
+      return data[0] as FirmSettings;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** 1. Admin KPI — single-row view */
 export function useAdminKPI() {
   return useQuery({

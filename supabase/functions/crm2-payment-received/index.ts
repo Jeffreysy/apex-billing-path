@@ -222,6 +222,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: clientRecord } = await sb
+      .from("clients")
+      .select("name")
+      .eq("id", clientId)
+      .limit(1)
+      .maybeSingle();
+
+    const resolvedClientName = clientRecord?.name || contract?.client || projectName || "Unknown Filevine Client";
+
     const paymentMethod =
       sourceMethod === "cash"
         ? "cash"
@@ -280,7 +289,12 @@ Deno.serve(async (req) => {
     if (contract) {
       const nextCollected = Number(contract.collected || 0) + amount;
       const nextBalance = Math.max(0, Number(contract.value || 0) - nextCollected);
-      const contractUpdate: Record<string, unknown> = { collected: nextCollected };
+      const contractUpdate: Record<string, unknown> = {
+        collected: nextCollected,
+        last_transaction_date: paymentDate,
+        last_transaction_amount: amount,
+        last_transaction_source: "filevine",
+      };
       if (nextBalance <= 0) {
         contractUpdate.status = "Paid";
         contractUpdate.delinquency_status = "Paid";
@@ -293,6 +307,7 @@ Deno.serve(async (req) => {
     const activityInsert = await sb.from("collection_activities").insert({
       client_id: clientId,
       contract_id: contract?.id || null,
+      client_name: resolvedClientName,
       activity_type: "payment_received",
       outcome: "payment_taken",
       activity_date: paymentDate,

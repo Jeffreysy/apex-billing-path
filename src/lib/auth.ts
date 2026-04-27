@@ -53,9 +53,9 @@ export function canAccessContracts(role: UserRole | null | undefined): boolean {
 }
 
 export function canAccessClients(role: UserRole | null | undefined): boolean {
-  return !!role;
+  return !!role && ALL_USER_ROLES.includes(role);
 }
 
 export function canAccessSettings(role: UserRole | null | undefined): boolean {
-  return !!role;
+  return !!role && ALL_USER_ROLES.includes(role);
 }

@@ -1,7 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
-import { tasks } from "@/data/mockData";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
@@ -30,17 +29,17 @@ const AdminDashboard = () => {
   const activeCases = Number(kpi?.active_cases) || 0;
   const collectionRate = Number(kpi?.collection_rate_pct) || 0;
   const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
-  const openTasks = tasks.filter(t => t.status !== "completed").length;
   const unresolvedCount = unresolvedEscalations.length;
+  const openTasks = unresolvedCount;
   const weeklyData = computeWeeklyCollections(payments);
 
   const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
 
   const deptData = [
-    { name: "Collections", tasks: tasks.filter(t => t.targetDepartment === "collections" && t.status !== "completed").length },
-    { name: "Legal", tasks: tasks.filter(t => t.targetDepartment === "legal" && t.status !== "completed").length },
-    { name: "AR", tasks: tasks.filter(t => t.targetDepartment === "ar" && t.status !== "completed").length },
-    { name: "Admin", tasks: tasks.filter(t => t.targetDepartment === "admin" && t.status !== "completed").length },
+    { name: "Collections", tasks: unresolvedEscalations.filter((t: any) => !t.handoff_queue || t.handoff_queue === "collections").length },
+    { name: "Legal", tasks: unresolvedEscalations.filter((t: any) => ["legal", "attorney", "case_management"].includes(t.handoff_queue)).length },
+    { name: "AR", tasks: unresolvedEscalations.filter((t: any) => ["billing_ops", "finance", "ar"].includes(t.handoff_queue)).length },
+    { name: "Admin", tasks: unresolvedEscalations.filter((t: any) => ["management", "admin"].includes(t.handoff_queue)).length },
   ];
 
   const lateClients = Number(kpi?.late_clients) || 0;

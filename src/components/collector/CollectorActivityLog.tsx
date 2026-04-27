@@ -37,12 +37,20 @@ const CollectorActivityLog = ({ collectorName, isLead }: Props) => {
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ["collector-activity-log", isLead ? "all" : collectorName],
     queryFn: async () => {
-      let query = supabase.from("collection_activities").select("*").order("activity_date", { ascending: false }).limit(500);
+      let query = supabase
+        .from("collection_activities")
+        .select("*")
+        .eq("activity_type", "outbound_call")
+        .order("activity_date", { ascending: false })
+        .limit(500);
       if (!isLead) query = query.eq("collector", collectorName);
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const [search, setSearch] = useState("");

@@ -2,11 +2,13 @@ import { useState, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag, Scale, Calendar } from "lucide-react";
+import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag, Scale, Calendar, CreditCard } from "lucide-react";
+import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 
 const ClientLookup = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
@@ -17,6 +19,7 @@ const ClientLookup = () => {
   const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [payOpen, setPayOpen] = useState(false);
 
   const filteredClients = useMemo(() => {
     if (!search.trim()) return [];
@@ -76,6 +79,19 @@ const ClientLookup = () => {
   const paidInstallments = selectedClient
     ? Math.round((selectedClient.totalPaid / Math.max(1, selectedClient.totalOwed - selectedClient.downPayment)) * selectedClient.installmentMonths) : 0;
 
+  const paymentTarget: PaymentTarget | null = selectedClient
+    ? {
+        clientId: selectedClient.id,
+        contractId: (selectedClient as any).contractId || null,
+        clientName: selectedClient.name,
+        email: selectedClient.email,
+        invoiceNumber: (selectedClient as any).invoiceNumber || null,
+        caseNumber: selectedClient.caseNumber,
+        defaultAmount: Math.max(0, selectedClient.totalOwed - selectedClient.totalPaid),
+        collectorName: selectedClient.assignedCollector || null,
+      }
+    : null;
+
   return (
     <DashboardLayout>
       <div className="mb-6"><h1 className="text-2xl font-bold">Client Lookup</h1><p className="text-muted-foreground">Search by client name, case number, or email — your source of truth</p></div>
@@ -114,6 +130,15 @@ const ClientLookup = () => {
                     {selectedClient.daysAging > 0 && <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" />{selectedClient.daysAging} days aging</Badge>}
                   </div>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-right mr-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining Balance</p>
+                  <p className="text-lg font-bold text-destructive">${(selectedClient.totalOwed - selectedClient.totalPaid).toLocaleString()}</p>
+                </div>
+                <Button onClick={() => setPayOpen(true)} className="gap-2">
+                  <CreditCard className="h-4 w-4" /> Take Payment
+                </Button>
               </div>
             </div>
           </div>
@@ -233,6 +258,8 @@ const ClientLookup = () => {
           <p className="mt-1 max-w-md text-sm text-muted-foreground">Use the search bar above to find a client by name, case number, or email.</p>
         </div>
       )}
+
+      <TakePaymentDialog open={payOpen} onOpenChange={setPayOpen} target={paymentTarget} />
     </DashboardLayout>
   );
 };

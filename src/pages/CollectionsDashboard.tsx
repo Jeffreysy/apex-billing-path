@@ -20,6 +20,37 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import MonthFilter, { filterByMonth } from "@/components/MonthFilter";
 
+function isCollectibleStatus(contractStatus: string | null, delinquencyStatus: string | null) {
+  const contract = (contractStatus || "").toLowerCase();
+  const delinquency = (delinquencyStatus || "").toLowerCase();
+  if (["completed", "paid", "paid off", "fulfilled"].includes(contract)) return false;
+  if (["current", ""].includes(delinquency)) return false;
+  return true;
+}
+
+function daysBetweenTodayAndDate(dateValue: string | null | undefined) {
+  if (!dateValue) return 0;
+  const [year, month, day] = dateValue.split("-").map(Number);
+  if (!year || !month || !day) return 0;
+  const dueDate = new Date(year, month - 1, day);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.floor((todayStart.getTime() - dueDate.getTime()) / 86_400_000);
+}
+
+function getQueueReason(item: any) {
+  const balance = Number(item.balance_remaining) || 0;
+  const storedDaysPastDue = Number(item.days_past_due) || 0;
+  const dueDateDaysPastDue = balance > 0 ? Math.max(0, daysBetweenTodayAndDate(item.next_due_date)) : 0;
+  const daysPastDue = Math.max(storedDaysPastDue, dueDateDaysPastDue);
+  if (balance <= 0) return null;
+  if (daysPastDue > 0) return `${daysPastDue}d past due`;
+  if (isCollectibleStatus(item.contract_status, item.delinquency_status)) {
+    return item.delinquency_status || item.contract_status || "Review needed";
+  }
+  return null;
+}
+
 const CollectionsDashboard = () => {
   const navigate = useNavigate();
   const { data: queue = [], isLoading: ql } = useCollectionsDashboard();
@@ -58,13 +89,17 @@ const CollectionsDashboard = () => {
   const filteredPayments = useMemo(() => filterByMonth(payments, "date", month), [payments, month]);
   const filteredCalls = useMemo(() => filterByMonth(callLogs, "date", month), [callLogs, month]);
   const filteredActivities = useMemo(() => filterByMonth(activities, "activity_date", month), [activities, month]);
+  const actionableQueue = useMemo(
+    () => queue.map((item: any) => ({ ...item, queue_reason: getQueueReason(item) })).filter((item: any) => item.queue_reason),
+    [queue]
+  );
 
   if (ql || pl || cal || col || escalationsLoading) return <DashboardLayout title="Collections"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const totalCollected = filteredPayments.reduce((s, p) => s + p.amount, 0);
   const totalCalls = filteredCalls.length;
   const promiseToPay = filteredCalls.filter(c => c.outcome === "promise_to_pay").length;
-  const delinquent = queue.filter((c: any) => (c.delinquency_status || "").toLowerCase() === "delinquent").length;
+  const delinquent = actionableQueue.filter((c: any) => (c.delinquency_status || "").toLowerCase() === "delinquent").length;
   const openEscalations = escalations.filter(e => e.status === "open" || e.status === "in_progress").length;
   const pendingCommitments = commitments.filter(c => c.status === "pending").length;
 
@@ -146,18 +181,26 @@ const CollectionsDashboard = () => {
           {/* Queue */}
           <TabsContent value="queue">
             <div className="dashboard-section">
-              <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Client Queue</h2><Badge variant="secondary">{queue.length} accounts</Badge></div>
+              <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-semibold">Client Queue</h2><Badge variant="secondary">{actionableQueue.length} actionable accounts</Badge></div>
               <div className="max-h-[500px] space-y-2 overflow-y-auto">
-                {queue.slice(0, 30).map((c: any) => {
-                  const daysOut = Number(c.days_past_due) || 0;
+                {actionableQueue.slice(0, 30).map((c: any) => {
+                  const daysOut = Math.max(
+                    Number(c.days_past_due) || 0,
+                    Number(c.balance_remaining) > 0 ? Math.max(0, daysBetweenTodayAndDate(c.next_due_date)) : 0
+                  );
                   const isDelinquent = (c.delinquency_status || "").toLowerCase() === "delinquent";
                   return (
                     <div key={c.contract_id || c.client_id} className="queue-item cursor-pointer" onClick={() => navigate(`/collections/workspace/${c.client_id}`)}>
-                      <div><p className="font-medium text-sm">{c.client_name}</p><p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"} · {c.collector || c.assigned_collector || "Unassigned"}</p>{daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}</div>
+                      <div><p className="font-medium text-sm">{c.client_name}</p><p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"} · {c.collector || c.assigned_collector || "Unassigned"}</p><p className="text-xs text-muted-foreground">Queue reason: {c.queue_reason}</p>{daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}</div>
                       <div className="flex items-center gap-2"><Badge variant={isDelinquent ? "destructive" : "default"} className="text-xs">{c.contract_status || c.delinquency_status || "Active"}</Badge></div>
                     </div>
                   );
                 })}
+                {actionableQueue.length === 0 && (
+                  <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+                    No accounts currently meet queue criteria.
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>

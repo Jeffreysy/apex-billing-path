@@ -1,7 +1,17 @@
+const cleanSecret = (value: string | undefined | null) =>
+  String(value || "")
+    .trim()
+    .replace(/^"(.*)"$/, "$1")
+    .replace(/^'(.*)'$/, "$1");
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const filevineHistoryUrl = Deno.env.get("FILEVINE_PAYMENTS_URL") || "";
-const filevineApiToken = Deno.env.get("FILEVINE_API_TOKEN") || "";
+const filevineHistoryUrl = cleanSecret(Deno.env.get("FILEVINE_PAYMENTS_URL"));
+const filevineApiToken = cleanSecret(Deno.env.get("FILEVINE_API_TOKEN"));
+const filevineClientId = cleanSecret(Deno.env.get("FILEVINE_CLIENT_ID"));
+const filevineClientSecret = cleanSecret(Deno.env.get("FILEVINE_CLIENT_SECRET"));
+const filevineOrgId = cleanSecret(Deno.env.get("FILEVINE_ORG_ID"));
+const filevineUserId = cleanSecret(Deno.env.get("FILEVINE_USER_ID"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,14 +50,52 @@ Deno.serve(async (req) => {
     let cursor = body.next_cursor ?? null;
 
     if (!records.length) {
-      if (!filevineHistoryUrl || !filevineApiToken) {
+      if (!filevineHistoryUrl || !filevineApiToken || !filevineClientId || !filevineClientSecret || !filevineOrgId || !filevineUserId) {
         return new Response(JSON.stringify({
-          error: "FILEVINE_PAYMENTS_URL and FILEVINE_API_TOKEN must be configured, or provide records in the request body.",
+          error: "FILEVINE_PAYMENTS_URL, FILEVINE_API_TOKEN, FILEVINE_CLIENT_ID, FILEVINE_CLIENT_SECRET, FILEVINE_ORG_ID, and FILEVINE_USER_ID must be configured, or provide records in the request body.",
         }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const tokenBody =
+        `client_id=${encodeURIComponent(filevineClientId)}`
+        + `&client_secret=${encodeURIComponent(filevineClientSecret)}`
+        + `&grant_type=personal_access_token`
+        + `&scope=${encodeURIComponent("fv.api.gateway.access tenant filevine.v2.api.* openid email fv.auth.tenant.read")}`
+        + `&token=${encodeURIComponent(filevineApiToken)}`;
+
+      const tokenResponse = await fetch("https://identity.filevine.com/connect/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: tokenBody,
+      });
+
+      if (!tokenResponse.ok) {
+        const failureText = (await tokenResponse.text()).slice(0, 500);
+        return new Response(JSON.stringify({
+          error: `Filevine auth failed: ${tokenResponse.status} ${tokenResponse.statusText}`,
+          diagnostics: {
+            client_id_length: filevineClientId.length,
+            client_secret_length: filevineClientSecret.length,
+            api_token_length: filevineApiToken.length,
+            org_id: filevineOrgId,
+            user_id: filevineUserId,
+            token_url: "https://identity.filevine.com/connect/token",
+            response_body: failureText,
+          },
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const tokenPayload = await tokenResponse.json();
+      const bearer = tokenPayload.access_token;
 
       const url = new URL(filevineHistoryUrl);
       if (body.from_date) url.searchParams.set("from_date", body.from_date);
@@ -58,8 +106,10 @@ Deno.serve(async (req) => {
 
       const response = await fetch(url.toString(), {
         headers: {
-          Authorization: `Bearer ${filevineApiToken}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${bearer}`,
+          "x-fv-orgid": filevineOrgId,
+          "x-fv-userid": filevineUserId,
+          Accept: "application/json",
         },
       });
 

@@ -9,34 +9,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type InvitePayload = {
-  action: "invite";
-  email: string;
-  fullName?: string;
-  role: "admin" | "partner" | "attorney" | "paralegal" | "billing_clerk" | "read_only";
-  redirectTo?: string;
-};
-
-type CreatePayload = {
-  action: "create";
-  email: string;
-  fullName?: string;
-  role: "admin" | "partner" | "attorney" | "paralegal" | "billing_clerk" | "read_only";
-  temporaryPassword?: string;
-};
-
-type ResetPasswordPayload = {
-  action: "reset_password";
-  userId: string;
-};
-
-type DeleteUserPayload = {
-  action: "delete";
-  userId: string;
-};
-
-type UserManagementPayload = InvitePayload | CreatePayload | ResetPasswordPayload | DeleteUserPayload;
-
 function generateTemporaryPassword(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
   const values = crypto.getRandomValues(new Uint32Array(18));
@@ -51,7 +23,7 @@ async function writeAuditLog(
   oldData: Record<string, unknown> | null,
   newData: Record<string, unknown> | null,
 ) {
-  const { error } = await adminClient.from("audit_log").insert({
+  await adminClient.from("audit_log").insert({
     table_name: "profiles",
     record_id: recordId,
     action,
@@ -59,10 +31,6 @@ async function writeAuditLog(
     new_data: newData,
     performed_by: actorId,
   });
-
-  if (error) {
-    throw error;
-  }
 }
 
 Deno.serve(async (req) => {
@@ -80,11 +48,7 @@ Deno.serve(async (req) => {
     }
 
     const userClient = createClient(supabaseUrl, anonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
+      global: { headers: { Authorization: authHeader } },
     });
 
     const {
@@ -99,17 +63,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: currentRole, error: roleError } = await userClient.rpc("current_user_role");
-    if (roleError || !["admin", "partner"].includes(currentRole || "")) {
+    const { data: currentRole } = await userClient.rpc("current_user_role");
+    if (!["admin", "partner"].includes(currentRole || "")) {
       return new Response(JSON.stringify({ error: "Not authorized" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const payload = (await req.json()) as UserManagementPayload;
-    if (!["invite", "create", "reset_password", "delete"].includes(payload.action)) {
-      return new Response(JSON.stringify({ error: "Unsupported action" }), {
+    const payload = await req.json();
+    const action = payload.action;
+
+    if (!["invite", "create", "reset_password", "resend_invite", "delete"].includes(action)) {
+      return new Response(JSON.stringify({ error: `Unsupported action: ${action}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -117,26 +83,47 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    let managedUserId: string | null = null;
-    let temporaryPassword: string | null = null;
-
-    if (payload.action === "invite") {
-      const inviteOptions = {
-        data: {
-          full_name: payload.fullName || payload.email,
+    // ── INVITE (send Supabase invite email) ──
+    if (action === "invite") {
+      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+        payload.email,
+        {
+          data: { full_name: payload.fullName || payload.email },
+          ...(payload.redirectTo ? { redirectTo: payload.redirectTo } : {}),
         },
-        ...(payload.redirectTo ? { redirectTo: payload.redirectTo } : {}),
-      };
-
-      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(payload.email, inviteOptions);
+      );
 
       if (inviteError || !inviteData.user) {
         throw inviteError || new Error("Unable to invite user");
       }
 
-      managedUserId = inviteData.user.id;
-    } else if (payload.action === "create") {
-      temporaryPassword = payload.temporaryPassword?.trim() || generateTemporaryPassword();
+      const managedUserId = inviteData.user.id;
+
+      await adminClient.from("profiles").upsert({
+        id: managedUserId,
+        email: payload.email,
+        full_name: payload.fullName || payload.email,
+        role: payload.role,
+        is_active: true,
+      });
+
+      await writeAuditLog(adminClient, user.id, "admin_invite_user", managedUserId, null, {
+        email: payload.email,
+        full_name: payload.fullName || payload.email,
+        role: payload.role,
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        user: { id: managedUserId, email: payload.email, role: payload.role },
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── CREATE (immediate account with temp password) ──
+    if (action === "create") {
+      const temporaryPassword = payload.temporaryPassword?.trim() || generateTemporaryPassword();
 
       const { data: createdUser, error: createError } = await adminClient.auth.admin.createUser({
         email: payload.email,
@@ -146,32 +133,107 @@ Deno.serve(async (req) => {
           full_name: payload.fullName || payload.email,
           must_change_password: true,
         },
-        app_metadata: {
-          role: payload.role,
-        },
+        app_metadata: { role: payload.role },
       });
 
       if (createError || !createdUser.user) {
         throw createError || new Error("Unable to create user");
       }
 
-      managedUserId = createdUser.user.id;
+      const managedUserId = createdUser.user.id;
 
-      await writeAuditLog(
-        adminClient,
-        user.id,
-        "admin_create_user",
-        managedUserId,
-        null,
-        {
-          email: payload.email,
-          full_name: payload.fullName || payload.email,
-          role: payload.role,
-          is_active: true,
+      await adminClient.from("profiles").upsert({
+        id: managedUserId,
+        email: payload.email,
+        full_name: payload.fullName || payload.email,
+        role: payload.role,
+        is_active: true,
+      });
+
+      await writeAuditLog(adminClient, user.id, "admin_create_user", managedUserId, null, {
+        email: payload.email,
+        full_name: payload.fullName || payload.email,
+        role: payload.role,
+        is_active: true,
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        user: { id: managedUserId, email: payload.email, role: payload.role },
+        temporaryPassword,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── RESEND INVITE (generate a magic link for an existing user) ──
+    if (action === "resend_invite") {
+      const { data: existingUser, error: existingUserError } = await adminClient.auth.admin.getUserById(payload.userId);
+      if (existingUserError || !existingUser.user) {
+        throw existingUserError || new Error("Unable to find user");
+      }
+
+      const targetEmail = existingUser.user.email;
+      if (!targetEmail) {
+        throw new Error("User has no email address on file");
+      }
+
+      const redirectTo = payload.redirectTo || undefined;
+      let deliveryMode: "invite" | "magic_link" = "invite";
+
+      const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(targetEmail, {
+        data: {
+          full_name: existingUser.user.user_metadata?.full_name || targetEmail,
         },
-      );
-    } else if (payload.action === "reset_password") {
-      temporaryPassword = generateTemporaryPassword();
+        ...(redirectTo ? { redirectTo } : {}),
+      });
+
+      if (inviteError) {
+        deliveryMode = "magic_link";
+        const { error: magicLinkError } = await adminClient.auth.resetPasswordForEmail(targetEmail, {
+          ...(redirectTo ? { redirectTo } : {}),
+        });
+
+        if (magicLinkError) {
+          const inviteDetails = [
+            typeof inviteError.status === "number" ? `status=${inviteError.status}` : null,
+            inviteError.code ? `code=${inviteError.code}` : null,
+            inviteError.message || null,
+          ].filter(Boolean).join(" | ");
+
+          const recoveryDetails = [
+            typeof magicLinkError.status === "number" ? `status=${magicLinkError.status}` : null,
+            magicLinkError.code ? `code=${magicLinkError.code}` : null,
+            magicLinkError.message || null,
+          ].filter(Boolean).join(" | ");
+
+          throw new Error(
+            `Invite email failed (${inviteDetails || "unknown error"}). Fallback login email failed (${recoveryDetails || "unknown error"}).`,
+          );
+        }
+      }
+
+      await writeAuditLog(adminClient, user.id, "admin_resend_invite", payload.userId, null, {
+        email: targetEmail,
+        delivery_mode: deliveryMode,
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        emailed: true,
+        deliveryMode,
+        message: deliveryMode === "invite"
+          ? `Invite email sent to ${targetEmail}`
+          : `Login email sent to ${targetEmail}`,
+        user: { id: payload.userId, email: targetEmail },
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── RESET PASSWORD ──
+    if (action === "reset_password") {
+      const temporaryPassword = generateTemporaryPassword();
 
       const { data: existingUser, error: existingUserError } = await adminClient.auth.admin.getUserById(payload.userId);
       if (existingUserError || !existingUser.user) {
@@ -190,31 +252,24 @@ Deno.serve(async (req) => {
         throw resetError || new Error("Unable to reset password");
       }
 
-      await writeAuditLog(
-        adminClient,
-        user.id,
-        "admin_reset_password",
-        payload.userId,
-        {
-          email: updatedUser.user.email,
-        },
-        {
-          email: updatedUser.user.email,
-          must_change_password: true,
-        },
-      );
+      await writeAuditLog(adminClient, user.id, "admin_reset_password", payload.userId, {
+        email: updatedUser.user.email,
+      }, {
+        email: updatedUser.user.email,
+        must_change_password: true,
+      });
 
       return new Response(JSON.stringify({
         success: true,
-        user: {
-          id: updatedUser.user.id,
-          email: updatedUser.user.email,
-        },
+        user: { id: updatedUser.user.id, email: updatedUser.user.email },
         temporaryPassword,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } else if (payload.action === "delete") {
+    }
+
+    // ── DELETE USER ──
+    if (action === "delete") {
       if (payload.userId === user.id) {
         throw new Error("You cannot delete your own account");
       }
@@ -230,19 +285,12 @@ Deno.serve(async (req) => {
         .eq("id", payload.userId)
         .maybeSingle();
 
-      await writeAuditLog(
-        adminClient,
-        user.id,
-        "admin_delete_user",
-        payload.userId,
-        {
-          email: existingProfile?.email || existingUser.user.email,
-          full_name: existingProfile?.full_name || existingUser.user.user_metadata?.full_name || null,
-          role: existingProfile?.role || existingUser.user.app_metadata?.role || null,
-          is_active: existingProfile?.is_active ?? null,
-        },
-        null,
-      );
+      await writeAuditLog(adminClient, user.id, "admin_delete_user", payload.userId, {
+        email: existingProfile?.email || existingUser.user.email,
+        full_name: existingProfile?.full_name || existingUser.user.user_metadata?.full_name || null,
+        role: existingProfile?.role || existingUser.user.app_metadata?.role || null,
+        is_active: existingProfile?.is_active ?? null,
+      }, null);
 
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(payload.userId);
       if (deleteError) {
@@ -251,36 +299,14 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        user: {
-          id: payload.userId,
-          email: existingProfile?.email || existingUser.user.email,
-        },
+        user: { id: payload.userId, email: existingProfile?.email || existingUser.user.email },
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { error: profileError } = await adminClient.from("profiles").upsert({
-      id: managedUserId,
-      email: payload.email,
-      full_name: payload.fullName || payload.email,
-      role: payload.role,
-      is_active: true,
-    });
-
-    if (profileError) {
-      throw profileError;
-    }
-
-    return new Response(JSON.stringify({
-      success: true,
-      user: {
-        id: managedUserId,
-        email: payload.email,
-        role: payload.role,
-      },
-      temporaryPassword,
-    }), {
+    return new Response(JSON.stringify({ error: "Unhandled action" }), {
+      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

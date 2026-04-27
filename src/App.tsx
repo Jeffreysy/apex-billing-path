@@ -5,8 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import type { UserRole } from "./lib/auth";
-import { getDefaultRouteForRole } from "./lib/auth";
+import { ALL_USER_ROLES, getDefaultRouteForRole, type UserRole } from "./lib/auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
@@ -28,8 +27,8 @@ const ADMIN_ROLES: UserRole[] = ["admin", "partner"];
 const COLLECTIONS_ROLES: UserRole[] = ["admin", "partner", "billing_clerk"];
 const LEGAL_ROLES: UserRole[] = ["admin", "partner", "attorney", "paralegal"];
 const FINANCIAL_ROLES: UserRole[] = ["admin", "partner", "billing_clerk", "read_only"];
-const CLIENT_ROLES: UserRole[] = ["admin", "partner", "attorney", "paralegal", "billing_clerk", "read_only"];
-const SETTINGS_ROLES: UserRole[] = ["admin", "partner", "attorney", "paralegal", "billing_clerk", "read_only"];
+const CLIENT_ROLES: UserRole[] = ALL_USER_ROLES;
+const SETTINGS_ROLES: UserRole[] = ALL_USER_ROLES;
 
 const RoleLanding = () => {
   const { role } = useAuth();

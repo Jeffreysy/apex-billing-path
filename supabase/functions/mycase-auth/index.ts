@@ -10,8 +10,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  */
 
 const MYCASE_DOMAIN = "grand-rapids-law-group.mycase.com";
-const AUTH_BASE = "https://auth.mycase.com";
-const API_BASE = `https://${MYCASE_DOMAIN}`;
+const AUTH_BASE = "https://auth.mycase.com";   // OAuth endpoints
+const API_BASE  = `https://${MYCASE_DOMAIN}`;  // REST API endpoints (unused in auth flow)
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -119,7 +119,8 @@ function buildAuthorizeUrl(): string {
     client_id: clientId,
     redirect_uri: REDIRECT_URI,
   });
-  return `${AUTH_BASE}/login_sessions/new?${params.toString()}`;
+  // OAuth authorize endpoint lives on the firm domain, not auth.mycase.com
+  return `${API_BASE}/oauth/authorize?${params.toString()}`;
 }
 
 interface TokenResponse {

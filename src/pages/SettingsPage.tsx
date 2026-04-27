@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { KeyRound, Mail, Shield, UserCog, Users, TriangleAlert, Building2 } from "lucide-react";
+import { KeyRound, Mail, Shield, UserCog, Users, TriangleAlert, Building2, CreditCard } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { ALL_USER_ROLES, type UserRole } from "@/lib/auth";
 
 type ManagedUser = {
@@ -59,6 +60,21 @@ const ROLE_PRESETS: Array<{ label: string; role: UserRole; description: string }
   { label: "Read Only", role: "read_only", description: "Client lookup and reporting without write actions." },
 ];
 
+const formatAuthError = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== "object") {
+    return fallback;
+  }
+
+  const errorRecord = error as Record<string, unknown>;
+  const parts = [
+    typeof errorRecord.code === "string" ? `code=${errorRecord.code}` : null,
+    typeof errorRecord.status === "number" ? `status=${errorRecord.status}` : null,
+    typeof errorRecord.message === "string" ? errorRecord.message : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" | ") : fallback;
+};
+
 const SettingsPage = () => {
   const location = useLocation();
   const { user, profile, role, mustChangePassword } = useAuth();
@@ -87,6 +103,68 @@ const SettingsPage = () => {
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(EMPTY_SETTINGS);
   const [loadingSystemSettings, setLoadingSystemSettings] = useState(false);
   const [savingSystemSettings, setSavingSystemSettings] = useState(false);
+
+  // LawPay firm_settings state
+  const [lawpaySettings, setLawpaySettings] = useState({
+    id: null as string | null,
+    lawpay_enabled: false,
+    lawpay_operating_url: "",
+    lawpay_trust_url: "",
+    lawpay_default_account: "operating" as "operating" | "trust",
+  });
+  const [loadingLawpay, setLoadingLawpay] = useState(false);
+  const [savingLawpay, setSavingLawpay] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const loadFirmSettings = async () => {
+      setLoadingLawpay(true);
+      const { data, error } = await supabase
+        .from("firm_settings")
+        .select("id, lawpay_enabled, lawpay_operating_url, lawpay_trust_url, lawpay_default_account")
+        .limit(1)
+        .maybeSingle();
+      setLoadingLawpay(false);
+      if (error) {
+        toast.error(error.message || "Unable to load LawPay settings");
+        return;
+      }
+      if (data) {
+        setLawpaySettings({
+          id: data.id,
+          lawpay_enabled: !!data.lawpay_enabled,
+          lawpay_operating_url: data.lawpay_operating_url || "",
+          lawpay_trust_url: data.lawpay_trust_url || "",
+          lawpay_default_account: (data.lawpay_default_account as "operating" | "trust") || "operating",
+        });
+      }
+    };
+    void loadFirmSettings();
+  }, [isAdmin]);
+
+  const handleSaveLawpaySettings = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!lawpaySettings.id) {
+      toast.error("Firm settings row missing — contact support");
+      return;
+    }
+    setSavingLawpay(true);
+    const { error } = await supabase
+      .from("firm_settings")
+      .update({
+        lawpay_enabled: lawpaySettings.lawpay_enabled,
+        lawpay_operating_url: lawpaySettings.lawpay_operating_url.trim() || null,
+        lawpay_trust_url: lawpaySettings.lawpay_trust_url.trim() || null,
+        lawpay_default_account: lawpaySettings.lawpay_default_account,
+      })
+      .eq("id", lawpaySettings.id);
+    setSavingLawpay(false);
+    if (error) {
+      toast.error(error.message || "Unable to save LawPay settings");
+      return;
+    }
+    toast.success("LawPay settings saved");
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -172,7 +250,12 @@ const SettingsPage = () => {
     setSendingReset(false);
 
     if (error) {
-      toast.error(error.message || "Unable to send reset email");
+      console.error("Recovery email error", {
+        email: user.email,
+        redirectTo: `${window.location.origin}/login`,
+        error,
+      });
+      toast.error(formatAuthError(error, "Unable to send reset email"));
       return;
     }
 
@@ -297,19 +380,11 @@ const SettingsPage = () => {
       return;
     }
 
-    const inviteLink = data && typeof data === "object" && "inviteLink" in data ? String(data.inviteLink) : null;
+    const message = data && typeof data === "object" && "message" in data
+      ? String(data.message)
+      : "Invite email sent to " + (managedUser.email || "user");
 
-    if (inviteLink) {
-      try {
-        await navigator.clipboard.writeText(inviteLink);
-        toast.success("Invite link copied to clipboard! Share it with the user.");
-      } catch {
-        toast.success("Invite link generated — check console for the link.");
-        console.log("Invite link for", managedUser.email, ":", inviteLink);
-      }
-    } else {
-      toast.success("Invite resent to " + (managedUser.email || "user"));
-    }
+    toast.success(message);
   };
 
   const handleSaveUser = async (managedUser: ManagedUser) => {
@@ -406,9 +481,10 @@ const SettingsPage = () => {
         )}
 
         <Tabs defaultValue="account" className="space-y-6">
-          <TabsList className={`grid w-full ${isAdmin ? "grid-cols-4" : "grid-cols-1"} max-w-3xl`}>
+          <TabsList className={`grid w-full ${isAdmin ? "grid-cols-5" : "grid-cols-1"} max-w-3xl`}>
             <TabsTrigger value="account">Account</TabsTrigger>
             {isAdmin && <TabsTrigger value="users">User Access</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="lawpay">LawPay</TabsTrigger>}
             {isAdmin && <TabsTrigger value="privacy">Privacy & Notices</TabsTrigger>}
             {isAdmin && <TabsTrigger value="system">System</TabsTrigger>}
           </TabsList>
@@ -760,7 +836,7 @@ const SettingsPage = () => {
                               onClick={() => handleResendInvite(managedUser)}
                               disabled={resendingUserId === managedUser.id}
                             >
-                              {resendingUserId === managedUser.id ? "Sending..." : "Resend Invite Link"}
+                              {resendingUserId === managedUser.id ? "Sending..." : "Resend Invite Email"}
                             </Button>
                             <Button
                               type="button"
@@ -778,6 +854,114 @@ const SettingsPage = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="lawpay" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CreditCard className="h-5 w-5" />
+                    LawPay Payment Integration
+                  </CardTitle>
+                  <CardDescription>
+                    Paste your LawPay Secure Payment Page URL(s). Collectors click "Take Payment" anywhere in
+                    LexCollect and a pre-filled LawPay page opens in a new tab. When the charge posts, your
+                    existing LawPay webhook auto-matches it back to the contract and updates balances —
+                    card data never touches this server.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSaveLawpaySettings} className="space-y-5">
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                      <div>
+                        <p className="text-sm font-medium">Enable LawPay Payments</p>
+                        <p className="text-xs text-muted-foreground">
+                          When off, the "Take Payment" button is disabled across LexCollect.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={lawpaySettings.lawpay_enabled}
+                        onCheckedChange={(checked) =>
+                          setLawpaySettings((prev) => ({ ...prev, lawpay_enabled: checked }))
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lawpay-operating-url">Operating Account URL</Label>
+                      <Input
+                        id="lawpay-operating-url"
+                        type="url"
+                        value={lawpaySettings.lawpay_operating_url}
+                        onChange={(event) =>
+                          setLawpaySettings((prev) => ({ ...prev, lawpay_operating_url: event.target.value }))
+                        }
+                        placeholder="https://secure.lawpay.com/pages/your-firm/operating"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        LawPay → Settings → Payment Pages → copy the "Hosted Page URL" for your operating account.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lawpay-trust-url">Trust / IOLTA Account URL (optional)</Label>
+                      <Input
+                        id="lawpay-trust-url"
+                        type="url"
+                        value={lawpaySettings.lawpay_trust_url}
+                        onChange={(event) =>
+                          setLawpaySettings((prev) => ({ ...prev, lawpay_trust_url: event.target.value }))
+                        }
+                        placeholder="https://secure.lawpay.com/pages/your-firm/trust"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Used for retainer and advance-fee deposits that must land in IOLTA.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lawpay-default-account">Default Account</Label>
+                      <Select
+                        value={lawpaySettings.lawpay_default_account}
+                        onValueChange={(value) =>
+                          setLawpaySettings((prev) => ({
+                            ...prev,
+                            lawpay_default_account: value as "operating" | "trust",
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="lawpay-default-account" className="max-w-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="operating">Operating</SelectItem>
+                          <SelectItem value="trust">Trust / IOLTA</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Alert>
+                      <Shield className="h-4 w-4" />
+                      <AlertTitle>Webhook already wired</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        Your <code className="font-mono">payment-received</code> edge function is deployed and
+                        matches incoming LawPay charges by invoice number / case number / client name. You do
+                        not need to change anything in the LawPay dashboard beyond copying the hosted page URL
+                        above.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="flex items-center gap-2">
+                      <Button type="submit" disabled={savingLawpay || loadingLawpay}>
+                        {savingLawpay ? "Saving..." : "Save LawPay Settings"}
+                      </Button>
+                      {loadingLawpay && <span className="text-xs text-muted-foreground">Loading...</span>}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
 

@@ -1,0 +1,2 @@
+-- Placeholder migration to align local files with the remote migration history.
+-- The corresponding remote migration was applied outside the current workspace.

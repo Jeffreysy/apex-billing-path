@@ -1,0 +1,23 @@
+name,client_number,contract_count,contract_value,collected,any_contract_case_number,any_contract_status,any_contract_delinquency
+Regina ROLON SABAI,AR-01349,1,75.0,0.0,,Risk,Delinquent
+Jesus Tavares,AR-02056,1,75.0,0.0,,Risk,Delinquent
+Roberto Ordaz Barcenas,AR-02425,1,12500.0,10820.0,,Active,Current
+Juan Lopez Gomez,AR-03663,1,100.0,0.0,#2110000000000124947,Risk,Delinquent
+Franklin Figueroa Reyes,AR-03667,1,100.0,0.0,#2110000000000124957,Risk,Delinquent
+Jose Antonio Carbajal Flores,AR-03690,1,50.0,0.0,#2110000000001287159,Risk,Delinquent
+Lucia Paz Marquez,AR-03798,1,100.0,0.0,#2110000000000245368,Risk,Delinquent
+Salvador Uscanga avendaÃ±o,AR-04006,1,13000.0,0.0,,Risk,Delinquent
+Isidro Mendoza Pablo,AR-04010,1,100.0,0.0,#2110000000000286084,Risk,Delinquent
+Reinaldo JesÃºs ASUAJE,AR-04023,2,15100.0,0.0,,Risk,Paid
+Pepita PÃREZ,AR-04028,2,26000.0,0.0,,Risk,Paid
+Fernando MartInez Cobon,AR-04091,1,100.0,0.0,#2110000000000286321,Risk,Delinquent
+Juan Francisco Francisco Alvarado Jaime,AR-04100,2,11000.0,198.0,,Risk,Paid
+Cesar Rios Trejo,AR-04112,1,100.0,0.0,#2110000000000286371,Risk,Delinquent
+MORA CABRERA Angel Fernando,AR-04175,1,100.0,0.0,#2110000000001286528,Risk,Delinquent
+Abelina Hernandez Rosiles,AR-04209,1,200.0,0.0,,Risk,Delinquent
+Marco Antonio Dominguez Lopez,AR-04658,1,2500.0,0.0,,Risk,Delinquent
+LAURA B Rodriguez Espiritu,AR-04744,1,50.0,0.0,E-20-89,Risk,Delinquent
+Merced Martinez Serrano,AR-04972,1,100.0,0.0,#2110000000001289339,Risk,Delinquent
+Daniela Juan CaÃ±a,AR-05190,1,13100.0,0.0,,Risk,Delinquent
+Servando ALVAREZ RAMIREZ,AR-05383,1,8000.0,5600.0,,Active,Current
+Rodrigo Paz CastaÃ±eda,AR-05515,1,13000.0,3944.44,,Active,Current

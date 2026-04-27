@@ -1,0 +1,2640 @@
+{
+  "summary": {
+    "case_list_records": 548,
+    "filevine_projects": 1395,
+    "exact_matches": 448,
+    "number_only_matches": 196,
+    "name_only_matches": 18,
+    "mismatches_for_review": 0,
+    "unmatched_filevine_projects": 733,
+    "unmatched_case_list_records": 54
+  },
+  "filters": {
+    "case_list_years": [
+      2025,
+      2026
+    ],
+    "case_list_start_date": "2025-11-01",
+    "filevine_created_since": "2025-11-01"
+  },
+  "distributions": {
+    "case_list_by_year": {
+      "2025": 195,
+      "2026": 353
+    },
+    "filevine_by_year": {
+      "2023": 46,
+      "2024": 1,
+      "2025": 623,
+      "2026": 651,
+      "2075": 1,
+      "unknown": 73
+    },
+    "unmatched_filevine_by_year": {
+      "2023": 46,
+      "2025": 283,
+      "2026": 333,
+      "2075": 1,
+      "unknown": 70
+    },
+    "unmatched_case_list_by_year": {
+      "2025": 2,
+      "2026": 52
+    },
+    "unmatched_filevine_by_project_type_top20": {
+      "IM": 730,
+      "Basic": 3
+    },
+    "unmatched_filevine_by_phase_top20": {
+      "New Case": 292,
+      "Archived": 132,
+      "Intro Call Complete": 48,
+      "FBI Received": 37,
+      "Active": 33,
+      "Need Review": 24,
+      "Sent to USCIS": 23,
+      "FBI Sent": 17,
+      "FP Card Pending from Client": 15,
+      "Evidence Missing": 12,
+      "Evidence Pending": 10,
+      "Receipts received": 10,
+      "FOIA NEEDED": 10,
+      "Sent to CLT signatures": 9,
+      "Intro Call": 7,
+      "Forms Pending": 7,
+      "Dec writing complete": 6,
+      "U cert sent/pending": 6,
+      "Reviewed by Attorney": 5,
+      "FBI Pending": 4
+    }
+  },
+  "exact_matches_sample": [
+    {
+      "filevine_project_id": "13730232",
+      "filevine_project_name": "BRAMBILA GONZALEZ, Jorge 26-0627",
+      "filevine_client_name": "Jorge Brambila Gonzalez",
+      "filevine_case_number": "26-0627",
+      "case_list_case_number": "26-0627",
+      "case_list_client_name": "BRAMBILA GONZALEZ, Jorge",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730225",
+      "filevine_project_name": "MOLINA MEJIA, Ambrosia 26-0625",
+      "filevine_client_name": "Ambrosia Molina Mejia",
+      "filevine_case_number": "26-0625",
+      "case_list_case_number": "26-0625",
+      "case_list_client_name": "MOLINA MEJIA, Ambrosia",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730223",
+      "filevine_project_name": "REYES ANTONIO, Blanca Rosa 26-0624",
+      "filevine_client_name": "Blanca Rosa Reyes Antonio",
+      "filevine_case_number": "26-0624",
+      "case_list_case_number": "26-0624",
+      "case_list_client_name": "REYES ANTONIO, Blanca Rosa",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730205",
+      "filevine_project_name": "SILVA CORREA, Belkys Cenobia 26-0622",
+      "filevine_client_name": "Belkys Cenobia Silva Correa",
+      "filevine_case_number": "26-0622",
+      "case_list_case_number": "26-0622",
+      "case_list_client_name": "SILVA CORREA, Belkys Cenobia",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730142",
+      "filevine_project_name": "RODRIGUEZ GUERRA, Maynor Alberto  26-0616",
+      "filevine_client_name": "Maynor Alberto  Rodriguez Guerra",
+      "filevine_case_number": "26-0616",
+      "case_list_case_number": "26-0616",
+      "case_list_client_name": "RODRIGUEZ GUERRA, Maynor Alberto",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730114",
+      "filevine_project_name": "TOMAS CHAVEZ, Geily Tatiana 26-0613",
+      "filevine_client_name": "Geily Tatiana Tomas Chavez",
+      "filevine_case_number": "26-0613",
+      "case_list_case_number": "26-0613",
+      "case_list_client_name": "TOMAS CHAVEZ, Geily Tatiana",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730089",
+      "filevine_project_name": "MENDEZ HERRERA, Lucia 26-0612",
+      "filevine_client_name": "Lucia Mendez Herrera",
+      "filevine_case_number": "26-0612",
+      "case_list_case_number": "26-0612",
+      "case_list_client_name": "MENDEZ HERRERA, Lucia",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730039",
+      "filevine_project_name": "CHAVARRIA MARTINEZ, Cyndi Stephanie 26-0610",
+      "filevine_client_name": "Cyndi Stephanie Chavarria Martinez",
+      "filevine_case_number": "26-0610",
+      "case_list_case_number": "26-0610",
+      "case_list_client_name": "CHAVARRIA MARTINEZ, Cyndi Stephanie",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729500",
+      "filevine_project_name": "TINAJERO RANGEL, Felipe 26-0600",
+      "filevine_client_name": "Felipe Tinajero Rangel",
+      "filevine_case_number": "26-0600",
+      "case_list_case_number": "26-0600",
+      "case_list_client_name": "TINAJERO RANGEL, Felipe",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729190",
+      "filevine_project_name": "MARROQUIN REYES, Jorge Abel  26-0595",
+      "filevine_client_name": "Jorge Abel Marroquin Reyes",
+      "filevine_case_number": "26-0595",
+      "case_list_case_number": "26-0595",
+      "case_list_client_name": "MARROQUIN REYES, Jorge Abel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13728623",
+      "filevine_project_name": "TENESACA CHACON, Nestor David 26-0587",
+      "filevine_client_name": "Nestor David Tenesaca Chacon",
+      "filevine_case_number": "26-0587",
+      "case_list_case_number": "26-0587",
+      "case_list_client_name": "TENESACA CHACON, Nestor David",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13728455",
+      "filevine_project_name": "MORALES CELY, Edgar Francisco 26-0586",
+      "filevine_client_name": "Edgar Francisco Morales Cely",
+      "filevine_case_number": "26-0586",
+      "case_list_case_number": "26-0586",
+      "case_list_client_name": "MORALES CELY, Edgar Francisco",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13728180",
+      "filevine_project_name": "PILLACELA  SICHIQUE , Mayra Lucia 26-0582",
+      "filevine_client_name": "Mayra Lucia Pillacela  Sichique",
+      "filevine_case_number": "26-0582",
+      "case_list_case_number": "26-0582",
+      "case_list_client_name": "PILLACELA  SICHIQUE , Mayra Lucia",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13728137",
+      "filevine_project_name": "VICARIO RAMIREZ , Jesus 26-0581",
+      "filevine_client_name": "Jesus  Vicario Ramirez",
+      "filevine_case_number": "26-0581",
+      "case_list_case_number": "26-0581",
+      "case_list_client_name": "VICARIO RAMIREZ , Jesus",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727317",
+      "filevine_project_name": "MORANCHEL CRUZ, Silvia 26-0568",
+      "filevine_client_name": "Silvia Moranchel Cruz",
+      "filevine_case_number": "26-0568",
+      "case_list_case_number": "26-0568",
+      "case_list_client_name": "MORANCHEL CRUZ, Silvia",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727179",
+      "filevine_project_name": "MARTINEZ AVILA, Pablo 26-0567",
+      "filevine_client_name": "Pablo Martinez Avila",
+      "filevine_case_number": "26-0567",
+      "case_list_case_number": "26-0567",
+      "case_list_client_name": "MARTINEZ AVILA, Pablo",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727046",
+      "filevine_project_name": "CUBAS HERNANDEZ, Cristian Alfredo 26-0565",
+      "filevine_client_name": "Cristian Alfredo Cubas Hernandez",
+      "filevine_case_number": "26-0565",
+      "case_list_case_number": "26-0565",
+      "case_list_client_name": "CUBAS HERNANDEZ, Cristian Alfredo",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13726963",
+      "filevine_project_name": "ONOFRE SORIANO, Mayra 26-0564",
+      "filevine_client_name": "Mayra Onofre Soriano",
+      "filevine_case_number": "26-0564",
+      "case_list_case_number": "26-0564",
+      "case_list_client_name": "ONOFRE SORIANO, Mayra",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13726518",
+      "filevine_project_name": "PEREZ CAPULIN, Paula 26-0558",
+      "filevine_client_name": "Paula Perez Capulin",
+      "filevine_case_number": "26-0558",
+      "case_list_case_number": "26-0558",
+      "case_list_client_name": "PEREZ CAPULIN, Paula",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13726368",
+      "filevine_project_name": "GARCIA, Yesenia Marisol 26-0557",
+      "filevine_client_name": "Yesenia Marisol Garcia",
+      "filevine_case_number": "26-0557",
+      "case_list_case_number": "26-0557",
+      "case_list_client_name": "GARCIA, Yesenia Marisol",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13725435",
+      "filevine_project_name": "ALMANZA RIVERA,  Eduardo 26-0546",
+      "filevine_client_name": "Eduardo  Almanza Rivera",
+      "filevine_case_number": "26-0546",
+      "case_list_case_number": "26-0546",
+      "case_list_client_name": "ALMANZA RIVERA,  Eduardo",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13725255",
+      "filevine_project_name": "MORALES GOMEZ, Trinidad 26-0545",
+      "filevine_client_name": "Trinidad Morales Gomez",
+      "filevine_case_number": "26-0545",
+      "case_list_case_number": "26-0545",
+      "case_list_client_name": "MORALES GOMEZ, Trinidad",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13725192",
+      "filevine_project_name": "ALVAREZ CORDON, Douglas Franklin 26-0544",
+      "filevine_client_name": "Douglas  Franklin Alvarez Cordon",
+      "filevine_case_number": "26-0544",
+      "case_list_case_number": "26-0544",
+      "case_list_client_name": "ALVAREZ CORDON, Douglas Franklin",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13724719",
+      "filevine_project_name": "VILLEDA PERAZA, Henry Humberto 26-0541",
+      "filevine_client_name": "Henry Humberto Villeda Peraza",
+      "filevine_case_number": "26-0541",
+      "case_list_case_number": "26-0541",
+      "case_list_client_name": "VILLEDA PERAZA, Henry Humberto",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723546",
+      "filevine_project_name": "MENESES SANCHEZ , Alex Leonel 26-0525",
+      "filevine_client_name": "Alex Leonel  Meneses Sanchez",
+      "filevine_case_number": "26-0525",
+      "case_list_case_number": "26-0525",
+      "case_list_client_name": "MENESES SANCHEZ , Alex Leonel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723343",
+      "filevine_project_name": "ALVITER DIONISIO, Angel  26-0520",
+      "filevine_client_name": "Angel  Alviter Dionisio",
+      "filevine_case_number": "26-0520",
+      "case_list_case_number": "26-0520",
+      "case_list_client_name": "ALVITER DIONISIO, Angel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723058",
+      "filevine_project_name": "SUAREZ CESPEDES, Jose Carlos 26-0516",
+      "filevine_client_name": "Jose  Carlos Suarez Cespedes",
+      "filevine_case_number": "26-0516",
+      "case_list_case_number": "26-0516",
+      "case_list_client_name": "CARLOS SUAREZ CESPEDES, Jose",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722916",
+      "filevine_project_name": "CIRIACO GARCIA, Luis Alberto 26-0512",
+      "filevine_client_name": "Luis Alberto Ciriaco Garcia",
+      "filevine_case_number": "26-0512",
+      "case_list_case_number": "26-0512",
+      "case_list_client_name": "CIRIACO GARCIA, Luis Alberto",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722720",
+      "filevine_project_name": "GUZMAN VASQUEZ, Miguel (T-VISA) 26-0507",
+      "filevine_client_name": "Miguel GUZMAN VASQUEZ",
+      "filevine_case_number": "26-0507",
+      "case_list_case_number": "26-0507",
+      "case_list_client_name": "GUZMAN VASQUEZ, Miguel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722186",
+      "filevine_project_name": "DOMINGUEZ MENDOZA, Sonia Maribel 26-0503 (P)",
+      "filevine_client_name": "Sonia Maribel  Dominguez Mendoza",
+      "filevine_case_number": "26-0503",
+      "case_list_case_number": "26-0503",
+      "case_list_client_name": "DOMINGUEZ MENDOZA, Sonia Maribel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13721336",
+      "filevine_project_name": "TORRES ALVAREZ, Ana Laura 26-0490",
+      "filevine_client_name": "Ana Laura Torres Alvarez",
+      "filevine_case_number": "26-0490",
+      "case_list_case_number": "26-0490",
+      "case_list_client_name": "TORRES ALVAREZ, Ana Laura",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720621",
+      "filevine_project_name": "ALANIS MENDOZA,Juan Manuel 26-0484",
+      "filevine_client_name": "Juan Manuel Alanis Mendoza",
+      "filevine_case_number": "26-0484",
+      "case_list_case_number": "26-0484",
+      "case_list_client_name": "ALANIS MENDOZA,Juan Manuel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13719266",
+      "filevine_project_name": "RECINOS ORDONEZ, Evaristo  26-0469",
+      "filevine_client_name": "Evaristo  Recinos Ordonez",
+      "filevine_case_number": "26-0469",
+      "case_list_case_number": "26-0469",
+      "case_list_client_name": "RECINOS ORDONEZ, Evaristo",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13718823",
+      "filevine_project_name": "DOMINGUEZ FLORES, Erubiel 26-0475",
+      "filevine_client_name": "Erubiel  Dominguez Flores",
+      "filevine_case_number": "26-0475",
+      "case_list_case_number": "26-0475",
+      "case_list_client_name": "DOMINGUEZ FLORES, Erubiel",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13718751",
+      "filevine_project_name": "VALENZUELA NAVARRO, Dulce Maria  26-0459",
+      "filevine_client_name": "Dulce Maria  Valenzuela Navarro",
+      "filevine_case_number": "26-0459",
+      "case_list_case_number": "26-0459",
+      "case_list_client_name": "VALENZUELA NAVARRO, Dulce Maria",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13717451",
+      "filevine_project_name": "DIAZ BERGANZA, Dublas Geremias 26-0443",
+      "filevine_client_name": "Dublas Geremias Diaz Berganza",
+      "filevine_case_number": "26-0443",
+      "case_list_case_number": "26-0443",
+      "case_list_client_name": "DIAZ BERGANZA, Dublas Geremias",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13717406",
+      "filevine_project_name": "MENDOZA FLORES, Denis Fernando 26-0449",
+      "filevine_client_name": "Denis Fernando Mendoza Flores",
+      "filevine_case_number": "26-0449",
+      "case_list_case_number": "26-0449",
+      "case_list_client_name": "MENDOZA FLORES, Denis Fernando",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716963",
+      "filevine_project_name": "LOPEZ VAZQUEZ, Johnny 26-0438",
+      "filevine_client_name": "Johnny Lopez Vazquez",
+      "filevine_case_number": "26-0438",
+      "case_list_case_number": "26-0438",
+      "case_list_client_name": "LOPEZ VAZQUEZ, Johnny",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716579",
+      "filevine_project_name": "ROMO REINA, Ma del  Refugio 26-0431",
+      "filevine_client_name": "Ma  del Refugio  Romo Reina",
+      "filevine_case_number": "26-0431",
+      "case_list_case_number": "26-0431",
+      "case_list_client_name": "ROMO REINA, Ma del Refugio",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13715921",
+      "filevine_project_name": "GUTIERREZ HERNANDEZ, Andrely 26-0418",
+      "filevine_client_name": "Andrely Gutierrez Hernandez",
+      "filevine_case_number": "26-0418",
+      "case_list_case_number": "26-0418",
+      "case_list_client_name": "GUTIERREZ HERNANDEZ, Andrely",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13715449",
+      "filevine_project_name": "GALDAMEZ GUTIERREZ ,Cruz  Anabel 26-0407",
+      "filevine_client_name": "Cruz Anabel Galdamez Gutierrez",
+      "filevine_case_number": "26-0407",
+      "case_list_case_number": "26-0407",
+      "case_list_client_name": "GALDAMEZ GUTIERREZ, Cruz Anabel",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13715406",
+      "filevine_project_name": "GALINDO MARTINEZ, Mauricio 26-0406",
+      "filevine_client_name": "Mauricio Galindo Martinez",
+      "filevine_case_number": "26-0406",
+      "case_list_case_number": "26-0406",
+      "case_list_client_name": "GALINDO MARTINEZ, Mauricio",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13715404",
+      "filevine_project_name": "POLANCO HERNANDEZ, Chilano  26-0405",
+      "filevine_client_name": "Chilano  Polanco Hernandez",
+      "filevine_case_number": "26-0405",
+      "case_list_case_number": "26-0405",
+      "case_list_client_name": "POLANCO HERNANDEZ, Chilano",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13711338",
+      "filevine_project_name": "DIAZ GONZALEZ, Valentin 26-0399",
+      "filevine_client_name": "Valentin  Diaz Gonzalez",
+      "filevine_case_number": "26-0399",
+      "case_list_case_number": "26-0399",
+      "case_list_client_name": "DIAZ GONZALEZ, Valentin",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13699828",
+      "filevine_project_name": "BENITEZ RAMOS, Gustavo  26-0387",
+      "filevine_client_name": "Gustavo  Benitez Ramos",
+      "filevine_case_number": "26-0387",
+      "case_list_case_number": "26-0387",
+      "case_list_client_name": "BENITEZ RAMOS, Gustavo",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13699545",
+      "filevine_project_name": "GOMEZ FRANCO, Nixon Herminio 26-0384",
+      "filevine_client_name": "Nixon Herminio Gomez Franco",
+      "filevine_case_number": "26-0384",
+      "case_list_case_number": "26-0384",
+      "case_list_client_name": "GOMEZ FRANCO, Nixon Herminio",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13699539",
+      "filevine_project_name": "RAMIREZ ALVARADO, Everardo 26-0383",
+      "filevine_client_name": "Everardo Ramirez Alvarado",
+      "filevine_case_number": "26-0383",
+      "case_list_case_number": "26-0383",
+      "case_list_client_name": "RAMIREZ ALVARADO, Everardo",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13697692",
+      "filevine_project_name": "GARCIA BACAJOL, Telma Amanda  26-0359",
+      "filevine_client_name": "Telma  Amanda Garcia Bacajol",
+      "filevine_case_number": "26-0359",
+      "case_list_case_number": "26-0359",
+      "case_list_client_name": "GARCIA BACAJOL, Telma Amanda",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13697650",
+      "filevine_project_name": "GARCIA MEDINA, Ricardo 26-0357",
+      "filevine_client_name": "Ricardo  Garcia Medina",
+      "filevine_case_number": "26-0357",
+      "case_list_case_number": "26-0357",
+      "case_list_client_name": "GARCIA MEDINA, Ricardo",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13697318",
+      "filevine_project_name": "SIQUINAJAY CAN, Juan Felipe 26-0353",
+      "filevine_client_name": "Juan Felipe Siquinajay Can",
+      "filevine_case_number": "26-0353",
+      "case_list_case_number": "26-0353",
+      "case_list_client_name": "SIQUINAJAY CAN, Juan Felipe",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    }
+  ],
+  "number_only_matches_sample": [
+    {
+      "filevine_project_id": "13730228",
+      "filevine_project_name": "BARRAGAN MARTINEZ, Victor Manuel 26-0626",
+      "filevine_client_name": "Victor Manuel Barragan Martinez",
+      "filevine_case_number": "26-0626",
+      "case_list_case_number": "26-0626",
+      "case_list_client_name": "BARRAGAN MARTINEZ, Victor Manuel 26-0626",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730040",
+      "filevine_project_name": "GOMEZ REYES, Denia Raquel 26-0610",
+      "filevine_client_name": "Denia Raquel Gomez Reyes",
+      "filevine_case_number": "26-0610",
+      "case_list_case_number": "26-0610",
+      "case_list_client_name": "CHAVARRIA MARTINEZ, Cyndi Stephanie",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730036",
+      "filevine_project_name": "GARCIA RODRIGUEZ, Luis Antonio (D) 26-0609",
+      "filevine_client_name": "Luis Antonio Garcia Rodriguez",
+      "filevine_case_number": "26-0609",
+      "case_list_case_number": "26-0609",
+      "case_list_client_name": "GARCIA RODRIGUEZ, Luis Antonio (D) 26-0609",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730021",
+      "filevine_project_name": "GARCIA RODRIGUEZ, Mayte del Carmen (D) 26-0607",
+      "filevine_client_name": "Mayte del Carmen Garcia Rodriguez",
+      "filevine_case_number": "26-0607",
+      "case_list_case_number": "26-0607",
+      "case_list_client_name": "GARCIA RODRIGUEZ, Mayte del Carmen (D) 26-0607",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13730008",
+      "filevine_project_name": "RODRIGUEZ RODRIGUEZ, Gabriela (D) 26-0605",
+      "filevine_client_name": "Gabriela  Rodriguez Rodriguez",
+      "filevine_case_number": "26-0605",
+      "case_list_case_number": "26-0605",
+      "case_list_client_name": "RODRIGUEZ RODRIGUEZ, Gabriela (D) 26-0605",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729859",
+      "filevine_project_name": "CASTILLO OSORIO, Alba Nelly  26-0602",
+      "filevine_client_name": "Alba Nelly Castillo Osorio",
+      "filevine_case_number": "26-0602",
+      "case_list_case_number": "26-0602",
+      "case_list_client_name": "CASTILLO OSORIO, ALBA NELLY  26-0602",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729575",
+      "filevine_project_name": "LOPEZ CARRILLO, Maribel (D) 26-0601",
+      "filevine_client_name": "Maribel  Lopez Carrillo",
+      "filevine_case_number": "26-0601",
+      "case_list_case_number": "26-0601",
+      "case_list_client_name": "LOPEZ CARRILLO, Maribel (D) 26-0601",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729383",
+      "filevine_project_name": "FUENTES VELAZQUEZ, Roger 26-0598",
+      "filevine_client_name": "Roger Fuentes Velazquez",
+      "filevine_case_number": "26-0598",
+      "case_list_case_number": "26-0598",
+      "case_list_client_name": "FUENTES VELAZQUEZ, Roger Vlzr",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13729231",
+      "filevine_project_name": "SANTOS SALGADO , Alan Omar  26-0596",
+      "filevine_client_name": "Alan Omar  Santos Salgado",
+      "filevine_case_number": "26-0596",
+      "case_list_case_number": "26-0596",
+      "case_list_client_name": "SANTOS SALGADO , Alan Omar  26-0596",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13728820",
+      "filevine_project_name": "MIRANDA SOLIS, Sebastian  26-0592",
+      "filevine_client_name": "Sebastian  Miranda Solis",
+      "filevine_case_number": "26-0592",
+      "case_list_case_number": "26-0592",
+      "case_list_client_name": "MIRANDA SOLIS, Sebastian  26-0592",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727458",
+      "filevine_project_name": "GOMEZ REYES , Dina Ruth 26-0570 (D)",
+      "filevine_client_name": "Dina Ruth Gomez Reyes",
+      "filevine_case_number": "26-0570",
+      "case_list_case_number": "26-0570",
+      "case_list_client_name": "GOMEZ REYES , Dina Ruth 26-0570 (D)",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727448",
+      "filevine_project_name": "SARAVIA HERNANDEZ, Johan  26-0569 (P)",
+      "filevine_client_name": "Johan  Saravia Hernandez",
+      "filevine_case_number": "26-0569",
+      "case_list_case_number": "26-0569",
+      "case_list_client_name": "SARAVIA HERNANDEZ, Johan  26-0569 (P)",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13724505",
+      "filevine_project_name": "MORALES HERNANDEZ, Roselino 26-0540",
+      "filevine_client_name": "Roselino Morales Hernandez",
+      "filevine_case_number": "26-0540",
+      "case_list_case_number": "26-0540",
+      "case_list_client_name": "MORALES HERNANDEZ, Roselino 26-0540 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13724373",
+      "filevine_project_name": "CRUZ MARTINEZ, Claudio Alejandro 26-0533",
+      "filevine_client_name": "Claudio   Alejandro Cruz Martinez",
+      "filevine_case_number": "26-0533",
+      "case_list_case_number": "26-0533",
+      "case_list_client_name": "CRUZ MARTINEZ, Claudio",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723683",
+      "filevine_project_name": "GOMEZ RODRIGUEZ, Hugo Rene (D) 26-0531",
+      "filevine_client_name": "Hugo Rene Gomez  Rodriguez",
+      "filevine_case_number": "26-0531",
+      "case_list_case_number": "26-0531",
+      "case_list_client_name": "GOMEZ RODRIGUEZ, Hugo Rene (D) 26-0531 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723665",
+      "filevine_project_name": "GABRIEL HERNANDEZ, Ana Maria 26-0530",
+      "filevine_client_name": "Ana Maria Gabriel Hernandez",
+      "filevine_case_number": "26-0530",
+      "case_list_case_number": "26-0530",
+      "case_list_client_name": "GABRIEL HERNANDEZ, Ana Maria 26-0530 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723274",
+      "filevine_project_name": "HERNANDEZ ALVITER, Ana Mayra 26-0519",
+      "filevine_client_name": "Ana Mayra Hernandez Aguilar",
+      "filevine_case_number": "26-0519",
+      "case_list_case_number": "26-0519",
+      "case_list_client_name": "HERNANDEZ ALVITER, Ana Marya",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723072",
+      "filevine_project_name": "REYES SANDOVAL, Victor Manuel 26-0518",
+      "filevine_client_name": "Victor Manuel  Reyes Sandoval",
+      "filevine_case_number": "26-0518",
+      "case_list_case_number": "26-0518",
+      "case_list_client_name": "REYES SANDOVAL, Victor Manuel 26-0518 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723071",
+      "filevine_project_name": "GALLEGOS COLLAZO, Juana Maria  (P)  26-0517",
+      "filevine_client_name": "Juana  Maria Gallegos Collazo",
+      "filevine_case_number": "26-0517",
+      "case_list_case_number": "26-0517",
+      "case_list_client_name": "GALLEGOS COLLAZO, Juana",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13723046",
+      "filevine_project_name": "GONZALEZ LARA, Maricela 26-0513",
+      "filevine_client_name": "Maricela  Gonzalez Lara",
+      "filevine_case_number": "26-0513",
+      "case_list_case_number": "26-0513",
+      "case_list_client_name": "GONZALEZ LARA, Maricela 26-0513 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722781",
+      "filevine_project_name": "VARGAS FLORES, Guadalupe 26-0508",
+      "filevine_client_name": "Guadalupe Vargas Flores",
+      "filevine_case_number": "26-0508",
+      "case_list_case_number": "26-0508",
+      "case_list_client_name": "VARGAS FLORES, Guadalupe 26-0508",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722231",
+      "filevine_project_name": "RAMIREZ HERNANDEZ, Edialberto (D) 26-0505",
+      "filevine_client_name": "Edialberto Ramirez Hernandez",
+      "filevine_case_number": "26-0505",
+      "case_list_case_number": "26-0505",
+      "case_list_client_name": "RAMIREZ HERNANDEZ, Edialberto (D) 26-0505",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13721912",
+      "filevine_project_name": "URGILES CUVI, Jorge Santiago 26-0499",
+      "filevine_client_name": "Jorge Santiago Urgiles Cuvi",
+      "filevine_case_number": "26-0499",
+      "case_list_case_number": "26-0499",
+      "case_list_client_name": "URGILES CUVI, Jorge Santiago 26-0499",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13721877",
+      "filevine_project_name": "MARCELLUS, Anel 26-0498",
+      "filevine_client_name": "Anel  Marcellus",
+      "filevine_case_number": "26-0498",
+      "case_list_case_number": "26-0498",
+      "case_list_client_name": "MARCELLUS, Anel 26-0498 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13721120",
+      "filevine_project_name": "LEON GOMEZ, Katia Ninoska 26-0488",
+      "filevine_client_name": "Katia Ninoska Leon Gomez",
+      "filevine_case_number": "26-0488",
+      "case_list_case_number": "26-0488",
+      "case_list_client_name": "LEON GOMEZ, Katia 26-0488",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720624",
+      "filevine_project_name": "PAJAREZ SARCENO , Javier  Enrique  26-0485",
+      "filevine_client_name": "Javier  Enrique Pajarez Sarceno",
+      "filevine_case_number": "26-0485",
+      "case_list_case_number": "26-0485",
+      "case_list_client_name": "PAJAREZ SARCENO , Javier  Enrique  26-0485",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720453",
+      "filevine_project_name": "CRESPO MACANCELA, Paul Alejandro  26-0483",
+      "filevine_client_name": "Paul  Crespo",
+      "filevine_case_number": "26-0483",
+      "case_list_case_number": "26-0483",
+      "case_list_client_name": "CRESPO MACANCELA, Paul Alejandro  26-0483",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720051",
+      "filevine_project_name": "MCKENZIE EVANS,  Sheila Luisa 26-0479",
+      "filevine_client_name": "Sheila Luisa McKenzie Evans",
+      "filevine_case_number": "26-0479",
+      "case_list_case_number": "26-0479",
+      "case_list_client_name": "MCKENZIE EVANS,  Sheila Luisa 26-0479",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720041",
+      "filevine_project_name": "BAZO SAAVEDRA, Rene Alexander 26-0478",
+      "filevine_client_name": "Rene Alexander Bazo Saavedra",
+      "filevine_case_number": "26-0478",
+      "case_list_case_number": "26-0478",
+      "case_list_client_name": "BAZO SAAVEDRA, Rene Alexander 26-0478",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13720027",
+      "filevine_project_name": "MORALES MONTES, Juan Antonio  26-0477",
+      "filevine_client_name": "Juan Antonio  Morales Montes",
+      "filevine_case_number": "26-0477",
+      "case_list_case_number": "26-0477",
+      "case_list_client_name": "MORALES MONTES, Juan Antonio 26-0477",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13719780",
+      "filevine_project_name": "CORDERO GUZMAN, Jose Luis 26-0474",
+      "filevine_client_name": "Jose Luis  Cordero Guzman",
+      "filevine_case_number": "26-0474",
+      "case_list_case_number": "26-0474",
+      "case_list_client_name": "CORDERO GUZMAN, Jose  26-0474",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13719569",
+      "filevine_project_name": "ROMERO NAVARRETE, Carlos Israel 26-0473",
+      "filevine_client_name": "Carlos Israel Romero Navarrete",
+      "filevine_case_number": "26-0473",
+      "case_list_case_number": "26-0473",
+      "case_list_client_name": "ROMERO NAVARRETE, Carlos Israel 26-0473",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13719288",
+      "filevine_project_name": "ZEPEDA CHAVEZ, Kain 26-0472",
+      "filevine_client_name": "Kain Zepeda Chavez",
+      "filevine_case_number": "26-0472",
+      "case_list_case_number": "26-0472",
+      "case_list_client_name": "ZEPEDA CHAVEZ, Kain 26-0472 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13719283",
+      "filevine_project_name": "ORTIZ FERREYRA, Martha Elena  26-0471",
+      "filevine_client_name": "Martha Elena  Ortiz Ferreyra",
+      "filevine_case_number": "26-0471",
+      "case_list_case_number": "26-0471",
+      "case_list_client_name": "ORTIZ FERREYRA, Martha Elena 26-0471 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13719159",
+      "filevine_project_name": "FLORES ORTIZ, Adan  26-0467",
+      "filevine_client_name": "Adan  Flores Ortiz",
+      "filevine_case_number": "26-0467",
+      "case_list_case_number": "26-0467",
+      "case_list_client_name": "FLORES ORTIZ, Adan  26-0467",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13719141",
+      "filevine_project_name": "PONCE PADILLA, Jorge Arturo  26-0466",
+      "filevine_client_name": "Jorge Arturo  Ponce Padilla",
+      "filevine_case_number": "26-0466",
+      "case_list_case_number": "26-0466",
+      "case_list_client_name": "VAZQUEZ GONZALEZ, Paola",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13719118",
+      "filevine_project_name": "BATALLA ALVAREZ, Reynaldo Alberto  26-0465",
+      "filevine_client_name": "Reynaldo Alberto Batalla Alvarez",
+      "filevine_case_number": "26-0465",
+      "case_list_case_number": "26-0465",
+      "case_list_client_name": "BATALLA ALVAREZ, Reynaldo Alberto  26-0465",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13718853",
+      "filevine_project_name": "ARREOLA HERNANDEZ, Sofia  26-0462",
+      "filevine_client_name": "Sofia  Arreola Hernandez",
+      "filevine_case_number": "26-0462",
+      "case_list_case_number": "26-0462",
+      "case_list_client_name": "VALERIO MUNOZ, Jorge Armando | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13718821",
+      "filevine_project_name": "VALERIO MUNOZ, Jorge Armando 26-0462",
+      "filevine_client_name": "Jorge Armando Valerio Munoz",
+      "filevine_case_number": "26-0462",
+      "case_list_case_number": "26-0462",
+      "case_list_client_name": "VALERIO MUNOZ, Jorge Armando | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13718708",
+      "filevine_project_name": "MARTINEZ VARELA, Sofia (FOIA)",
+      "filevine_client_name": "Sofia Martinez Varela",
+      "filevine_case_number": "26-0503",
+      "case_list_case_number": "26-0503",
+      "case_list_client_name": "DOMINGUEZ MENDOZA, Sonia Maribel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13717808",
+      "filevine_project_name": "BARAJAS CARRAZCO, Jose  26-0448",
+      "filevine_client_name": "Jose  Barajas Carrazco",
+      "filevine_case_number": "26-0448",
+      "case_list_case_number": "26-0448",
+      "case_list_client_name": "BARAJAS CARRAZCO, Jose 26-0448 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716750",
+      "filevine_project_name": "XOCHIHUA GARCIA, Josafat  (T VISA) 26-0433",
+      "filevine_client_name": "Josafat Xochihua Garcia",
+      "filevine_case_number": "26-0433",
+      "case_list_case_number": "26-0433",
+      "case_list_client_name": "XOCHIHUA GARCIA, Josefat  26-0433",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716553",
+      "filevine_project_name": "VELIZ FUENTES, Iris Del Carmen 26-0428 (D)",
+      "filevine_client_name": "Iris Del Carmen Veliz Fuentes",
+      "filevine_case_number": "26-0428",
+      "case_list_case_number": "26-0428",
+      "case_list_client_name": "VELIZ FUENTES, Iris Del Carmen 26-0428 (D)",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716513",
+      "filevine_project_name": "ALEJANDRO CANO , Luis  Miguel  26-0426",
+      "filevine_client_name": "Luis Miguel Alejandro Cano",
+      "filevine_case_number": "26-0426",
+      "case_list_case_number": "26-0426",
+      "case_list_client_name": "ALEJANDRO CANO , Luis  Miguel  26-0426",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716219",
+      "filevine_project_name": "CAICEROS TORRES, Grisel (D) 26-0429",
+      "filevine_client_name": "Grisel Caiceros Torres",
+      "filevine_case_number": "26-0429",
+      "case_list_case_number": "26-0429",
+      "case_list_client_name": "CAICEROS TORRES, Grisel (D) | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716200",
+      "filevine_project_name": "RUIZ REYES, Byron Estuardo 26-0424",
+      "filevine_client_name": "Bayron Estuardo Ruiz Reyes",
+      "filevine_case_number": "26-0424",
+      "case_list_case_number": "26-0424",
+      "case_list_client_name": "RUIZ REYES, Byron Estuardo 26-0424",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716158",
+      "filevine_project_name": "BURGOS CABALLERO , Sandra Teodora 26-0423",
+      "filevine_client_name": "Sandra  Teodora Burgos Caballero",
+      "filevine_case_number": "26-0423",
+      "case_list_case_number": "26-0423",
+      "case_list_client_name": "BURGOS CABALLERO , Sandra  26-0423",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716143",
+      "filevine_project_name": "CAZARES PULIDO, Oscar Miguel 26-0421",
+      "filevine_client_name": "Oscar  Miguel  Cazares Pulido",
+      "filevine_case_number": "26-0421",
+      "case_list_case_number": "26-0421",
+      "case_list_client_name": "CAZARES PULIDO, Oscar Miguel 26-0421 | Filevine",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13716045",
+      "filevine_project_name": "GONZALEZ, Saul Ernesto 26-0420",
+      "filevine_client_name": "Saul  Ernesto Gonzalez",
+      "filevine_case_number": "26-0420",
+      "case_list_case_number": "26-0420",
+      "case_list_client_name": "ERNESTO GONZALEZ, Saul  26-0420",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    },
+    {
+      "filevine_project_id": "13715669",
+      "filevine_project_name": "GARCIA PARRA, Angelica 26-0416",
+      "filevine_client_name": "ANGELICA  GARCIA PARRA",
+      "filevine_case_number": "26-0416",
+      "case_list_case_number": "26-0416",
+      "case_list_client_name": "GARCIA PARRA, ANGELICA  26-0416",
+      "case_list_year": 2026,
+      "sheet": "FEBRUARY"
+    }
+  ],
+  "name_only_matches_sample": [
+    {
+      "filevine_project_id": "13728400",
+      "filevine_project_name": "MORENO NIETO, Juan Carlos 26-0597",
+      "filevine_client_name": "Juan Carlos Moreno Nieto",
+      "filevine_case_number": "26-0597",
+      "case_list_case_number": "26-0585",
+      "case_list_client_name": "MORENO NIETO, Juan Carlos",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13727817",
+      "filevine_project_name": "GUZMAN VASQUEZ, Miguel [CLOSED]",
+      "filevine_client_name": "Miguel GUZMAN VASQUEZ",
+      "filevine_case_number": "",
+      "case_list_case_number": "26-0507",
+      "case_list_client_name": "GUZMAN VASQUEZ, Miguel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13724443",
+      "filevine_project_name": "CRUZ MARTINEZ, Claudio [CLOSED]",
+      "filevine_client_name": "Claudio  Cruz Martinez",
+      "filevine_case_number": "26-0537",
+      "case_list_case_number": "26-0533",
+      "case_list_client_name": "CRUZ MARTINEZ, Claudio",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13724441",
+      "filevine_project_name": "CRUZ MARTINEZ, Claudio [CLOSED]",
+      "filevine_client_name": "Claudio  Cruz Martinez",
+      "filevine_case_number": "26-0536",
+      "case_list_case_number": "26-0533",
+      "case_list_client_name": "CRUZ MARTINEZ, Claudio",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13722870",
+      "filevine_project_name": "GUZMAN VASQUEZ, Miguel (Removal Defense - 42B)",
+      "filevine_client_name": "Miguel GUZMAN VASQUEZ",
+      "filevine_case_number": "26-0509",
+      "case_list_case_number": "26-0507",
+      "case_list_client_name": "GUZMAN VASQUEZ, Miguel",
+      "case_list_year": 2026,
+      "sheet": "MARCH"
+    },
+    {
+      "filevine_project_id": "13689879",
+      "filevine_project_name": "CRUZ RUIZ, Rebeca (D) 26-0617",
+      "filevine_client_name": "Rebeca Cruz Ruiz",
+      "filevine_case_number": "26-0617",
+      "case_list_case_number": "26-0242",
+      "case_list_client_name": "CRUZ RUIZ, Rebeca (D)",
+      "case_list_year": 2026,
+      "sheet": "JANUARY"
+    },
+    {
+      "filevine_project_id": "13688294",
+      "filevine_project_name": "CUELLAR GAVARRETE , Roman  26-0205",
+      "filevine_client_name": "Roman  Cuellar Gavarrete",
+      "filevine_case_number": "26-205",
+      "case_list_case_number": "26-0205",
+      "case_list_client_name": "CUELLAR GAVARRETE , Roman",
+      "case_list_year": 2026,
+      "sheet": "JANUARY"
+    },
+    {
+      "filevine_project_id": "13683528",
+      "filevine_project_name": "CRUZ HURTADO, Sandra 26-0128",
+      "filevine_client_name": "Sandra  Cruz Hurtado",
+      "filevine_case_number": "26-0128",
+      "case_list_case_number": "26-0135",
+      "case_list_client_name": "CRUZ HURTADO, Sandra",
+      "case_list_year": 2026,
+      "sheet": "JANUARY"
+    },
+    {
+      "filevine_project_id": "13682800",
+      "filevine_project_name": "DIAZ RIVAS, Emily Marisela 13682800",
+      "filevine_client_name": "Emily Marisela Diaz Rivas",
+      "filevine_case_number": "",
+      "case_list_case_number": "25-2775",
+      "case_list_client_name": "DIAZ RIVAS, Emily Marisela (D)",
+      "case_list_year": 2026,
+      "sheet": "JANUARY"
+    },
+    {
+      "filevine_project_id": "13674236",
+      "filevine_project_name": "LOPEZ MORALES, Wendy Fabiola",
+      "filevine_client_name": "Wendy Fabiola Lopez Morales",
+      "filevine_case_number": "25-2944",
+      "case_list_case_number": "13674236",
+      "case_list_client_name": "LOPEZ MORALES, Wendy Fabiola",
+      "case_list_year": 2025,
+      "sheet": "DECEMBER"
+    },
+    {
+      "filevine_project_id": "13664202",
+      "filevine_project_name": "SALVADOR MOLINA, Dilmer Nahin",
+      "filevine_client_name": "Dilmer Nahin Salvador Molina",
+      "filevine_case_number": "",
+      "case_list_case_number": "25-2948",
+      "case_list_client_name": "SALVADOR MOLINA, Dilmer Nahin",
+      "case_list_year": 2025,
+      "sheet": "DECEMBER"
+    },
+    {
+      "filevine_project_id": "13664197",
+      "filevine_project_name": "SALVADOR MOLINA, Dilmer Nahin 25-2884",
+      "filevine_client_name": "Dilmer Nahin Salvador Molina",
+      "filevine_case_number": "25-2884",
+      "case_list_case_number": "25-2948",
+      "case_list_client_name": "SALVADOR MOLINA, Dilmer Nahin",
+      "case_list_year": 2025,
+      "sheet": "DECEMBER"
+    },
+    {
+      "filevine_project_id": "13661778",
+      "filevine_project_name": "SIFUENTES ESPINOZA, Maria del Rosario [CLOSED]",
+      "filevine_client_name": "Maria del Rosario Sifuentes Espinoza",
+      "filevine_case_number": "25-2629",
+      "case_list_case_number": "25-2898",
+      "case_list_client_name": "SIFUENTES ESPINOZA, Maria del Rosario",
+      "case_list_year": 2025,
+      "sheet": "DECEMBER"
+    },
+    {
+      "filevine_project_id": "13661715",
+      "filevine_project_name": "BENITEZ VALDEZ, Jesus (U CERT)",
+      "filevine_client_name": "Jesus Benitez Valdez (D)",
+      "filevine_case_number": "25-2692",
+      "case_list_case_number": "25-2693",
+      "case_list_client_name": "BENITEZ VALDEZ, Jesus (D)",
+      "case_list_year": 2025,
+      "sheet": "NOVEMBER"
+    },
+    {
+      "filevine_project_id": "13661188",
+      "filevine_project_name": "MENDOZA GUZMAN, Jorge Luis (REMOVAL DEFENSE)",
+      "filevine_client_name": "Jorge Luis Mendoza Guzman",
+      "filevine_case_number": "25-2846",
+      "case_list_case_number": "25-2640",
+      "case_list_client_name": "MENDOZA GUZMAN, Jorge Luis",
+      "case_list_year": 2025,
+      "sheet": "NOVEMBER"
+    },
+    {
+      "filevine_project_id": "13650537",
+      "filevine_project_name": "PINEDA PORTILLO, Marvin Alexander  25-5683",
+      "filevine_client_name": "Marvin  Alexander  Pineda Portillo",
+      "filevine_case_number": "25-5683",
+      "case_list_case_number": "25-2827",
+      "case_list_client_name": "PINEDA PORTILLO, Marvin Alexander",
+      "case_list_year": 2025,
+      "sheet": "DECEMBER"
+    },
+    {
+      "filevine_project_id": "13650420",
+      "filevine_project_name": "BENITEZ VALDEZ, Jesus (U-Cert)",
+      "filevine_client_name": "Jesus Benitez  Valdez",
+      "filevine_case_number": "25-2692",
+      "case_list_case_number": "25-2693",
+      "case_list_client_name": "BENITEZ VALDEZ, Jesus (D)",
+      "case_list_year": 2025,
+      "sheet": "NOVEMBER"
+    },
+    {
+      "filevine_project_id": "13641111",
+      "filevine_project_name": "TOVAR NARVAEZ, Juan Roman 25-2671",
+      "filevine_client_name": "Juan Roman Tovar Narvaez",
+      "filevine_case_number": "25-2659",
+      "case_list_case_number": "25-2671",
+      "case_list_client_name": "TOVAR NARVAEZ, Juan Roman",
+      "case_list_year": 2025,
+      "sheet": "NOVEMBER"
+    }
+  ],
+  "mismatches_sample": [],
+  "unmatched_filevine_sample": [
+    {
+      "filevine_project_id": "13730639",
+      "filevine_project_name": "HUIPE HERNANDEZ, Nayeli Yeraldi 26-0629",
+      "filevine_client_name": "Nayeli Yeraldi Huipe Hernandez",
+      "filevine_case_number": "26-0629",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-23T16:52:55.833Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730637",
+      "filevine_project_name": "HUIPE HERNANDEZ, Nayeli Yeraldi 26-0628",
+      "filevine_client_name": "Nayeli Yeraldi Huipe Hernandez",
+      "filevine_case_number": "26-0628",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-23T16:52:00.48Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730222",
+      "filevine_project_name": "CALLEJAS ORELLANA, Kevin Ariel 26-0623",
+      "filevine_client_name": "Kevin Ariel  Callejas Orellana",
+      "filevine_case_number": "26-0623",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-21T17:35:50.883Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730153",
+      "filevine_project_name": "ROMERO CHILEL, Florentina  26-0621",
+      "filevine_client_name": "Florentina  Romero Chilel",
+      "filevine_case_number": "26-0621",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T22:15:41.64Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730152",
+      "filevine_project_name": "RODRIGUEZ LOPEZ, Salvador  26-0620",
+      "filevine_client_name": "Salvador  Rodriguez Lopez",
+      "filevine_case_number": "26-0620",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T22:08:46.433Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730123",
+      "filevine_project_name": "MARTINEZ NAVARRETE, Carmen Areli  26-0615",
+      "filevine_client_name": "Carmen Areli Martinez Navarrete",
+      "filevine_case_number": "26-0615",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T21:11:35.543Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730119",
+      "filevine_project_name": "LOPEZ CRUZ, Silvia",
+      "filevine_client_name": "Silvia Lopez Cruz",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T21:03:19.297Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730117",
+      "filevine_project_name": "TRUJILLO LOPEZ, Andrea  26-0614",
+      "filevine_client_name": "Andrea  Trujillo Lopez",
+      "filevine_case_number": "26-0614",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T21:02:12.997Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730041",
+      "filevine_project_name": "GOMEZ REYES, Denia Raquel 26-0611",
+      "filevine_client_name": "Denia Raquel Gomez Reyes",
+      "filevine_case_number": "26-0611",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T19:31:45.15Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730025",
+      "filevine_project_name": "GOMEZ REYES, Denia Raquel 26-0608",
+      "filevine_client_name": "Denia Raquel Gomez Reyes",
+      "filevine_case_number": "26-0608",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T19:20:25.783Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13730018",
+      "filevine_project_name": "BANEGAS FERRUFINO, Edmer Wilfredo 26-0606",
+      "filevine_client_name": "Edmer Wilfredo Banegas Ferrufino",
+      "filevine_case_number": "26-0606",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T19:16:35.583Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729898",
+      "filevine_project_name": "COLIN NIEVES, Teresa (D) 26-0604",
+      "filevine_client_name": "Teresa  Colin Nieves",
+      "filevine_case_number": "26-0604",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T17:16:54.427Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729860",
+      "filevine_project_name": "DIMAS CASTELLANOS, Jose 26-0603",
+      "filevine_client_name": "Jose  Dimas Castellanos",
+      "filevine_case_number": "26-0603",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T16:41:09.863Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729749",
+      "filevine_project_name": "ANTUNEZ ESCOBAR, Martina Alicia (Removal Defense)",
+      "filevine_client_name": "Martina Antunez Escobar (P)",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-20T15:22:14.557Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729485",
+      "filevine_project_name": "REYES OROZCO, Juan 26-0599",
+      "filevine_client_name": "JUAN  REYES OROZCO",
+      "filevine_case_number": "26-0599",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-19T21:10:16.54Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729221",
+      "filevine_project_name": "MORAN JIMENEZ, Diana Erfilia",
+      "filevine_client_name": "Diana Erfilia Moran Jimenez",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-19T16:50:09.31Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729158",
+      "filevine_project_name": "RUIZ BAUTISTA, Eliseo 26-0594",
+      "filevine_client_name": "Eliseo Ruiz Bautista",
+      "filevine_case_number": "26-0594",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-19T15:51:13.337Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13729058",
+      "filevine_project_name": "GUTIERREZ QUEZADA, Heidi 26-0593",
+      "filevine_client_name": "Heidi Gutierrez  Quezada",
+      "filevine_case_number": "26-0593",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-19T14:20:38.653Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728705",
+      "filevine_project_name": "HERNANDEZ CANTOR, Arturo Daniel 26-0591",
+      "filevine_client_name": "Arturo Daniel Hernandez Cantor",
+      "filevine_case_number": "26-0591",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-18T19:33:53.707Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728689",
+      "filevine_project_name": "MENDOZA ALVARADO, Nely Argentina (Stay of Removal)",
+      "filevine_client_name": "Nely Argentina Mendoza Alvarado",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-18T19:21:31.597Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728655",
+      "filevine_project_name": "MANZANO MEZA, Gloria de los Angeles 26-0590",
+      "filevine_client_name": "Gloria de los Angeles Manzano Meza",
+      "filevine_case_number": "26-0590",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-18T18:55:46.283Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728654",
+      "filevine_project_name": "MANZANO, Gloria 26-0589",
+      "filevine_client_name": "Gloria Manzano",
+      "filevine_case_number": "26-0589",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-18T18:55:15.347Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728637",
+      "filevine_project_name": "LOJA TUZA, Erika Michelle  26-0588",
+      "filevine_client_name": "Erika Michelle  Loja Tuza",
+      "filevine_case_number": "26-0588",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-18T18:41:41.527Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728135",
+      "filevine_project_name": "CASTANEDA SAENZ, Ma Clemencia  26-0580",
+      "filevine_client_name": "Ma Clemencia  Castaneda Saenz",
+      "filevine_case_number": "26-0580",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T21:49:17.777Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13728086",
+      "filevine_project_name": "VARGAS ACOSTA, Arturo 26-0579",
+      "filevine_client_name": "Arturo Vargas Acosta",
+      "filevine_case_number": "26-0579",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T20:44:32.993Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727814",
+      "filevine_project_name": "AGUILAR RODRIGUEZ, David 26-0578",
+      "filevine_client_name": "David Aguilar Rodriguez",
+      "filevine_case_number": "26-0578",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T16:39:10.083Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727812",
+      "filevine_project_name": "AGUILAR RODRIGUEZ, David 26-0577",
+      "filevine_client_name": "David Aguilar Rodriguez",
+      "filevine_case_number": "26-0577",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T16:38:23.977Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727783",
+      "filevine_project_name": "GUTIERREZ SABAN, Domingo (T AOS) 26-0584",
+      "filevine_client_name": "Domingo GUTIERREZ SABAN (AOS)",
+      "filevine_case_number": "26-0584",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T16:15:56.82Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727673",
+      "filevine_project_name": "MENDOZA ENRIQUEZ, Maricruz (D) 26-0576",
+      "filevine_client_name": "Maricruz Mendoza Enriquez",
+      "filevine_case_number": "26-0576",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-17T14:44:43.22Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727386",
+      "filevine_project_name": "DOMINGUEZ JAIMES, Gerardo (VIRTUAL DETAINED VISIT)",
+      "filevine_client_name": "Gerardo Dominguez Jaimes",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-16T21:03:07.06Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13727065",
+      "filevine_project_name": "AVILA QUINTANA, Emmanuel  26-0566",
+      "filevine_client_name": "Emmanuel  Avila Quintana",
+      "filevine_case_number": "26-0566",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-16T16:11:29.993Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726993",
+      "filevine_project_name": "TORRES TORRES, Celina 26-0575 (ADVANCE PAROLE)",
+      "filevine_client_name": "Celina Torres Torres",
+      "filevine_case_number": "26-0575",
+      "project_type": "IM",
+      "phase_name": "Evidence Missing",
+      "created_date": "2026-03-16T15:14:41.787Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726864",
+      "filevine_project_name": "MEJIA ORTIZ, Damaris Anabelly 26-0574 (601 A)",
+      "filevine_client_name": "Damaris Anabelly Mejia Ortiz (I130)",
+      "filevine_case_number": "26-0574",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-16T13:40:48.223Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726689",
+      "filevine_project_name": "DONIS VALENZUELA , Marlon De Jesus 26-0563",
+      "filevine_client_name": "Marlon De Jesus Donis Valenzuela",
+      "filevine_case_number": "26-0563",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-14T16:37:31.237Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726687",
+      "filevine_project_name": "MUNOZ HERNANDEZ, Jimy Alexander 26-0562",
+      "filevine_client_name": "Jimy Alexander Mu\u00f1oz Hernandez",
+      "filevine_case_number": "26-0562",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-14T16:28:11.013Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726605",
+      "filevine_project_name": "COLLAGUAZO SOSARANGA, Arelis Paulina 26-0561",
+      "filevine_client_name": "Arelis Paulina Collaguazo Sosaranga",
+      "filevine_case_number": "26-0561",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-13T21:12:36.597Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726602",
+      "filevine_project_name": "AYACHE BOUDJEMAA, Ramzi",
+      "filevine_client_name": "Ramzi Ayache Boudjemaa",
+      "filevine_case_number": "26-0583",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-13T21:11:12.15Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726598",
+      "filevine_project_name": "AYACHE, Ramzi 26-0560",
+      "filevine_client_name": "Ramzi Ayache",
+      "filevine_case_number": "26-0560",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-13T21:06:40.467Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726596",
+      "filevine_project_name": "AYACHE, Ramzi 26-0559",
+      "filevine_client_name": "Ramzi Ayache",
+      "filevine_case_number": "26-0559",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-13T21:05:03.467Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726488",
+      "filevine_project_name": "PALACIOS GOMEZ, Abilio Bersain 26-0573 (I-102)",
+      "filevine_client_name": "Abilio Bersain Palacios Gomez",
+      "filevine_case_number": "26-0573",
+      "project_type": "IM",
+      "phase_name": "Intro Call",
+      "created_date": "2026-03-13T19:17:54.477Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13726168",
+      "filevine_project_name": "JUAREZ PEREZ, Iris Yoselin (DEFENSIVE ASYLUM)",
+      "filevine_client_name": "Iris Yoselin  Juarez Perez",
+      "filevine_case_number": "26-0556",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-13T15:09:43.43Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725899",
+      "filevine_project_name": "JIMENEZ GOMEZ, Osnaider Manuel 26-0555",
+      "filevine_client_name": "Osnaider Manuel Jimenez Gomez",
+      "filevine_case_number": "26-0555",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T21:20:04.723Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725898",
+      "filevine_project_name": "JIMENEZ GOMEZ, Osnaider Manuel 26-0554",
+      "filevine_client_name": "Osnaider Manuel Jimenez Gomez",
+      "filevine_case_number": "26-0554",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T21:18:54.147Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725897",
+      "filevine_project_name": "JIMENEZ GOMEZ, Osnaider Manuel 26-0553",
+      "filevine_client_name": "Osnaider Manuel Jimenez Gomez",
+      "filevine_case_number": "26-0553",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T21:17:38.067Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725894",
+      "filevine_project_name": "JIMENEZ GOMEZ, Osnaider Manuel 26-0552",
+      "filevine_client_name": "Osnaider Manuel Jimenez Gomez",
+      "filevine_case_number": "26-0552",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T21:15:47.827Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725892",
+      "filevine_project_name": "JIMENEZ GOMEZ, Osnaider Manuel 26-0551",
+      "filevine_client_name": "Osnaider Manuel Jimenez Gomez",
+      "filevine_case_number": "26-0551",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T21:13:55.51Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725833",
+      "filevine_project_name": "RAMIREZ GARCIA, Diana Guadalupe (Beneficiary)",
+      "filevine_client_name": "Diana Guadalupe Ramirez Garcia.",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T20:31:30.047Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725803",
+      "filevine_project_name": "AYALA ASCENSION, Rafael  (Petitioner) 26-0550",
+      "filevine_client_name": "Rafael Ayala Ascension",
+      "filevine_case_number": "26-0550",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-12T20:10:11.097Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725797",
+      "filevine_project_name": "OLAYO ROMO, Sandra Guadalupe (VIRTUAL DETAINED VISIT)",
+      "filevine_client_name": "Sandra Guadalupe OLAYO ROMO",
+      "filevine_case_number": "26-0549",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T20:03:19.123Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725655",
+      "filevine_project_name": "URDANETA PIRELA, Samuel Levi 26-0548",
+      "filevine_client_name": "Samuel Levi Urdaneta Pirela",
+      "filevine_case_number": "26-0548",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T18:16:40.477Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725546",
+      "filevine_project_name": "AGUILAR VIVEROS, Yareli Michelle 26-0571 (U VISA)",
+      "filevine_client_name": "Yareli Michelle Aguilar Viveros",
+      "filevine_case_number": "26-0571",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T16:29:28.357Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725499",
+      "filevine_project_name": "GAMEZ LOPEZ, Brenda Steffany 26-0547",
+      "filevine_client_name": "Brenda Steffany Gamez Lopez",
+      "filevine_case_number": "26-0547",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-12T15:47:40.243Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13725172",
+      "filevine_project_name": "CHAVEZ MANCILLA, Miguel  Angel 26-0543",
+      "filevine_client_name": "Miguel  Angel Chavez Mancilla",
+      "filevine_case_number": "26-0543",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-11T20:48:34.593Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724771",
+      "filevine_project_name": "SUAREZ, Mario [CLOSED]",
+      "filevine_client_name": "Mario Suarez",
+      "filevine_case_number": "26-0542",
+      "project_type": "IM",
+      "phase_name": "Archived",
+      "created_date": "2026-03-11T15:17:13.757Z",
+      "is_archived": true
+    },
+    {
+      "filevine_project_id": "13724715",
+      "filevine_project_name": "RAMOS REYES, Leticia Elizabeth (Removal Defense)",
+      "filevine_client_name": "Leticia Elizabeth RAMOS REYES",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-11T14:21:03.49Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724486",
+      "filevine_project_name": "MENA MAGANA, Wendy 26-0539",
+      "filevine_client_name": "Wendy Mena Magana",
+      "filevine_case_number": "26-0539",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T22:03:37.077Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724467",
+      "filevine_project_name": "ROSALES LEMUS, Oscar 26-0538",
+      "filevine_client_name": "Oscar Rosales Lemus",
+      "filevine_case_number": "26-0538",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T21:26:22.287Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724425",
+      "filevine_project_name": "CASILLAS MEZA, Calixto (P)",
+      "filevine_client_name": "Calixto Casillas Meza",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T20:36:35.08Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724412",
+      "filevine_project_name": "ROSALES LEMUS, Oscar 26-0535",
+      "filevine_client_name": "Oscar Rosales Lemus",
+      "filevine_case_number": "26-0535",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T20:28:04.66Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724401",
+      "filevine_project_name": "TORRES OLAGUEZ, Luis Fernando 26-0534",
+      "filevine_client_name": "Luis Fernando Torres Olaguez",
+      "filevine_case_number": "26-0534",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T20:21:20.423Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724164",
+      "filevine_project_name": "CALVO FRANCO, Beatriz, (Removal Defense)",
+      "filevine_client_name": "Beatriz Calvo Franco (P)",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T16:52:28.67Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13724095",
+      "filevine_project_name": "SUAREZ, Mario (EAD RENEWAL) 26-0542",
+      "filevine_client_name": "Mario Suarez",
+      "filevine_case_number": "26-0542",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T16:06:42.957Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723980",
+      "filevine_project_name": "SALAS GARCIA, David 26-0532",
+      "filevine_client_name": "David Salas Garcia",
+      "filevine_case_number": "26-0532",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-10T14:28:41.8Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723724",
+      "filevine_project_name": "CASTRO ANGUIANO, Maritza (EAD RENEWAL)",
+      "filevine_client_name": "Maritza Castro Anguiano",
+      "filevine_case_number": "26-0548",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T20:56:51.96Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723662",
+      "filevine_project_name": "HERRERA BALDERAS, Heidi 26-0529",
+      "filevine_client_name": "Heidi Elizabeth Herrera Balderas",
+      "filevine_case_number": "26-0529",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T19:46:55.083Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723640",
+      "filevine_project_name": "JUAREZ TAPIA, Samuel  26-0528",
+      "filevine_client_name": "Samuel  Juarez Tapia",
+      "filevine_case_number": "26-0528",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T19:26:01.5Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723608",
+      "filevine_project_name": "OSTO CASTRO, Alejandro 26-0527",
+      "filevine_client_name": "Alejandro  Osto Castro",
+      "filevine_case_number": "26-0527",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T18:50:29.927Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723449",
+      "filevine_project_name": "GOMEZ AMAYA, Jose Joel 26-0524",
+      "filevine_client_name": "Jose Joel Gomez Amaya",
+      "filevine_case_number": "26-0524",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T16:52:39.88Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723435",
+      "filevine_project_name": "GARCIA VEGA, Karen Mavel 26-0522 NOT HIRED",
+      "filevine_client_name": "Karen Mavel Garcia Vega",
+      "filevine_case_number": "26-0522",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-09T16:45:24.887Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723385",
+      "filevine_project_name": "JUAREZ OROZCO, Manuel 26-0526 (EAD RENEWAL)",
+      "filevine_client_name": "Manuel Juarez Orozco",
+      "filevine_case_number": "26-0526",
+      "project_type": "IM",
+      "phase_name": "FBI Sent",
+      "created_date": "2026-03-09T16:03:00.07Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723329",
+      "filevine_project_name": "GONZALEZ GUERRERO, Marcela Judith 26-0523 (601 WAIVER PRO BONO)",
+      "filevine_client_name": "MARCELA  JUDITH  GONZALEZ GUERRERO",
+      "filevine_case_number": "26-0523",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-09T15:24:36.063Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723070",
+      "filevine_project_name": "ESPINO FRIAS, Alison (I-130) 26-0521",
+      "filevine_client_name": "Jared Frias",
+      "filevine_case_number": "26-0521",
+      "project_type": "IM",
+      "phase_name": "Need Review",
+      "created_date": "2026-03-07T21:14:29.077Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723057",
+      "filevine_project_name": "DIAZ RIVAS, Luis Fernando",
+      "filevine_client_name": "Luis Fernando Diaz Rivas",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-07T19:25:55.63Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723056",
+      "filevine_project_name": "GARCIA OROZCO, LUIS FERNANDO 26-0515",
+      "filevine_client_name": "LUIS FERNANDO GARCIA OROZCO",
+      "filevine_case_number": "26-0515",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-07T19:15:03.76Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13723051",
+      "filevine_project_name": "MADRIGAL MORENO, Jose Trinidad 26-0514",
+      "filevine_client_name": "Jose  Trinidad  Madrigal Moreno",
+      "filevine_case_number": "26-0514",
+      "project_type": "IM",
+      "phase_name": "FBI Sent",
+      "created_date": "2026-03-07T18:28:32.75Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13722905",
+      "filevine_project_name": "TORRES PEREZ, Juan Carlos 26-0511",
+      "filevine_client_name": "Juan  Carlos  Torres Perez",
+      "filevine_case_number": "26-0511",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-06T21:56:07.473Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13722881",
+      "filevine_project_name": "MARBAN, eduardo 26-0510",
+      "filevine_client_name": "eduardo marban",
+      "filevine_case_number": "26-0510",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-06T21:23:01.78Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13722189",
+      "filevine_project_name": "CALDERON VARGAS, Monica Maria (Beneficiary) 26-0504",
+      "filevine_client_name": "Monica Maria  Calderon Vargas",
+      "filevine_case_number": "26-0504",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-05T21:08:59.733Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13722140",
+      "filevine_project_name": "MORENO LOPEZ, Abraham",
+      "filevine_client_name": "Abraham Moreno Lopez",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-05T20:36:09.25Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13722121",
+      "filevine_project_name": "GIRON CASTRO, Ritza Lilibet (Removal Defense)",
+      "filevine_client_name": "RITZA LILIBET GIRON CASTRO (P)",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-05T20:25:07.85Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721860",
+      "filevine_project_name": "VASQUEZ VARELA, Candido 26-0497",
+      "filevine_client_name": "Candido  Vasquez Varela",
+      "filevine_case_number": "26-0497",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-05T16:44:49.263Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721569",
+      "filevine_project_name": "ALCANTAR ARELLANO, Elsa Ver\u00f3nica (Asylum)",
+      "filevine_client_name": "Elsa Veronica Alcantar Arellano",
+      "filevine_case_number": "26-0494",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T22:24:12.673Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721510",
+      "filevine_project_name": "DE LEON LOPEZ, Irene Onaida 26-0493",
+      "filevine_client_name": "Irene  Onaida  de Leon Lopez",
+      "filevine_case_number": "26-0493",
+      "project_type": "IM",
+      "phase_name": "Intro Call",
+      "created_date": "2026-03-04T21:24:17.813Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721463",
+      "filevine_project_name": "MATA JUAREZ, Domingo  26-0492",
+      "filevine_client_name": "Domingo  Mata Juarez",
+      "filevine_case_number": "26-0492",
+      "project_type": "IM",
+      "phase_name": "FBI Pending",
+      "created_date": "2026-03-04T20:33:10.907Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721364",
+      "filevine_project_name": "CHICAS PINEDA, Marisa Yamileth 26-0491",
+      "filevine_client_name": "Marisa  Yamileth  Chicas Pineda",
+      "filevine_case_number": "26-0491",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T19:26:06.833Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721265",
+      "filevine_project_name": "SILVA GARCIA, Oscar Manuel (U CERT) 26-0502",
+      "filevine_client_name": "Oscar Manuel Silva Garcia (P)",
+      "filevine_case_number": "26-0502",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T18:06:14.85Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721186",
+      "filevine_project_name": "MALDONADO, JUAN  26-0489",
+      "filevine_client_name": "Juan Antonio MALDONADO ORTIZ",
+      "filevine_case_number": "26-0489",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T17:01:06.3Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721136",
+      "filevine_project_name": "GONZALEZ RAMOS, Thirza Odesa 26-0572 (U VISA)",
+      "filevine_client_name": "Thirza Odesa GONZALEZ RAMOS",
+      "filevine_case_number": "26-0572",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T16:23:06.687Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13721100",
+      "filevine_project_name": "NIZ ESTEBAN, Leonardo Fernando 26-0487",
+      "filevine_client_name": "Leonardo Fernando Niz Esteban",
+      "filevine_case_number": "26-0487",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-04T15:45:36.56Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13720728",
+      "filevine_project_name": "RAMIREZ VAZQUEZ, Maria Senaida",
+      "filevine_client_name": "Maria Senaida Ramirez Vazquez",
+      "filevine_case_number": "26-0486",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-03T20:58:23.38Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13720418",
+      "filevine_project_name": "REYES IBARRA, Alexis Antonio 26-0482",
+      "filevine_client_name": "Alexis  Antonio Reyes Ibarra",
+      "filevine_case_number": "26-0482",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-03-03T16:58:36.613Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13720378",
+      "filevine_project_name": "GONZALEZ RAMOS, Maximino 26-0481",
+      "filevine_client_name": "Maximino Gonzalez Ramos",
+      "filevine_case_number": "26-0481",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-03T16:33:52.507Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13720344",
+      "filevine_project_name": "POALASIN CANDO, Franklin Nestor 26-0480",
+      "filevine_client_name": "FRANKLIN NESTOR POALASIN CANDO",
+      "filevine_case_number": "26-0480",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-03T16:05:00.993Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13720312",
+      "filevine_project_name": "OHL, Samuelito",
+      "filevine_client_name": "Samuelito Ohl",
+      "filevine_case_number": "",
+      "project_type": "IM",
+      "phase_name": "Archived",
+      "created_date": "2026-03-03T15:47:58.673Z",
+      "is_archived": true
+    },
+    {
+      "filevine_project_id": "13719988",
+      "filevine_project_name": "GUARDADO CLABEL, Norma Elizabeth 26-0476",
+      "filevine_client_name": "Norma Elizabeth Guardado Clabel",
+      "filevine_case_number": "26-0476",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-03-02T21:37:36.85Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13719286",
+      "filevine_project_name": "PATRACA ALOR, Aurora (I-601) 26-0496",
+      "filevine_client_name": "Aurora  Patraca Alor",
+      "filevine_case_number": "26-0496",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-02-28T21:20:45.75Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13719280",
+      "filevine_project_name": "HERNANDEZ FERNANDEZ, William Alexander 26-0470",
+      "filevine_client_name": "William  Alexander  Hernandez Fernandez",
+      "filevine_case_number": "26-0470",
+      "project_type": "IM",
+      "phase_name": "Intro Call Complete",
+      "created_date": "2026-02-28T20:29:51.967Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13719257",
+      "filevine_project_name": "TAPIA MONTANO, Blanca Estela 26-0468",
+      "filevine_client_name": "Blanca Estela Tapia Montano",
+      "filevine_case_number": "26-0468",
+      "project_type": "IM",
+      "phase_name": "Reviewed by Attorney",
+      "created_date": "2026-02-28T18:08:13.367Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13719051",
+      "filevine_project_name": "VAZQUEZ GONZALEZ, Paola Marina 26-0464",
+      "filevine_client_name": "Paola Marina Vazquez Gonzalez",
+      "filevine_case_number": "26-0464",
+      "project_type": "IM",
+      "phase_name": "Dec writing complete",
+      "created_date": "2026-02-27T20:31:50.2Z",
+      "is_archived": false
+    },
+    {
+      "filevine_project_id": "13718980",
+      "filevine_project_name": "DE LAS NIEVES ZAPIEN, Griselda Elizabeth",
+      "filevine_client_name": "Griselda Elizabeth de las Nieves Zapien",
+      "filevine_case_number": "26-0463",
+      "project_type": "IM",
+      "phase_name": "New Case",
+      "created_date": "2026-02-27T19:32:48.783Z",
+      "is_archived": false
+    }
+  ],
+  "unmatched_case_list_sample": [
+    {
+      "case_number": "25-2572",
+      "client_name": "SANCHEZ NIETO, Bernardita (D)",
+      "year": 2025,
+      "sheet": "NOVEMBER",
+      "source_file": "2025 Case List (1).xlsx"
+    },
+    {
+      "case_number": "E23-2574",
+      "client_name": "ESTRADA AVELLANEDA, Nolbertha (D)",
+      "year": 2025,
+      "sheet": "NOVEMBER",
+      "source_file": "2025 Case List (1).xlsx"
+    },
+    {
+      "case_number": "13686025",
+      "client_name": "HERNADEZ GRANADOS, Rocio (D)",
+      "year": 2026,
+      "sheet": "JANUARY",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "25-1636",
+      "client_name": "FUENTES GODINEZ, Magda Ester (D) | Filevine",
+      "year": 2026,
+      "sheet": "FEBRUARY",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-0390",
+      "client_name": "RENTERIA MATEO, Alexi (D)",
+      "year": 2026,
+      "sheet": "FEBRUARY",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "25-726",
+      "client_name": "TOMAS VARONA, Domitila (D)",
+      "year": 2026,
+      "sheet": "FEBRUARY",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2419",
+      "client_name": "CARRIZALES TOVAR, Magdalena",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2369",
+      "client_name": "MASSA CHAVEZ, Ariana Emmy",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2370",
+      "client_name": "ALVITER CRUZ, Edna Concepcion",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2379",
+      "client_name": "TIRADO DELGADO, Alex Galo",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2398",
+      "client_name": "SANCHEZ TAVERA, Osvaldo Salvador",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2390",
+      "client_name": "GABRIELGARCIA, Leonarda",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2392",
+      "client_name": "DE PAZ, Luis Alberto",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2412",
+      "client_name": "DIAZ AGUILAR, Marco Antonio",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2421",
+      "client_name": "ENRIQUEZ PINEDA, Yadira Marisela",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2426",
+      "client_name": "XIQUE TELLO, Saul",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2394",
+      "client_name": "VALERIO BERNAL, Jose Antonio",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2422",
+      "client_name": "HERNANDEZ RODRIGUEZ, Alvaro",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2432",
+      "client_name": "BUNAY RODAS, Mayra Patricia",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2400",
+      "client_name": "GIRON AMAYA, Josue Elias",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2438",
+      "client_name": "GALLEGOS GARCIA, Ulises",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "25-2561",
+      "client_name": "MARTINEZ MANZO, Minnette Carolina",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2428",
+      "client_name": "SEDANO LOZANO, Araceli",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2389",
+      "client_name": "LOZANO, Manuela Ivonne",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2418",
+      "client_name": "BAUTISTA SEBASTIAN, Elena",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2371",
+      "client_name": "AYALA LOZANO, Ulises",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2424",
+      "client_name": "GODINEZ RODRIGUEZ, Elmer Estuardo",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2425",
+      "client_name": "BIZARRO ROMERO, Carmen Veronica",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2372",
+      "client_name": "MARTINEZ RAMOS, Melvin Antonio",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2393",
+      "client_name": "VALLE SANCHEZ, Maria Dolores",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2416",
+      "client_name": "DIAZ ORELLANA, Kendy Gissela",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2429",
+      "client_name": "MORALES TORRES, Saul Salvador",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2430",
+      "client_name": "GRANADA CEDANO, Mayra Araceli",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2408",
+      "client_name": "LARALARA, Sandy Yoeli",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2417",
+      "client_name": "LOPEZ ITZEP, Maria",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2423",
+      "client_name": "Juan Carlos Murillo Uday",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2436",
+      "client_name": "CRUZ ESCALANTE, Sihumara",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2439",
+      "client_name": "ACOSTA OCHOA, Uriel",
+      "year": 2026,
+      "sheet": "MARCH",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2442",
+      "client_name": "SOTO GARCIA, Elia Amalia (T VISA)",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2444",
+      "client_name": "CASTILLO BARRIOS, Luis Aroldo",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2449",
+      "client_name": "SOSA PERALTA, Maura",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2447",
+      "client_name": "MORALES MORALES, Briana Liset (D)",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2453",
+      "client_name": "PILLACELA SICHIQUE, Aida Mirian",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2454",
+      "client_name": "PEREZ CHAVEZ, Jose",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2452",
+      "client_name": "LEANDRO CORDOBA, Camerina",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2457",
+      "client_name": "CORTES ROJAS, Cesar Augusto",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2458",
+      "client_name": "SOLORZANO SERRATO, Jose Luis",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2460",
+      "client_name": "HUEZO FRANCO, Melida Leonor",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2459",
+      "client_name": "VELASCO MEDRANO, Jose Marcos",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2461",
+      "client_name": "GARCIA HERNANDEZ, Gerver Enoc",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2462",
+      "client_name": "MELESIO CURIEL, Rita Marcela",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2463",
+      "client_name": "GONZALEZ CORTEZ, Maria Angela",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2467",
+      "client_name": "FLORES DELGADO, Jose",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    },
+    {
+      "case_number": "26-2468",
+      "client_name": "PALMEROS SAGRERO, Jesus (D)",
+      "year": 2026,
+      "sheet": "APRIL",
+      "source_file": "2026 Case List (2).xlsx"
+    }
+  ]
+}

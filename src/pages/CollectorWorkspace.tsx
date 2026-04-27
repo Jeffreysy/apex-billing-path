@@ -12,11 +12,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
+import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 import { ESCALATION_HANDOFF_QUEUES, formatEscalationStatus, formatEscalationValue, getDefaultHandoffQueue } from "@/lib/escalations";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, DollarSign, AlertTriangle, Calendar,
-  Clock, FileText, Users, ChevronRight, Shield,
+  Clock, FileText, Users, ChevronRight, Shield, CreditCard,
 } from "lucide-react";
 
 // --- helpers ---
@@ -27,6 +28,30 @@ function agingBucket(days: number | null): string {
   if (d <= 60) return "31-60 days";
   if (d <= 90) return "61-90 days";
   return "90+ days";
+}
+
+function daysBetweenTodayAndDate(dateValue: string | null | undefined) {
+  if (!dateValue) return 0;
+  const [year, month, day] = dateValue.split("-").map(Number);
+  if (!year || !month || !day) return 0;
+  const dueDate = new Date(year, month - 1, day);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.floor((todayStart.getTime() - dueDate.getTime()) / 86_400_000);
+}
+
+function formatNextDue(nextDueDate: string | null | undefined, effectiveDaysPastDue: number) {
+  if (!nextDueDate) return "—";
+  if (effectiveDaysPastDue > 0) return `${nextDueDate} (${effectiveDaysPastDue}d overdue)`;
+  return nextDueDate;
+}
+
+function formatLastTransaction(account: any) {
+  if (!account?.last_transaction_date) return "No payment";
+  const amount = Number(account.last_transaction_amount) || 0;
+  return amount > 0
+    ? `${account.last_transaction_date} - $${amount.toLocaleString()}`
+    : account.last_transaction_date;
 }
 
 function priorityLabel(score: number | null) {
@@ -88,6 +113,7 @@ const CollectorWorkspace = () => {
   const [commitOpen, setCommitOpen] = useState(false);
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
 
   // Call form state removed — now handled by CallDocumentationDialog
 
@@ -188,11 +214,22 @@ const CollectorWorkspace = () => {
     }
   };
 
-  const handleSetFollowUp = (e: React.FormEvent) => {
+  const handleSetFollowUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(`Follow-up set for ${followUpDate}`);
-    setFollowUpOpen(false);
-    setFollowUpDate("");
+    if (!followUpDate) return;
+    try {
+      const { error } = await supabase
+        .from("contracts")
+        .update({ next_payment_date: followUpDate })
+        .eq("id", account?.contract_id);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["collections-dashboard"] });
+      toast.success(`Follow-up set for ${followUpDate}`);
+      setFollowUpOpen(false);
+      setFollowUpDate("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to set follow-up");
+    }
   };
 
   if (ql || al) {
@@ -213,8 +250,13 @@ const CollectorWorkspace = () => {
   }
 
   const priority = priorityLabel(account.priority_score);
-  const daysOut = account.days_past_due || 0;
   const balance = Number(account.balance_remaining) || 0;
+  const storedDaysOut = Number(account.days_past_due) || 0;
+  const dueDateDaysOut = balance > 0 ? Math.max(0, daysBetweenTodayAndDate(account.next_due_date)) : 0;
+  const daysOut = Math.max(storedDaysOut, dueDateDaysOut);
+  const delinquencyLabel = daysOut > 0
+    ? `${daysOut}d past due`
+    : account.delinquency_status || "Current";
   const contractVal = Number(account.contract_value) || 0;
   const collected = Number(account.collected) || 0;
   const collectionPct = contractVal > 0 ? Math.round((collected / contractVal) * 100) : 0;
@@ -265,20 +307,24 @@ const CollectorWorkspace = () => {
         </div>
 
         {/* Key metrics row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-4 pt-4 border-t">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mt-4 pt-4 border-t">
           <MetricCell label="Outstanding" value={`$${balance.toLocaleString()}`} />
           <MetricCell label="Contract Value" value={`$${contractVal.toLocaleString()}`} />
           <MetricCell label="Collected" value={`$${collected.toLocaleString()} (${collectionPct}%)`} />
           <MetricCell label="Aging" value={agingBucket(daysOut)} />
           <MetricCell label="Last Contact" value={lastContacted} />
-          <MetricCell label="Next Due" value={account.next_due_date || "—"} />
+          <MetricCell label="Last Payment" value={formatLastTransaction(account)} />
+          <MetricCell label="Next Due" value={formatNextDue(account.next_due_date, daysOut)} />
           <MetricCell label="Next Follow-Up" value={account.next_payment_date || "—"} />
         </div>
       </div>
 
       {/* === QUICK ACTIONS === */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <Button onClick={() => setCallOpen(true)} className="gap-2">
+        <Button onClick={() => setPayOpen(true)} className="gap-2">
+          <CreditCard className="h-4 w-4" /> Take Payment
+        </Button>
+        <Button variant="outline" onClick={() => setCallOpen(true)} className="gap-2">
           <Phone className="h-4 w-4" /> Log Call Outcome
         </Button>
         <Button variant="outline" onClick={() => setCommitOpen(true)} className="gap-2">
@@ -299,7 +345,7 @@ const CollectorWorkspace = () => {
         <Section title="Account Summary" icon={<FileText className="h-4 w-4" />}>
           <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
             <DetailRow label="Contract Status" value={account.contract_status || "—"} />
-            <DetailRow label="Delinquency" value={account.delinquency_status || "Current"} />
+            <DetailRow label="Delinquency" value={delinquencyLabel} />
             <DetailRow label="Monthly Installment" value={`$${(Number(account.monthly_installment) || 0).toLocaleString()}`} />
             <DetailRow label="Practice Area" value={account.practice_area || "—"} />
             <DetailRow label="Case Stage" value={account.case_stage || account.immigration_stage || "—"} />
@@ -409,6 +455,22 @@ const CollectorWorkspace = () => {
       </div>
 
       {/* ===== DIALOGS ===== */}
+
+      {/* Take Payment (LawPay hand-off) */}
+      <TakePaymentDialog
+        open={payOpen}
+        onOpenChange={setPayOpen}
+        target={account ? {
+          clientId: account.client_id || null,
+          contractId: account.contract_id || null,
+          clientName: account.client_name || "Unknown",
+          email: account.email || null,
+          invoiceNumber: account.invoice_number || null,
+          caseNumber: account.case_number || null,
+          defaultAmount: Number(account.balance_remaining) || 0,
+          collectorName: account.collector || account.assigned_collector || null,
+        } : null}
+      />
 
       {/* Call Documentation */}
       <CallDocumentationDialog open={callOpen} onOpenChange={setCallOpen} account={account} />

@@ -341,7 +341,10 @@ export type Database = {
           assigned_collector: string | null
           billing_contact_email: string | null
           case_stage: string | null
+          case_number: string | null
           city: string | null
+          client_quality_reason: string | null
+          client_quality_status: string
           client_number: string
           contact_name: string | null
           created_at: string
@@ -351,9 +354,13 @@ export type Database = {
           delinquency_status: string | null
           detained: boolean | null
           email: string | null
+          excluded_from_collections: boolean
           filevine_project_id: string | null
           id: string
           is_active: boolean
+          last_transaction_amount: number | null
+          last_transaction_date: string | null
+          last_transaction_source: string | null
           mycase_id: number | null
           name: string
           nationality: string | null
@@ -364,6 +371,7 @@ export type Database = {
           practice_area: string | null
           preferred_contact_method: string | null
           preferred_language: string | null
+          quality_reviewed_at: string | null
           referral_source: string | null
           state: string | null
           updated_at: string
@@ -376,7 +384,10 @@ export type Database = {
           assigned_collector?: string | null
           billing_contact_email?: string | null
           case_stage?: string | null
+          case_number?: string | null
           city?: string | null
+          client_quality_reason?: string | null
+          client_quality_status?: string
           client_number: string
           contact_name?: string | null
           created_at?: string
@@ -386,9 +397,13 @@ export type Database = {
           delinquency_status?: string | null
           detained?: boolean | null
           email?: string | null
+          excluded_from_collections?: boolean
           filevine_project_id?: string | null
           id?: string
           is_active?: boolean
+          last_transaction_amount?: number | null
+          last_transaction_date?: string | null
+          last_transaction_source?: string | null
           mycase_id?: number | null
           name: string
           nationality?: string | null
@@ -399,6 +414,7 @@ export type Database = {
           practice_area?: string | null
           preferred_contact_method?: string | null
           preferred_language?: string | null
+          quality_reviewed_at?: string | null
           referral_source?: string | null
           state?: string | null
           updated_at?: string
@@ -411,7 +427,10 @@ export type Database = {
           assigned_collector?: string | null
           billing_contact_email?: string | null
           case_stage?: string | null
+          case_number?: string | null
           city?: string | null
+          client_quality_reason?: string | null
+          client_quality_status?: string
           client_number?: string
           contact_name?: string | null
           created_at?: string
@@ -421,9 +440,13 @@ export type Database = {
           delinquency_status?: string | null
           detained?: boolean | null
           email?: string | null
+          excluded_from_collections?: boolean
           filevine_project_id?: string | null
           id?: string
           is_active?: boolean
+          last_transaction_amount?: number | null
+          last_transaction_date?: string | null
+          last_transaction_source?: string | null
           mycase_id?: number | null
           name?: string
           nationality?: string | null
@@ -434,6 +457,7 @@ export type Database = {
           practice_area?: string | null
           preferred_contact_method?: string | null
           preferred_language?: string | null
+          quality_reviewed_at?: string | null
           referral_source?: string | null
           state?: string | null
           updated_at?: string
@@ -460,6 +484,7 @@ export type Database = {
           collected_amount: number | null
           collector: string
           commission: number | null
+          contract_id: string | null
           created_at: string | null
           delinquency_days: number | null
           duration_minutes: number | null
@@ -486,6 +511,7 @@ export type Database = {
           collected_amount?: number | null
           collector: string
           commission?: number | null
+          contract_id?: string | null
           created_at?: string | null
           delinquency_days?: number | null
           duration_minutes?: number | null
@@ -512,6 +538,7 @@ export type Database = {
           collected_amount?: number | null
           collector?: string
           commission?: number | null
+          contract_id?: string | null
           created_at?: string | null
           delinquency_days?: number | null
           duration_minutes?: number | null
@@ -542,6 +569,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "collections_dashboard"
             referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "collection_activities_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_activities_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
           },
         ]
       }
@@ -633,6 +674,9 @@ export type Database = {
           id: string
           installments_paid: number | null
           invoice_number: string | null
+          last_transaction_amount: number | null
+          last_transaction_date: string | null
+          last_transaction_source: string | null
           matter_id: string | null
           maturity_date: string | null
           monthly_installment: number | null
@@ -660,6 +704,9 @@ export type Database = {
           id?: string
           installments_paid?: number | null
           invoice_number?: string | null
+          last_transaction_amount?: number | null
+          last_transaction_date?: string | null
+          last_transaction_source?: string | null
           matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
@@ -687,6 +734,9 @@ export type Database = {
           id?: string
           installments_paid?: number | null
           invoice_number?: string | null
+          last_transaction_amount?: number | null
+          last_transaction_date?: string | null
+          last_transaction_source?: string | null
           matter_id?: string | null
           maturity_date?: string | null
           monthly_installment?: number | null
@@ -969,6 +1019,10 @@ export type Database = {
           email: string | null
           firm_name: string
           id: string
+          lawpay_default_account: string
+          lawpay_enabled: boolean
+          lawpay_operating_url: string | null
+          lawpay_trust_url: string | null
           logo_url: string | null
           phone: string | null
           state: string | null
@@ -987,6 +1041,10 @@ export type Database = {
           email?: string | null
           firm_name?: string
           id?: string
+          lawpay_default_account?: string
+          lawpay_enabled?: boolean
+          lawpay_operating_url?: string | null
+          lawpay_trust_url?: string | null
           logo_url?: string | null
           phone?: string | null
           state?: string | null
@@ -1005,6 +1063,10 @@ export type Database = {
           email?: string | null
           firm_name?: string
           id?: string
+          lawpay_default_account?: string
+          lawpay_enabled?: boolean
+          lawpay_operating_url?: string | null
+          lawpay_trust_url?: string | null
           logo_url?: string | null
           phone?: string | null
           state?: string | null
@@ -2817,17 +2879,29 @@ export type Database = {
           case_stage: string | null
           client_id: string | null
           client_name: string | null
+          client_quality_reason: string | null
+          client_quality_status: string | null
           collected: number | null
           collector: string | null
           contract_id: string | null
           contract_status: string | null
           contract_value: number | null
+          client_last_transaction_amount: number | null
+          client_last_transaction_date: string | null
+          client_last_transaction_source: string | null
+          contract_last_transaction_amount: number | null
+          contract_last_transaction_date: string | null
+          contract_last_transaction_source: string | null
           days_out: number | null
           days_past_due: number | null
           delinquency_status: string | null
           email: string | null
+          excluded_from_collections: boolean | null
           immigration_stage: string | null
           lead_attorney: string | null
+          last_transaction_amount: number | null
+          last_transaction_date: string | null
+          last_transaction_source: string | null
           monthly_installment: number | null
           next_due_date: string | null
           next_payment_date: string | null
