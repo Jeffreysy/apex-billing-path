@@ -301,7 +301,19 @@ const CollectorDashboard = () => {
               return (
                 <div key={key} className="queue-item">
                   <div>
-                    <p className="font-medium text-sm">{c.client_name}</p>
+                    <p className="font-medium text-sm">
+                      {c.client_id || c.contract_id ? (
+                        <button
+                          onClick={() => navigate(`/clients?${c.client_id ? `clientId=${c.client_id}` : `contractId=${c.contract_id}`}`)}
+                          className="text-primary hover:underline text-left"
+                          title="Open client profile"
+                        >
+                          {c.client_name}
+                        </button>
+                      ) : (
+                        c.client_name
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground">{c.phone} · Due: {c.next_due_date || "—"}</p>
                     {daysOut > 0 && <p className="text-xs text-destructive font-medium">{daysOut} days past due</p>}
                     {lastCalled && <p className="text-xs text-muted-foreground">Last called: {lastCalled}</p>}
