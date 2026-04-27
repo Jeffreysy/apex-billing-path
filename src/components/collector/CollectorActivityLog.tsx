@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Phone, Calendar, Clock, ArrowUpDown } from "lucide-react";
+import { Search, Phone, Calendar, Clock, ArrowUpDown, CreditCard, ExternalLink } from "lucide-react";
+import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 
 const OUTCOMES = [
   "payment_taken", "promise_to_pay", "no_answer", "left_voicemail",
@@ -34,6 +37,30 @@ interface Props {
 }
 
 const CollectorActivityLog = ({ collectorName, isLead }: Props) => {
+  const navigate = useNavigate();
+  const [payOpen, setPayOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
+
+  const goToWorkspace = (row: any) => {
+    const id = row.contract_id || row.client_id;
+    if (!id) return;
+    navigate(`/collections/workspace/${id}`);
+  };
+
+  const openPayment = (row: any) => {
+    setPayTarget({
+      clientId: row.client_id || null,
+      contractId: row.contract_id || null,
+      clientName: row.client_name || "Unknown",
+      email: null,
+      invoiceNumber: null,
+      caseNumber: null,
+      defaultAmount: 0,
+      collectorName: row.collector || collectorName,
+    });
+    setPayOpen(true);
+  };
+
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ["collector-activity-log", isLead ? "all" : collectorName],
     queryFn: async () => {
@@ -135,26 +162,65 @@ const CollectorActivityLog = ({ collectorName, isLead }: Props) => {
                 <span className="flex items-center gap-1">Amount <ArrowUpDown className="h-2.5 w-2.5" /></span>
               </th>
               <th className="px-2 py-1.5 text-left font-medium">Notes</th>
+              <th className="px-2 py-1.5 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={isLead ? 6 : 5} className="px-2 py-6 text-center text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={isLead ? 7 : 6} className="px-2 py-6 text-center text-muted-foreground">Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={isLead ? 6 : 5} className="px-2 py-6 text-center text-muted-foreground">No activities found</td></tr>
+              <tr><td colSpan={isLead ? 7 : 6} className="px-2 py-6 text-center text-muted-foreground">No activities found</td></tr>
             ) : filtered.slice(0, 200).map(row => (
               <tr key={row.id} className="border-b hover:bg-muted/30">
                 <td className="px-2 py-1.5 whitespace-nowrap">{row.activity_date}{row.start_time && <span className="text-muted-foreground ml-1">{String(row.start_time).slice(0, 5)}</span>}</td>
                 {isLead && <td className="px-2 py-1.5 font-medium">{row.collector}</td>}
-                <td className="px-2 py-1.5">{row.client_name}</td>
+                <td className="px-2 py-1.5">
+                  {row.contract_id || row.client_id ? (
+                    <button
+                      onClick={() => goToWorkspace(row)}
+                      className="text-primary hover:underline text-left font-medium"
+                      title="Open in collector workspace"
+                    >
+                      {row.client_name}
+                    </button>
+                  ) : (
+                    row.client_name
+                  )}
+                </td>
                 <td className="px-2 py-1.5">{outcomeBadge(row.outcome)}</td>
                 <td className="px-2 py-1.5 font-mono">{fmt(row.collected_amount)}</td>
                 <td className="px-2 py-1.5 max-w-[150px] truncate" title={row.notes || ""}>{row.notes || "—"}</td>
+                <td className="px-2 py-1.5">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      title="Take payment"
+                      onClick={() => openPayment(row)}
+                      disabled={!row.client_id && !row.contract_id}
+                    >
+                      <CreditCard className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      title="Open workspace"
+                      onClick={() => goToWorkspace(row)}
+                      disabled={!row.client_id && !row.contract_id}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <TakePaymentDialog open={payOpen} onOpenChange={setPayOpen} target={payTarget} />
     </div>
   );
 };
