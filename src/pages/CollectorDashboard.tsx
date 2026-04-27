@@ -216,7 +216,7 @@ const CollectorDashboard = () => {
       if (!map[key] || a.activity_date > map[key]) map[key] = a.activity_date;
     }
     return map;
-  }, [myAllActivities]);
+  }, [myOutboundCalls]);
 
   const openCallFor = (account: any) => {
     setCallAccount(account);
