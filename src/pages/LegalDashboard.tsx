@@ -55,16 +55,19 @@ const YEAR_OPTIONS = [
 
 const LegalDashboard = () => {
   const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
-  const { data: kpi, isLoading } = useLegalKPI(selectedYear);
+  const { data: kpiRaw, isLoading } = useLegalKPI(selectedYear);
   const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
 
-  if (isLoading || escalationsLoading || !kpi) {
+  if (isLoading || escalationsLoading || !kpiRaw) {
     return (
       <DashboardLayout title="Legal Department">
         <div className="p-8 text-center text-muted-foreground">Loading legal dashboard...</div>
       </DashboardLayout>
     );
   }
+
+  // Cast to any — useLegalKPI returns a JSON blob whose shape is well-known but not typed.
+  const kpi: any = kpiRaw;
 
   const stageData = (kpi.stage_breakdown || [])
     .filter((s: any) => s.pipeline_stage !== "Other")
