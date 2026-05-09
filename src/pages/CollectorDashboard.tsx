@@ -20,7 +20,7 @@ import CollectorCommitments from "@/components/collector/CollectorCommitments";
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
-const KNOWN_COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
+// Lead collector — update here if the lead changes
 const LEAD_COLLECTOR = "Alejandro A";
 
 function normalizeCollectorName(value: string | null | undefined) {
@@ -102,11 +102,10 @@ const CollectorDashboard = () => {
     const map: Record<string, Set<string>> = {};
     for (const a of allActivities) {
       if (!CALL_TYPES.includes(a.activity_type)) continue;
-      const norm = normalizeCollectorName(a.collector);
-      const matched = KNOWN_COLLECTORS.find(c => normalizeCollectorName(c) === norm);
-      if (!matched || !a.client_id) continue;
-      if (!map[matched]) map[matched] = new Set<string>();
-      map[matched].add(a.client_id);
+      if (!a.collector || !a.client_id) continue;
+      const name = a.collector.trim();
+      if (!map[name]) map[name] = new Set<string>();
+      map[name].add(a.client_id);
     }
     return map;
   }, [allActivities]);

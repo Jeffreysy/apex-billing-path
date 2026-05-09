@@ -2,6 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
+import CollectorCoverageTab from "@/components/collector/CollectorCoverageTab";
 import { useCollectionsDashboard, usePaymentsData, useCollectionActivities, useCollectors, useEscalations } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -169,9 +170,10 @@ const CollectionsDashboard = () => {
       {/* Tabbed view for all sections */}
       <div className="mt-6">
         <Tabs defaultValue="queue" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="queue">Queue</TabsTrigger>
             <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="coverage">Coverage</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
             <TabsTrigger value="escalations">Escalations</TabsTrigger>
             <TabsTrigger value="commitments">Commitments</TabsTrigger>
@@ -224,6 +226,13 @@ const CollectionsDashboard = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Coverage */}
+          <TabsContent value="coverage">
+            <div className="dashboard-section">
+              <CollectorCoverageTab />
             </div>
           </TabsContent>
 

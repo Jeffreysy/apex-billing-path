@@ -265,7 +265,7 @@ export function useMergedClients() {
           downPayment,
           installmentMonths,
           status: mapStatus(row.contract_status, row.delinquency_status),
-          assignedCollector: row.collector || "",
+          assignedCollector: row.collector || "Unassigned",
           lastContact: "",
           nextPaymentDue: row.next_due_date || "",
           caseNumber: row.case_number || "",
@@ -374,7 +374,8 @@ export function useCollectionActivityRows() {
   });
 }
 
-/** 6. Collectors — from collector_performance view, current month (falls back to latest) */
+/** 6. Collectors — from collector_performance view, current month (falls back to latest).
+ *  Dynamic: all collectors except System-Auto are included automatically. */
 export function useCollectors(monthStart?: string) {
   const currentMonthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
   const start = monthStart || currentMonthStart;
@@ -404,11 +405,11 @@ export function useCollectors(monthStart?: string) {
         }
       }
 
-      const knownCollectors = new Set(["Alejandro A", "Patricio D", "Maritza V"]);
       const collectorMap = new Map<string, { totalCollected: number; totalCommission: number; callsMade: number; paymentsTaken: number }>();
 
       for (const row of (rows || [])) {
-        if (!row.collector || !knownCollectors.has(row.collector)) continue;
+        // Exclude automated/system entries
+        if (!row.collector || row.collector.toLowerCase().startsWith("system")) continue;
         const existing = collectorMap.get(row.collector) || { totalCollected: 0, totalCommission: 0, callsMade: 0, paymentsTaken: 0 };
         existing.totalCollected += Number(row.total_collected) || 0;
         existing.totalCommission += Number(row.total_commission) || 0;
@@ -433,6 +434,73 @@ export function useCollectors(monthStart?: string) {
         i++;
       }
       return collectors.sort((a, b) => b.totalCollected - a.totalCollected);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 7. Collector Weekly Coverage — unique clients contacted per week vs AR universe */
+export type CollectorWeeklyCoverage = {
+  collector: string;
+  week_start: string;
+  week_end: string;
+  unique_clients_contacted: number;
+  total_activities: number;
+  productive_contacts: number;
+  team_unique_clients: number;
+  total_ar_clients: number;
+  coverage_pct: number;
+  team_share_pct: number;
+  productivity_pct: number;
+};
+
+export function useCollectorWeeklyCoverage(weeksBack = 12) {
+  return useQuery({
+    queryKey: ["collector-weekly-coverage", weeksBack],
+    queryFn: async () => {
+      const since = format(
+        new Date(Date.now() - weeksBack * 7 * 24 * 60 * 60 * 1000),
+        "yyyy-MM-dd"
+      );
+      const { data, error } = await supabase
+        .from("collector_weekly_coverage" as any)
+        .select("*")
+        .gte("week_start", since)
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      return (data || []) as CollectorWeeklyCoverage[];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 8. Collector Client Status — per-collector view of each client: last contact, days since, this-week flag */
+export type CollectorClientStatus = {
+  collector: string;
+  client_id: string;
+  client_name: string;
+  practice_area: string | null;
+  delinquency_status: string | null;
+  remaining_ar: number;
+  last_contact_date: string | null;
+  days_since_contact: number | null;
+  total_contacts: number;
+  contacts_last_30d: number;
+  contacted_this_week: boolean;
+};
+
+export function useCollectorClientStatus(collectorName?: string) {
+  return useQuery({
+    queryKey: ["collector-client-status", collectorName ?? "all"],
+    queryFn: async () => {
+      let query = supabase
+        .from("collector_client_status" as any)
+        .select("*")
+        .order("remaining_ar", { ascending: false });
+      if (collectorName) query = (query as any).eq("collector", collectorName);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as CollectorClientStatus[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -673,4 +741,70 @@ export function computeMonthlyPastCollections(payments: Payment[]) {
     crm: Math.round(crm),
     total: Math.round(collector + crm),
   })).slice(-6);
+}
+
+// ========================
+// HARDSHIP REQUESTS
+// ========================
+
+export type HardshipRequest = {
+  id: string;
+  client_id: string;
+  contract_id: string | null;
+  requested_by: string;
+  reason: string;
+  hardship_type: "extended_term" | "reduced_payment" | "temporary_pause" | "settlement_offer" | "other";
+  current_monthly_payment: number | null;
+  proposed_monthly_payment: number | null;
+  current_term_remaining: number | null;
+  proposed_term_months: number | null;
+  notes: string | null;
+  status: "pending" | "approved" | "denied" | "counter_offered";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Hardship requests for a specific client/contract (used in CollectorWorkspace). */
+export function useHardshipRequests(clientId: string | null | undefined, contractId?: string | null) {
+  return useQuery<HardshipRequest[]>({
+    queryKey: ["hardship-requests", clientId, contractId],
+    queryFn: async () => {
+      if (!clientId) return [];
+      let query = supabase
+        .from("hardship_requests")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (contractId) query = query.eq("contract_id", contractId);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as HardshipRequest[];
+    },
+    enabled: !!clientId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/** All pending hardship requests (used in admin/management views). */
+export function useAllHardshipRequests(statusFilter?: string) {
+  return useQuery<HardshipRequest[]>({
+    queryKey: ["hardship-requests-all", statusFilter ?? "all"],
+    queryFn: async () => {
+      let query = supabase
+        .from("hardship_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (statusFilter && statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as HardshipRequest[];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 }
