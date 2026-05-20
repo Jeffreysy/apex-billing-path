@@ -12,7 +12,6 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
-import { Card } from "@/components/ui/card";
 
 const AGING_BUCKETS = [
   { key: "current", label: "Current", max: 0 },
