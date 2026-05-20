@@ -8,7 +8,7 @@ import {
   format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
 } from "date-fns";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
 
@@ -359,42 +359,73 @@ export default function ExecutiveInsights() {
           <SectionHeader
             eyebrow="Cash Movement"
             title="Money Flow"
-            caption={`Opening AR → New AR → Collections → Closing AR · ${monthLabel}`}
+            caption={`Composition of inflows vs outflows · ${monthLabel}`}
           />
-          <div className="mt-6">
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={view.waterfall} margin={{ top: 10, right: 8, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => fmtMoney(v)} axisLine={false} tickLine={false} width={56} />
-                <Tooltip
-                  formatter={(v: number) => fmtMoney(Math.abs(v))}
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 11,
-                    boxShadow: "0 8px 24px -8px hsl(var(--primary)/0.25)",
-                  }}
-                />
-                <ReferenceLine y={0} stroke="hsl(var(--border))" />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={64}>
-                  {view.waterfall.map((d, i) => (
-                    <Cell
-                      key={i}
-                      fill={
-                        d.type === "pos"
-                          ? "hsl(var(--destructive))"
-                          : d.type === "neg"
-                            ? "hsl(var(--success))"
-                            : "hsl(var(--primary))"
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {(() => {
+            const opening = view.waterfall[0].value;
+            const newAR = view.waterfall[1].value;
+            const collected = Math.abs(view.waterfall[2].value);
+            const closing = view.totalAR;
+            const pieData = [
+              { name: "Opening AR", value: Math.max(0, opening), color: "hsl(var(--primary))" },
+              { name: "+ New AR", value: Math.max(0, newAR), color: "hsl(var(--destructive))" },
+              { name: "− Collected", value: Math.max(0, collected), color: "hsl(var(--success))" },
+            ].filter((d) => d.value > 0);
+            const total = pieData.reduce((s, d) => s + d.value, 0) || 1;
+            return (
+              <div className="mt-6 grid items-center gap-6 sm:grid-cols-[260px_1fr]">
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={64}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
+                      >
+                        {pieData.map((d, i) => (
+                          <Cell key={i} fill={d.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v: number) => fmtMoney(v)}
+                        contentStyle={{
+                          background: "hsl(var(--popover))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 8,
+                          fontSize: 11,
+                          boxShadow: "0 8px 24px -8px hsl(var(--primary)/0.25)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">Closing AR</span>
+                    <span className="text-lg font-semibold tabular-nums">{fmtMoney(closing)}</span>
+                  </div>
+                </div>
+                <ul className="space-y-3 text-sm">
+                  {pieData.map((d) => {
+                    const pct = (d.value / total) * 100;
+                    return (
+                      <li key={d.name} className="flex items-center gap-3">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+                        <span className="flex-1 text-muted-foreground">{d.name}</span>
+                        <span className="tabular-nums font-medium">{fmtMoney(d.value)}</span>
+                        <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">{pct.toFixed(1)}%</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })()}
         </Card>
 
         <Card className="rounded-2xl border-border/70 p-6 shadow-none">
