@@ -103,14 +103,14 @@ export default function ExecutiveInsights() {
       monthAggs[m].collected += Number(p.amount) || 0;
       monthAggs[m].count += 1;
     });
-    const prevMonth = format(subMonths(new Date(monthVal + "-01"), 1), "yyyy-MM");
+    const prevMonth = format(subMonths(monthValToDate(monthVal), 1), "yyyy-MM");
     const curr = monthAggs[monthVal] || { collected: 0, count: 0 };
     const prev = monthAggs[prevMonth] || { collected: 0, count: 0 };
 
     // last 8 months sparkline of collections
     const collSpark: number[] = [];
     for (let i = 7; i >= 0; i--) {
-      const m = format(subMonths(new Date(monthVal + "-01"), i), "yyyy-MM");
+      const m = format(subMonths(monthValToDate(monthVal), i), "yyyy-MM");
       collSpark.push(monthAggs[m]?.collected || 0);
     }
 
@@ -150,7 +150,7 @@ export default function ExecutiveInsights() {
     );
 
     // ---------- Money flow (waterfall) for selected month ----------
-    const monthStart = startOfMonth(new Date(monthVal + "-01"));
+    const monthStart = startOfMonth(monthValToDate(monthVal));
     const monthEnd = endOfMonth(monthStart);
     const arAddedThisMonth = ar
       .filter((r: any) => {
@@ -262,7 +262,7 @@ export default function ExecutiveInsights() {
 
   const coverage = view.totalAR > 0 ? (view.curr.collected / view.totalAR) * 100 : 0;
   const netChange = view.waterfall[1].value + view.waterfall[2].value;
-  const monthLabel = format(new Date(monthVal + "-01"), "MMMM yyyy");
+  const monthLabel = format(monthValToDate(monthVal), "MMMM yyyy");
 
   return (
     <div className="space-y-8 font-sans">
@@ -323,7 +323,7 @@ export default function ExecutiveInsights() {
             sublabel="Outstanding balance"
           />
           <HeroKpi
-            label={`Collected · ${format(new Date(monthVal + "-01"), "MMM")}`}
+            label={`Collected · ${format(monthValToDate(monthVal), "MMM")}`}
             value={fmtMoney(view.curr.collected)}
             spark={view.collSpark}
             sparkColor="hsl(var(--secondary))"
@@ -409,7 +409,7 @@ export default function ExecutiveInsights() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            New AR less collections for {format(new Date(monthVal + "-01"), "MMM yyyy")}.
+            New AR less collections for {format(monthValToDate(monthVal), "MMM yyyy")}.
           </p>
 
           <dl className="mt-6 space-y-3 border-t border-border/60 pt-4 text-sm">
