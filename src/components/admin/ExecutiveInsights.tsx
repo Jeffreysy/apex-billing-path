@@ -9,6 +9,7 @@ import {
 } from "date-fns";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
+  PieChart, Pie,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
 
