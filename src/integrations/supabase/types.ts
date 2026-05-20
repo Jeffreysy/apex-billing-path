@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _hs_contact_staging: {
-        Row: {
-          email: string | null
-          hs_contact_id: string | null
-          phone: string | null
-        }
-        Insert: {
-          email?: string | null
-          hs_contact_id?: string | null
-          phone?: string | null
-        }
-        Update: {
-          email?: string | null
-          hs_contact_id?: string | null
-          phone?: string | null
-        }
-        Relationships: []
-      }
       activity_log: {
         Row: {
           action: string
@@ -112,103 +94,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_contract_installment_resolved"
             referencedColumns: ["contract_id"]
-          },
-        ]
-      }
-      ar_audit_20260503: {
-        Row: {
-          aging_bucket: string | null
-          amount_paid: number | null
-          ar_balance: number | null
-          client_name: string
-          created_at: string
-          days_overdue: number | null
-          id: string
-          install_amount: number | null
-          invoice_total: number | null
-          match_method: string | null
-          matched_client_id: string | null
-          matched_quality_status: string | null
-          name_sim: number | null
-          practice_area: string | null
-          risk_tier: string | null
-        }
-        Insert: {
-          aging_bucket?: string | null
-          amount_paid?: number | null
-          ar_balance?: number | null
-          client_name: string
-          created_at?: string
-          days_overdue?: number | null
-          id?: string
-          install_amount?: number | null
-          invoice_total?: number | null
-          match_method?: string | null
-          matched_client_id?: string | null
-          matched_quality_status?: string | null
-          name_sim?: number | null
-          practice_area?: string | null
-          risk_tier?: string | null
-        }
-        Update: {
-          aging_bucket?: string | null
-          amount_paid?: number | null
-          ar_balance?: number | null
-          client_name?: string
-          created_at?: string
-          days_overdue?: number | null
-          id?: string
-          install_amount?: number | null
-          invoice_total?: number | null
-          match_method?: string | null
-          matched_client_id?: string | null
-          matched_quality_status?: string | null
-          name_sim?: number | null
-          practice_area?: string | null
-          risk_tier?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_client_detail"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_flagged_accounts"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "collections_dashboard"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "mycase_ar_validation"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "ar_audit_20260503_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "v_recommendations_preview"
-            referencedColumns: ["client_id"]
           },
         ]
       }
@@ -2207,84 +2092,6 @@ export type Database = {
           },
         ]
       }
-      contracts_backup_20260403: {
-        Row: {
-          case_number: string | null
-          client: string | null
-          client_id: string | null
-          collected: number | null
-          collector: string | null
-          created_at: string | null
-          days_out: number | null
-          delinquency_status: string | null
-          down_payment: number | null
-          down_payment_paid: boolean | null
-          id: string
-          installments_paid: number | null
-          matter_id: string | null
-          maturity_date: string | null
-          monthly_installment: number | null
-          next_due_date: string | null
-          notes: string | null
-          phone: string | null
-          practice_area: string | null
-          start_date: string | null
-          status: string | null
-          total_installments: number | null
-          value: number | null
-        }
-        Insert: {
-          case_number?: string | null
-          client?: string | null
-          client_id?: string | null
-          collected?: number | null
-          collector?: string | null
-          created_at?: string | null
-          days_out?: number | null
-          delinquency_status?: string | null
-          down_payment?: number | null
-          down_payment_paid?: boolean | null
-          id: string
-          installments_paid?: number | null
-          matter_id?: string | null
-          maturity_date?: string | null
-          monthly_installment?: number | null
-          next_due_date?: string | null
-          notes?: string | null
-          phone?: string | null
-          practice_area?: string | null
-          start_date?: string | null
-          status?: string | null
-          total_installments?: number | null
-          value?: number | null
-        }
-        Update: {
-          case_number?: string | null
-          client?: string | null
-          client_id?: string | null
-          collected?: number | null
-          collector?: string | null
-          created_at?: string | null
-          days_out?: number | null
-          delinquency_status?: string | null
-          down_payment?: number | null
-          down_payment_paid?: boolean | null
-          id?: string
-          installments_paid?: number | null
-          matter_id?: string | null
-          maturity_date?: string | null
-          monthly_installment?: number | null
-          next_due_date?: string | null
-          notes?: string | null
-          phone?: string | null
-          practice_area?: string | null
-          start_date?: string | null
-          status?: string | null
-          total_installments?: number | null
-          value?: number | null
-        }
-        Relationships: []
-      }
       custom_field_definitions: {
         Row: {
           created_at: string | null
@@ -3095,13 +2902,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hardship_requests_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "hardship_requests_contract_id_fkey"
@@ -4044,148 +3844,6 @@ export type Database = {
           workers_dispatched?: number | null
         }
         Relationships: []
-      }
-      lawpay_export_staging: {
-        Row: {
-          account: string | null
-          already_in_lawpay_txns: boolean | null
-          amount: number
-          authorized_amount: number | null
-          card_type: string | null
-          charge_ref: string | null
-          city: string | null
-          cliente: string | null
-          country: string | null
-          currency: string | null
-          email: string | null
-          estimated_date: string | null
-          id: string
-          imported_at: string | null
-          ip_address: string | null
-          match_type: string | null
-          matched_client_id: string | null
-          method: string | null
-          payment_page: string | null
-          payor: string | null
-          phone: string | null
-          postal_code: string | null
-          raw_row: Json | null
-          state: string | null
-          status: string | null
-          subtotal_amount: number | null
-          surcharge_amount: number | null
-          transaction_id: string
-          txn_type: string | null
-          user_name: string | null
-        }
-        Insert: {
-          account?: string | null
-          already_in_lawpay_txns?: boolean | null
-          amount?: number
-          authorized_amount?: number | null
-          card_type?: string | null
-          charge_ref?: string | null
-          city?: string | null
-          cliente?: string | null
-          country?: string | null
-          currency?: string | null
-          email?: string | null
-          estimated_date?: string | null
-          id?: string
-          imported_at?: string | null
-          ip_address?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          method?: string | null
-          payment_page?: string | null
-          payor?: string | null
-          phone?: string | null
-          postal_code?: string | null
-          raw_row?: Json | null
-          state?: string | null
-          status?: string | null
-          subtotal_amount?: number | null
-          surcharge_amount?: number | null
-          transaction_id: string
-          txn_type?: string | null
-          user_name?: string | null
-        }
-        Update: {
-          account?: string | null
-          already_in_lawpay_txns?: boolean | null
-          amount?: number
-          authorized_amount?: number | null
-          card_type?: string | null
-          charge_ref?: string | null
-          city?: string | null
-          cliente?: string | null
-          country?: string | null
-          currency?: string | null
-          email?: string | null
-          estimated_date?: string | null
-          id?: string
-          imported_at?: string | null
-          ip_address?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          method?: string | null
-          payment_page?: string | null
-          payor?: string | null
-          phone?: string | null
-          postal_code?: string | null
-          raw_row?: Json | null
-          state?: string | null
-          status?: string | null
-          subtotal_amount?: number | null
-          surcharge_amount?: number | null
-          transaction_id?: string
-          txn_type?: string | null
-          user_name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_client_detail"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_flagged_accounts"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "collections_dashboard"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "mycase_ar_validation"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "lawpay_export_staging_matched_client_id_fkey"
-            columns: ["matched_client_id"]
-            isOneToOne: false
-            referencedRelation: "v_recommendations_preview"
-            referencedColumns: ["client_id"]
-          },
-        ]
       }
       lawpay_transactions: {
         Row: {
@@ -5563,111 +5221,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mycase_invoice_links_backup_20260505_pre_contract_link: {
-        Row: {
-          id: string | null
-          invoice_number: string | null
-          match_type: string | null
-          matched_client_id: string | null
-          matched_contract_id: string | null
-          mycase_internal_id: string | null
-          mycase_invoice_id: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string | null
-          invoice_number?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string | null
-          invoice_number?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      mycase_invoice_links_backup_20260505_pre_high_confidence_connec: {
-        Row: {
-          amount: number | null
-          amount_due: number | null
-          amount_paid: number | null
-          created_at: string | null
-          description: string | null
-          due_date: string | null
-          id: string | null
-          invoice_number: string | null
-          issue_date: string | null
-          match_type: string | null
-          matched_client_id: string | null
-          matched_contract_id: string | null
-          mycase_case_id: number | null
-          mycase_contact_id: number | null
-          mycase_internal_id: string | null
-          mycase_invoice_id: number | null
-          paid_date: string | null
-          raw_payload: Json | null
-          status: string | null
-          synced_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       mycase_invoice_payments: {
         Row: {
           amount: number | null
@@ -5984,150 +5537,6 @@ export type Database = {
           },
         ]
       }
-      mycase_invoices_backup_20260505_pre_pdf_refresh: {
-        Row: {
-          amount: number | null
-          amount_due: number | null
-          amount_paid: number | null
-          created_at: string | null
-          description: string | null
-          due_date: string | null
-          id: string | null
-          invoice_number: string | null
-          issue_date: string | null
-          match_type: string | null
-          matched_client_id: string | null
-          matched_contract_id: string | null
-          mycase_case_id: number | null
-          mycase_contact_id: number | null
-          mycase_internal_id: string | null
-          mycase_invoice_id: number | null
-          paid_date: string | null
-          raw_payload: Json | null
-          status: string | null
-          synced_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      mycase_invoices_stale_archive_20260505: {
-        Row: {
-          amount: number | null
-          amount_due: number | null
-          amount_paid: number | null
-          created_at: string | null
-          description: string | null
-          due_date: string | null
-          id: string | null
-          invoice_number: string | null
-          issue_date: string | null
-          match_type: string | null
-          matched_client_id: string | null
-          matched_contract_id: string | null
-          mycase_case_id: number | null
-          mycase_contact_id: number | null
-          mycase_internal_id: string | null
-          mycase_invoice_id: number | null
-          paid_date: string | null
-          raw_payload: Json | null
-          status: string | null
-          synced_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number | null
-          amount_due?: number | null
-          amount_paid?: number | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string | null
-          invoice_number?: string | null
-          issue_date?: string | null
-          match_type?: string | null
-          matched_client_id?: string | null
-          matched_contract_id?: string | null
-          mycase_case_id?: number | null
-          mycase_contact_id?: number | null
-          mycase_internal_id?: string | null
-          mycase_invoice_id?: number | null
-          paid_date?: string | null
-          raw_payload?: Json | null
-          status?: string | null
-          synced_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       mycase_leads: {
         Row: {
           cell_phone_number: string | null
@@ -6284,39 +5693,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mycase_pdf_ar_staging: {
-        Row: {
-          amount_due: number | null
-          amount_paid: number | null
-          days_aging: number | null
-          due_date: string | null
-          formal_name: string | null
-          invoice_number: string
-          invoice_status: string | null
-          invoice_total: number | null
-        }
-        Insert: {
-          amount_due?: number | null
-          amount_paid?: number | null
-          days_aging?: number | null
-          due_date?: string | null
-          formal_name?: string | null
-          invoice_number: string
-          invoice_status?: string | null
-          invoice_total?: number | null
-        }
-        Update: {
-          amount_due?: number | null
-          amount_paid?: number | null
-          days_aging?: number | null
-          due_date?: string | null
-          formal_name?: string | null
-          invoice_number?: string
-          invoice_status?: string | null
-          invoice_total?: number | null
-        }
-        Relationships: []
-      }
       mycase_practice_areas: {
         Row: {
           created_at: string
@@ -6392,42 +5768,6 @@ export type Database = {
           status?: string | null
           synced_at?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      mycase_staging: {
-        Row: {
-          billing_contact: string | null
-          case_number: string
-          case_stage: string | null
-          closed_date: string | null
-          flat_fee: number | null
-          is_closed: boolean | null
-          lead_attorney: string | null
-          open_date: string | null
-          practice_area: string | null
-        }
-        Insert: {
-          billing_contact?: string | null
-          case_number: string
-          case_stage?: string | null
-          closed_date?: string | null
-          flat_fee?: number | null
-          is_closed?: boolean | null
-          lead_attorney?: string | null
-          open_date?: string | null
-          practice_area?: string | null
-        }
-        Update: {
-          billing_contact?: string | null
-          case_number?: string
-          case_stage?: string | null
-          closed_date?: string | null
-          flat_fee?: number | null
-          is_closed?: boolean | null
-          lead_attorney?: string | null
-          open_date?: string | null
-          practice_area?: string | null
         }
         Relationships: []
       }
@@ -6861,39 +6201,6 @@ export type Database = {
           },
         ]
       }
-      payment_plan_staging: {
-        Row: {
-          amount_due: number | null
-          case_name: string | null
-          contact: string
-          created_at: string | null
-          id: number
-          installment_amount: number | null
-          paid: number | null
-          total: number | null
-        }
-        Insert: {
-          amount_due?: number | null
-          case_name?: string | null
-          contact: string
-          created_at?: string | null
-          id?: number
-          installment_amount?: number | null
-          paid?: number | null
-          total?: number | null
-        }
-        Update: {
-          amount_due?: number | null
-          case_name?: string | null
-          contact?: string
-          created_at?: string | null
-          id?: number
-          installment_amount?: number | null
-          paid?: number | null
-          total?: number | null
-        }
-        Relationships: []
-      }
       payments: {
         Row: {
           aging_bucket: string | null
@@ -7105,269 +6412,6 @@ export type Database = {
             | Database["public"]["Enums"]["timekeeper_type"]
             | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      recon_change_log: {
-        Row: {
-          applied_at: string | null
-          change_source: string | null
-          contract_id: string | null
-          field_name: string
-          id: number
-          new_value: string | null
-          old_value: string | null
-          recon_staging_id: number | null
-        }
-        Insert: {
-          applied_at?: string | null
-          change_source?: string | null
-          contract_id?: string | null
-          field_name: string
-          id?: number
-          new_value?: string | null
-          old_value?: string | null
-          recon_staging_id?: number | null
-        }
-        Update: {
-          applied_at?: string | null
-          change_source?: string | null
-          contract_id?: string | null
-          field_name?: string
-          id?: number
-          new_value?: string | null
-          old_value?: string | null
-          recon_staging_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_active_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_closed_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_migration_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "collections_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "v_ar_preview"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "v_contract_installment_resolved"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_recon_staging_id_fkey"
-            columns: ["recon_staging_id"]
-            isOneToOne: false
-            referencedRelation: "recon_staging"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      recon_staging: {
-        Row: {
-          created_at: string | null
-          delta_collected: number | null
-          delta_status: string | null
-          delta_value: number | null
-          excel_aging_bucket: string | null
-          excel_amount_paid: number | null
-          excel_balance_owed: number | null
-          excel_client_name: string
-          excel_collection_pct: number | null
-          excel_days_aging: number | null
-          excel_due_date: string | null
-          excel_invoice_number: string | null
-          excel_invoice_total: number | null
-          excel_notes: string | null
-          excel_source: string | null
-          excel_status: string | null
-          id: number
-          match_confidence: number | null
-          match_method: string | null
-          matched_contract_id: string | null
-          processed_at: string | null
-          recon_notes: string | null
-          recon_status: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          delta_collected?: number | null
-          delta_status?: string | null
-          delta_value?: number | null
-          excel_aging_bucket?: string | null
-          excel_amount_paid?: number | null
-          excel_balance_owed?: number | null
-          excel_client_name: string
-          excel_collection_pct?: number | null
-          excel_days_aging?: number | null
-          excel_due_date?: string | null
-          excel_invoice_number?: string | null
-          excel_invoice_total?: number | null
-          excel_notes?: string | null
-          excel_source?: string | null
-          excel_status?: string | null
-          id?: number
-          match_confidence?: number | null
-          match_method?: string | null
-          matched_contract_id?: string | null
-          processed_at?: string | null
-          recon_notes?: string | null
-          recon_status?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          delta_collected?: number | null
-          delta_status?: string | null
-          delta_value?: number | null
-          excel_aging_bucket?: string | null
-          excel_amount_paid?: number | null
-          excel_balance_owed?: number | null
-          excel_client_name?: string
-          excel_collection_pct?: number | null
-          excel_days_aging?: number | null
-          excel_due_date?: string | null
-          excel_invoice_number?: string | null
-          excel_invoice_total?: number | null
-          excel_notes?: string | null
-          excel_source?: string | null
-          excel_status?: string | null
-          id?: number
-          match_confidence?: number | null
-          match_method?: string | null
-          matched_contract_id?: string | null
-          processed_at?: string | null
-          recon_notes?: string | null
-          recon_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_active_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_closed_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_migration_contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "collections_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "v_ar_preview"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "v_contract_installment_resolved"
-            referencedColumns: ["contract_id"]
-          },
-        ]
-      }
-      recon_staging_apr29: {
-        Row: {
-          case_number: string | null
-          client_name: string | null
-          collected: number | null
-          delinquency: string | null
-          excel_status: string | null
-          last_date: string | null
-          last_src: string | null
-          match_key: string
-          recon_status: string | null
-          sorted_key: string | null
-          status: string | null
-          value: number | null
-        }
-        Insert: {
-          case_number?: string | null
-          client_name?: string | null
-          collected?: number | null
-          delinquency?: string | null
-          excel_status?: string | null
-          last_date?: string | null
-          last_src?: string | null
-          match_key: string
-          recon_status?: string | null
-          sorted_key?: string | null
-          status?: string | null
-          value?: number | null
-        }
-        Update: {
-          case_number?: string | null
-          client_name?: string | null
-          collected?: number | null
-          delinquency?: string | null
-          excel_status?: string | null
-          last_date?: string | null
-          last_src?: string | null
-          match_key?: string
-          recon_status?: string | null
-          sorted_key?: string | null
-          status?: string | null
-          value?: number | null
         }
         Relationships: []
       }
@@ -9334,6 +8378,68 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ar_contact_coverage: {
+        Row: {
+          assigned_collector: string | null
+          call_contacts: number | null
+          client_id: string | null
+          client_name: string | null
+          days_contacted: number | null
+          days_out: number | null
+          delinquency_status: string | null
+          ever_contacted: boolean | null
+          first_contact_date: string | null
+          last_contact_date: string | null
+          outstanding_ar: number | null
+          payment_contacts: number | null
+          total_collected: number | null
+          total_contacts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_client_detail"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_flagged_accounts"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "mycase_ar_validation"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "v_recommendations_preview"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
       v_ar_dashboard: {
         Row: {
           active_plan_ar: number | null
@@ -9580,6 +8686,37 @@ export type Database = {
             referencedColumns: ["client_id"]
           },
         ]
+      }
+      v_collection_contact_trend: {
+        Row: {
+          collected_amount: number | null
+          cumulative_clients_ever_contacted: number | null
+          cumulative_contact_rate_pct: number | null
+          payment_calls: number | null
+          total_activities: number | null
+          total_ar_clients: number | null
+          total_calls: number | null
+          unique_clients_called: number | null
+          unique_clients_contacted: number | null
+          week_start: string | null
+          weekly_contact_rate_pct: number | null
+        }
+        Relationships: []
+      }
+      v_collector_ar_coverage: {
+        Row: {
+          assigned_ar: number | null
+          assigned_clients: number | null
+          clients_contacted_30d: number | null
+          clients_contacted_7d: number | null
+          clients_contacted_total: number | null
+          collected_30d: number | null
+          collector: string | null
+          contact_coverage_30d_pct: number | null
+          contact_coverage_pct: number | null
+          total_collected: number | null
+        }
+        Relationships: []
       }
       v_contract_installment_resolved: {
         Row: {
@@ -10572,6 +9709,13 @@ export type Database = {
           similarity_score: number
         }[]
       }
+      link_collection_activities_to_clients: {
+        Args: never
+        Returns: {
+          linked_count: number
+          tier: string
+        }[]
+      }
       mark_overdue_invoices: { Args: never; Returns: number }
       match_contract_by_normalized_name: {
         Args: {
@@ -10641,6 +9785,7 @@ export type Database = {
       }
       normalize_case_stage: { Args: { raw_stage: string }; Returns: string }
       normalize_client_name: { Args: { raw: string }; Returns: string }
+      normalize_collection_name: { Args: { raw: string }; Returns: string }
       normalize_collector_client_name: {
         Args: { value: string }
         Returns: string
@@ -10968,5 +10113,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.95.4 (currently installed v2.84.5)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
