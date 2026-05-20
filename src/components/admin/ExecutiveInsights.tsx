@@ -49,13 +49,14 @@ function monthOptions(count = 6) {
 
 function useInsightsData() {
   return useQuery({
-    queryKey: ["admin-insights-v1"],
+    queryKey: ["admin-insights-v2"],
     queryFn: async () => {
-      const [ar, payments] = await Promise.all([
+      const [ar, payments, activities] = await Promise.all([
         fetchAllRows<any>("ar_dashboard"),
         fetchAllRows<any>("payments_clean"),
+        fetchAllRows<any>("collection_activities"),
       ]);
-      return { ar, payments };
+      return { ar, payments, activities };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -70,6 +71,7 @@ export default function ExecutiveInsights() {
     if (!data) return null;
     const ar = data.ar.filter((r: any) => r.delinquency_status !== "Paid");
     const payments = data.payments;
+    const activities = data.activities || [];
 
     // ---------- Weekly collections (8w sparkline) ----------
     const weeks: { key: string; total: number }[] = [];
@@ -119,20 +121,6 @@ export default function ExecutiveInsights() {
     );
     const dso = totalAR > 0 ? Math.round(dsoNumerator / totalAR) : 0;
 
-    // ---------- Top 10 AR concentration ----------
-    const byClient: Record<string, { name: string; balance: number; days: number; collector: string }> = {};
-    ar.forEach((r: any) => {
-      const name = r.client_name || "Unknown";
-      if (!byClient[name]) byClient[name] = { name, balance: 0, days: 0, collector: r.collector || "Unassigned" };
-      byClient[name].balance += Number(r.remaining_balance) || 0;
-      byClient[name].days = Math.max(byClient[name].days, Number(r.days_past_due) || 0);
-    });
-    const topClients = Object.values(byClient)
-      .sort((a, b) => b.balance - a.balance)
-      .slice(0, 10);
-    const top10Total = topClients.reduce((s, c) => s + c.balance, 0);
-    const top10Pct = totalAR > 0 ? (top10Total / totalAR) * 100 : 0;
-
     // ---------- Aging × Collector heatmap ----------
     const collectorBuckets: Record<string, Record<string, number>> = {};
     ar.forEach((r: any) => {
@@ -173,6 +161,66 @@ export default function ExecutiveInsights() {
       { name: "Closing AR", value: totalAR, type: "balance" },
     ];
 
+    // ---------- Collector time & activity (selected month) ----------
+    const inMonth = (d: string | null | undefined) => {
+      if (!d) return false;
+      const dt = new Date(d);
+      return dt >= monthStart && dt <= monthEnd;
+    };
+    const failedOutcomes = ["failed", "refund", "disputed", "disconnected", "no collection"];
+    const isFailedOutcome = (o: string | null) => {
+      const v = (o || "").toLowerCase().trim();
+      return failedOutcomes.some((x) => v.includes(x));
+    };
+
+    const collectorActivity: Record<
+      string,
+      { collector: string; minutes: number; activities: number; payments: number; collected: number; commission: number; failed: number }
+    > = {};
+    const failedList: any[] = [];
+
+    activities.forEach((a: any) => {
+      if (!inMonth(a.activity_date)) return;
+      if (a.is_junk) return;
+      const c = a.collector || "Unassigned";
+      collectorActivity[c] = collectorActivity[c] || {
+        collector: c, minutes: 0, activities: 0, payments: 0, collected: 0, commission: 0, failed: 0,
+      };
+      const row = collectorActivity[c];
+      row.activities += 1;
+      row.minutes += Number(a.duration_minutes) || 0;
+      row.collected += Number(a.collected_amount) || 0;
+      row.commission += Number(a.commission) || 0;
+      if ((Number(a.collected_amount) || 0) > 0) row.payments += 1;
+      if (isFailedOutcome(a.outcome)) {
+        row.failed += 1;
+        failedList.push(a);
+      }
+    });
+    const collectorActivityRows = Object.values(collectorActivity).sort((a, b) => b.collected - a.collected);
+    const failedRecent = failedList
+      .sort((a, b) => (b.activity_date || "").localeCompare(a.activity_date || ""))
+      .slice(0, 10);
+    const failedTotal = failedList.length;
+
+    // ---------- Bucket movement (collections by aging bucket, selected month) ----------
+    const BUCKET_ORDER = ["Current", "1-30", "31-60", "61-90", "91-120", "120+"];
+    const bucketMovement: Record<string, { collected: number; count: number }> = {};
+    payments.forEach((p: any) => {
+      if (!inMonth(p.payment_date)) return;
+      const b = p.aging_bucket || "Current";
+      bucketMovement[b] = bucketMovement[b] || { collected: 0, count: 0 };
+      bucketMovement[b].collected += Number(p.amount) || 0;
+      bucketMovement[b].count += 1;
+    });
+    const bucketRows = BUCKET_ORDER
+      .map((b) => ({ bucket: b, ...(bucketMovement[b] || { collected: 0, count: 0 }) }))
+      .filter((r) => r.collected > 0 || r.count > 0);
+    const bucketMax = Math.max(1, ...bucketRows.map((r) => r.collected));
+    const recoveredFromDelinquent = bucketRows
+      .filter((r) => r.bucket !== "Current")
+      .reduce((s, r) => s + r.collected, 0);
+
     return {
       weeklySeries,
       collSpark,
@@ -181,12 +229,15 @@ export default function ExecutiveInsights() {
       totalAR,
       atRisk,
       dso,
-      topClients,
-      top10Total,
-      top10Pct,
       collectorRows,
       heatMax,
       waterfall,
+      collectorActivityRows,
+      failedRecent,
+      failedTotal,
+      bucketRows,
+      bucketMax,
+      recoveredFromDelinquent,
     };
   }, [data, monthVal]);
 
@@ -197,8 +248,10 @@ export default function ExecutiveInsights() {
   const sections = [
     { id: "hero", label: "Executive" },
     { id: "flow", label: "Money Flow" },
-    { id: "concentration", label: "Concentration" },
     { id: "aging", label: "Aging × Collector" },
+    { id: "activity", label: "Collector Activity" },
+    { id: "movement", label: "Bucket Movement" },
+    { id: "failed", label: "Failed / Issues" },
   ];
 
   const coverage = view.totalAR > 0 ? (view.curr.collected / view.totalAR) * 100 : 0;
@@ -364,79 +417,6 @@ export default function ExecutiveInsights() {
         </Card>
       </section>
 
-      {/* ─────────── Concentration ─────────── */}
-      <section id="concentration" className="scroll-mt-24">
-        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <SectionHeader
-              eyebrow="Risk Concentration"
-              title="Top 10 Client Exposure"
-              caption="Largest balances ranked against the portfolio leader."
-            />
-            <div className="flex items-center gap-3 text-right">
-              <Metric mini label="Top 10 Total" value={fmtMoney(view.top10Total)} />
-              <Metric mini label="% of AR" value={`${view.top10Pct.toFixed(1)}%`} />
-            </div>
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/60 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
-                  <th className="pb-3 pl-1 font-semibold">Rank</th>
-                  <th className="pb-3 font-semibold">Client</th>
-                  <th className="pb-3 font-semibold">Collector</th>
-                  <th className="pb-3 font-semibold">Days Out</th>
-                  <th className="pb-3 pr-1 text-right font-semibold">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/40">
-                {view.topClients.map((c, i) => {
-                  const pct = view.topClients[0]?.balance
-                    ? (c.balance / view.topClients[0].balance) * 100
-                    : 0;
-                  return (
-                    <tr key={c.name} className="group transition-colors hover:bg-muted/30">
-                      <td className="py-3 pl-1 font-mono text-[11px] text-muted-foreground">
-                        {String(i + 1).padStart(2, "0")}
-                      </td>
-                      <td className="py-3 font-medium tracking-tight">{c.name}</td>
-                      <td className="py-3 text-xs text-muted-foreground">{c.collector}</td>
-                      <td className="py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            c.days > 60
-                              ? "bg-destructive/10 text-destructive"
-                              : c.days > 30
-                                ? "bg-warning/15 text-warning"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {c.days}d
-                        </span>
-                      </td>
-                      <td className="py-3 pr-1">
-                        <div className="flex items-center justify-end gap-3">
-                          <div className="relative h-1 w-24 overflow-hidden rounded-full bg-muted/60">
-                            <div
-                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-secondary"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="w-20 text-right font-mono text-[13px] font-semibold tabular-nums">
-                            {fmtMoney(c.balance)}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </section>
-
       {/* ─────────── Aging matrix ─────────── */}
       <section id="aging" className="scroll-mt-24">
         <Card className="rounded-2xl border-border/70 p-6 shadow-none">
@@ -473,6 +453,129 @@ export default function ExecutiveInsights() {
                     <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold tabular-nums">
                       {fmtMoney(row.total)}
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
+      {/* ─────────── Collector Time & Activity ─────────── */}
+      <section id="activity" className="scroll-mt-24">
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <SectionHeader
+            eyebrow="Workforce"
+            title="Collector Time & Activity"
+            caption={`Logged effort and outcomes per collector · ${monthLabel}`}
+          />
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+                  <th className="pb-3 pl-1">Collector</th>
+                  <th className="pb-3 text-right">Hours</th>
+                  <th className="pb-3 text-right">Activities</th>
+                  <th className="pb-3 text-right">Payments</th>
+                  <th className="pb-3 text-right">Collected</th>
+                  <th className="pb-3 text-right">Commission</th>
+                  <th className="pb-3 pr-1 text-right">Failed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {view.collectorActivityRows.length === 0 ? (
+                  <tr><td colSpan={7} className="py-6 text-center text-xs text-muted-foreground">No activity logged this month.</td></tr>
+                ) : view.collectorActivityRows.map((r) => (
+                  <tr key={r.collector} className="transition-colors hover:bg-muted/30">
+                    <td className="py-2.5 pl-1 font-medium tracking-tight">{r.collector}</td>
+                    <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{(r.minutes / 60).toFixed(1)}</td>
+                    <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{r.activities}</td>
+                    <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{r.payments}</td>
+                    <td className="py-2.5 text-right font-mono tabular-nums text-[13px] font-semibold">{fmtMoney(r.collected)}</td>
+                    <td className="py-2.5 text-right font-mono tabular-nums text-[13px] text-muted-foreground">{fmtMoney(r.commission)}</td>
+                    <td className="py-2.5 pr-1 text-right">
+                      {r.failed > 0 ? (
+                        <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">{r.failed}</span>
+                      ) : <span className="text-[11px] text-muted-foreground">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
+      {/* ─────────── Bucket Movement ─────────── */}
+      <section id="movement" className="scroll-mt-24">
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <SectionHeader
+              eyebrow="Aging Recovery"
+              title="Bucket Movement"
+              caption={`Collections by aging bucket · ${monthLabel}`}
+            />
+            <Metric mini label="Recovered from Delinquent" value={fmtMoney(view.recoveredFromDelinquent)} />
+          </div>
+          <div className="mt-6 space-y-2">
+            {view.bucketRows.length === 0 ? (
+              <div className="py-6 text-center text-xs text-muted-foreground">No collections in this period.</div>
+            ) : view.bucketRows.map((b) => {
+              const pct = (b.collected / view.bucketMax) * 100;
+              const tone =
+                b.bucket === "Current" ? "from-secondary/70 to-secondary"
+                : b.bucket === "1-30" ? "from-primary/60 to-primary"
+                : b.bucket === "31-60" ? "from-warning/60 to-warning"
+                : "from-destructive/60 to-destructive";
+              return (
+                <div key={b.bucket} className="grid grid-cols-[110px_1fr_90px_60px] items-center gap-3 py-1.5">
+                  <span className="text-xs font-medium tracking-tight">{b.bucket}</span>
+                  <div className="relative h-2 overflow-hidden rounded-full bg-muted/50">
+                    <div className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-right font-mono text-[13px] font-semibold tabular-nums">{fmtMoney(b.collected)}</span>
+                  <span className="text-right text-[11px] text-muted-foreground tabular-nums">{b.count} pmt</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </section>
+
+      {/* ─────────── Failed / Issues ─────────── */}
+      <section id="failed" className="scroll-mt-24">
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <SectionHeader
+              eyebrow="Risk Signals"
+              title="Failed Transactions & Issues"
+              caption={`Failed payments, refunds, disputes & disconnections · ${monthLabel}`}
+            />
+            <Metric mini label="Total Issues" value={String(view.failedTotal)} />
+          </div>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+                  <th className="pb-3 pl-1">Date</th>
+                  <th className="pb-3">Client</th>
+                  <th className="pb-3">Collector</th>
+                  <th className="pb-3">Outcome</th>
+                  <th className="pb-3 pr-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {view.failedRecent.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-xs text-muted-foreground">No failed transactions or issues this month.</td></tr>
+                ) : view.failedRecent.map((a: any) => (
+                  <tr key={a.id} className="transition-colors hover:bg-muted/30">
+                    <td className="py-2.5 pl-1 text-xs text-muted-foreground tabular-nums">{a.activity_date}</td>
+                    <td className="py-2.5 font-medium tracking-tight">{a.client_name || "—"}</td>
+                    <td className="py-2.5 text-xs text-muted-foreground">{a.collector || "—"}</td>
+                    <td className="py-2.5">
+                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">{a.outcome}</span>
+                    </td>
+                    <td className="py-2.5 pr-1 text-right font-mono tabular-nums text-[13px]">{a.collected_amount ? fmtMoney(Number(a.collected_amount)) : "—"}</td>
                   </tr>
                 ))}
               </tbody>

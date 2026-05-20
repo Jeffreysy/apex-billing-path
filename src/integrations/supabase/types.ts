@@ -82,13 +82,6 @@ export type Database = {
             foreignKeyName: "activity_log_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "activity_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -1487,13 +1480,6 @@ export type Database = {
             foreignKeyName: "collection_activities_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "collection_activities_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -1855,13 +1841,6 @@ export type Database = {
             foreignKeyName: "consults_converted_contract_id_fkey"
             columns: ["converted_contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "consults_converted_contract_id_fkey"
-            columns: ["converted_contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -1951,13 +1930,6 @@ export type Database = {
             foreignKeyName: "contract_orphan_recovery_audit_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "contract_orphan_recovery_audit_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -2039,13 +2011,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contract_status_reclass_audit_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "contract_status_reclass_audit_contract_id_fkey"
@@ -2499,13 +2464,6 @@ export type Database = {
             foreignKeyName: "escalations_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "escalations_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -2722,13 +2680,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "filevine_payment_events_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "filevine_payment_events_matched_contract_id_fkey"
@@ -3149,13 +3100,6 @@ export type Database = {
             foreignKeyName: "hardship_requests_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "hardship_requests_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -3330,13 +3274,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hubspot_deals_raw_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "hubspot_deals_raw_matched_contract_id_fkey"
@@ -4392,13 +4329,6 @@ export type Database = {
             foreignKeyName: "lawpay_transactions_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "lawpay_transactions_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -4575,13 +4505,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lawpay_validation_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "lawpay_validation_log_contract_id_fkey"
@@ -5185,13 +5108,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mycase_cases_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "mycase_cases_matched_contract_id_fkey"
@@ -5861,13 +5777,6 @@ export type Database = {
             foreignKeyName: "mycase_invoice_payments_matched_contract_id_fkey"
             columns: ["matched_contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "mycase_invoice_payments_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -6030,13 +5939,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mycase_invoices_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "mycase_invoices_matched_contract_id_fkey"
@@ -6919,13 +6821,6 @@ export type Database = {
             foreignKeyName: "payment_commitments_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "payment_commitments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -7120,13 +7015,6 @@ export type Database = {
             foreignKeyName: "payments_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "payments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -7263,13 +7151,6 @@ export type Database = {
             foreignKeyName: "recon_change_log_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "recon_change_log_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -7400,13 +7281,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "recon_staging_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "recon_staging_matched_contract_id_fkey"
@@ -8341,13 +8215,6 @@ export type Database = {
             foreignKeyName: "lawpay_transactions_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "lawpay_transactions_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -8413,13 +8280,6 @@ export type Database = {
             foreignKeyName: "payments_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "payments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -8473,6 +8333,7 @@ export type Database = {
           email: string | null
           installments_paid: number | null
           installments_remaining: number | null
+          invoice_number: string | null
           latest_payment_date: string | null
           lead_attorney: string | null
           monthly_installment: number | null
@@ -8482,54 +8343,12 @@ export type Database = {
           practice_area: string | null
           preferred_language: string | null
           remaining_balance: number | null
+          snapshot_date: string | null
           start_date: string | null
           total_contract_value: number | null
           total_installments: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_client_detail"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "ar_flagged_accounts"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "collections_dashboard"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "mycase_ar_validation"
-            referencedColumns: ["client_id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "v_recommendations_preview"
-            referencedColumns: ["client_id"]
-          },
-        ]
+        Relationships: []
       }
       ar_flagged_accounts: {
         Row: {
@@ -9118,13 +8937,6 @@ export type Database = {
             foreignKeyName: "mycase_invoices_matched_contract_id_fkey"
             columns: ["matched_contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "mycase_invoices_matched_contract_id_fkey"
-            columns: ["matched_contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -9382,13 +9194,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "payments_contract_id_fkey"
@@ -9968,13 +9773,6 @@ export type Database = {
             foreignKeyName: "lawpay_transactions_contract_id_fkey"
             columns: ["candidate_contract_id"]
             isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
-          },
-          {
-            foreignKeyName: "lawpay_transactions_contract_id_fkey"
-            columns: ["candidate_contract_id"]
-            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -10224,13 +10022,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ar_closed_contracts"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "ar_dashboard"
-            referencedColumns: ["contract_id"]
           },
           {
             foreignKeyName: "payments_contract_id_fkey"

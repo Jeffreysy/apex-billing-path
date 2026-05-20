@@ -34,8 +34,6 @@ const AdminDashboard = () => {
   const openTasks = unresolvedCount;
   const weeklyData = computeWeeklyCollections(payments);
 
-  const recentPayments = [...payments].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
-
   const deptData = [
     { name: "Collections", tasks: unresolvedEscalations.filter((t: any) => !t.handoff_queue || t.handoff_queue === "collections").length },
     { name: "Legal", tasks: unresolvedEscalations.filter((t: any) => ["legal", "attorney", "case_management"].includes(t.handoff_queue)).length },
@@ -138,23 +136,6 @@ const AdminDashboard = () => {
         <TaskPanel department="admin" showAll />
       </div>
 
-      <div className="mt-6 dashboard-section">
-        <h2 className="mb-4 text-lg font-semibold">Recent Payments</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-left text-muted-foreground"><th className="pb-3 font-medium">Client</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Method</th><th className="pb-3 font-medium">Collector</th><th className="pb-3 font-medium">Status</th></tr></thead>
-            <tbody>
-              {recentPayments.map((p) => (
-                <tr key={p.id} className="border-b last:border-0">
-                  <td className="py-3 font-medium">{p.clientName}</td><td className="py-3">${p.amount.toLocaleString()}</td><td className="py-3 text-muted-foreground">{p.date}</td>
-                  <td className="py-3 capitalize">{p.method}</td><td className="py-3">{p.collectorName}</td>
-                  <td className="py-3"><Badge variant={p.status === "completed" ? "default" : p.status === "pending" ? "secondary" : "destructive"} className="text-xs">{p.status}</Badge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </DashboardLayout>
   );
 };
