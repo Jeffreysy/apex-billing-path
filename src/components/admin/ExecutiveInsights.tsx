@@ -49,13 +49,14 @@ function monthOptions(count = 6) {
 
 function useInsightsData() {
   return useQuery({
-    queryKey: ["admin-insights-v1"],
+    queryKey: ["admin-insights-v2"],
     queryFn: async () => {
-      const [ar, payments] = await Promise.all([
+      const [ar, payments, activities] = await Promise.all([
         fetchAllRows<any>("ar_dashboard"),
         fetchAllRows<any>("payments_clean"),
+        fetchAllRows<any>("collection_activities"),
       ]);
-      return { ar, payments };
+      return { ar, payments, activities };
     },
     staleTime: 5 * 60 * 1000,
   });
