@@ -202,186 +202,305 @@ export default function ExecutiveInsights() {
     { id: "aging", label: "Aging × Collector" },
   ];
 
+  const coverage = view.totalAR > 0 ? (view.curr.collected / view.totalAR) * 100 : 0;
+  const netChange = view.waterfall[1].value + view.waterfall[2].value;
+  const monthLabel = format(new Date(monthVal + "-01"), "MMMM yyyy");
+
   return (
-    <div className="space-y-6">
-      {/* Sticky section nav + month picker */}
-      <div className="sticky top-0 z-20 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur print:hidden">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Insights</span>
-        {sections.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-muted"
-          >
-            {s.label}
-          </a>
-        ))}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Period</span>
-          <Select value={monthVal} onValueChange={setMonthVal}>
-            <SelectTrigger className="h-8 w-[180px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((m) => (
-                <SelectItem key={m.value} value={m.value} className="text-xs">
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <button
-            onClick={() => window.print()}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-muted"
-          >
-            Print
-          </button>
+    <div className="space-y-8 font-sans">
+      {/* ─────────── Refined command bar ─────────── */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-xl print:hidden">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-[15px] font-semibold tracking-tight text-foreground">Executive Insights</h1>
+            <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+              {monthLabel}
+            </span>
+          </div>
+
+          <nav className="hidden items-center gap-0.5 rounded-full border border-border/70 bg-muted/30 p-0.5 md:flex">
+            {sections.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className="rounded-full px-3 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+              >
+                {s.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Select value={monthVal} onValueChange={setMonthVal}>
+              <SelectTrigger className="h-8 w-[170px] rounded-full border-border/70 bg-background text-xs font-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m.value} value={m.value} className="text-xs">
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border/70 bg-background px-3 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Printer className="h-3 w-3" />
+              Export
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* HERO KPI STRIP */}
-      <section id="hero" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <HeroKpi
-          label="Total AR"
-          value={fmtMoney(view.totalAR)}
-          icon={<DollarSign className="h-4 w-4" />}
-          spark={view.weeklySeries}
-        />
-        <HeroKpi
-          label={`Collected · ${format(new Date(monthVal + "-01"), "MMM")}`}
-          value={fmtMoney(view.curr.collected)}
-          icon={<TrendingUp className="h-4 w-4" />}
-          spark={view.collSpark}
-          delta={<Delta prev={view.prev.collected} curr={view.curr.collected} />}
-        />
-        <HeroKpi
-          label="Collection Coverage"
-          value={`${view.totalAR > 0 ? Math.round((view.curr.collected / view.totalAR) * 100) : 0}%`}
-          icon={<Percent className="h-4 w-4" />}
-          spark={view.collSpark}
-        />
-        <HeroKpi
-          label="Avg DSO (weighted)"
-          value={`${view.dso}d`}
-          icon={<Activity className="h-4 w-4" />}
-          accent={view.dso > 60 ? "warn" : "ok"}
-        />
-        <HeroKpi
-          label="AR At Risk (60+)"
-          value={fmtMoney(view.atRisk)}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent="warn"
-        />
+      {/* ─────────── Hero KPI band ─────────── */}
+      <section id="hero" className="scroll-mt-24">
+        <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-muted/30 shadow-[0_1px_0_0_hsl(var(--border)),0_24px_60px_-30px_hsl(var(--primary)/0.25)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-5">
+          <HeroKpi
+            label="Total AR"
+            value={fmtMoney(view.totalAR)}
+            spark={view.weeklySeries}
+            sparkColor="hsl(var(--primary))"
+            sublabel="Outstanding balance"
+          />
+          <HeroKpi
+            label={`Collected · ${format(new Date(monthVal + "-01"), "MMM")}`}
+            value={fmtMoney(view.curr.collected)}
+            spark={view.collSpark}
+            sparkColor="hsl(var(--secondary))"
+            delta={<DeltaPill prev={view.prev.collected} curr={view.curr.collected} />}
+            sublabel="vs prior month"
+          />
+          <HeroKpi
+            label="Coverage Ratio"
+            value={`${coverage.toFixed(1)}%`}
+            spark={view.collSpark}
+            sparkColor="hsl(var(--secondary))"
+            sublabel="Collected / AR"
+          />
+          <HeroKpi
+            label="Weighted DSO"
+            value={`${view.dso}`}
+            unit="days"
+            accent={view.dso > 60 ? "warn" : "ok"}
+            sublabel="Days sales outstanding"
+          />
+          <HeroKpi
+            label="AR at Risk"
+            value={fmtMoney(view.atRisk)}
+            accent="warn"
+            sublabel="60+ days past due"
+          />
+        </div>
       </section>
 
-      {/* MONEY FLOW */}
-      <section id="flow" className="dashboard-section scroll-mt-20">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Money Flow — {format(new Date(monthVal + "-01"), "MMMM yyyy")}</h2>
-          <span className="text-xs text-muted-foreground">Opening AR → New AR → Collections → Closing AR</span>
-        </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={view.waterfall} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmtMoney(v)} />
-            <Tooltip formatter={(v: number) => fmtMoney(Math.abs(v))} />
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {view.waterfall.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={
-                    d.type === "pos"
-                      ? "hsl(var(--destructive))"
-                      : d.type === "neg"
-                        ? "hsl(152 60% 40%)"
-                        : "hsl(var(--primary))"
-                  }
+      {/* ─────────── Money flow + Net change ─────────── */}
+      <section id="flow" className="scroll-mt-24 grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2 rounded-2xl border-border/70 p-6 shadow-none">
+          <SectionHeader
+            eyebrow="Cash Movement"
+            title="Money Flow"
+            caption={`Opening AR → New AR → Collections → Closing AR · ${monthLabel}`}
+          />
+          <div className="mt-6">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={view.waterfall} margin={{ top: 10, right: 8, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => fmtMoney(v)} axisLine={false} tickLine={false} width={56} />
+                <Tooltip
+                  formatter={(v: number) => fmtMoney(Math.abs(v))}
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    boxShadow: "0 8px 24px -8px hsl(var(--primary)/0.25)",
+                  }}
                 />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Net AR change:{" "}
-          <span className={view.waterfall[1].value - Math.abs(view.waterfall[2].value) >= 0 ? "text-destructive" : "text-success"}>
-            {fmtMoney(view.waterfall[1].value + view.waterfall[2].value)}
-          </span>
-        </p>
-      </section>
-
-      {/* CONCENTRATION */}
-      <section id="concentration" className="dashboard-section scroll-mt-20">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Top 10 AR Concentration</h2>
-          <Badge variant="outline" className="text-xs">
-            Top 10 = {fmtMoney(view.top10Total)} ({view.top10Pct.toFixed(1)}% of AR)
-          </Badge>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs uppercase text-muted-foreground">
-              <th className="pb-2 font-medium">#</th>
-              <th className="pb-2 font-medium">Client</th>
-              <th className="pb-2 font-medium">Collector</th>
-              <th className="pb-2 font-medium">Days Out</th>
-              <th className="pb-2 font-medium">Balance vs Top</th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.topClients.map((c, i) => (
-              <tr key={c.name} className="border-b last:border-0">
-                <td className="py-2 font-mono text-xs text-muted-foreground">{i + 1}</td>
-                <td className="py-2 font-medium">{c.name}</td>
-                <td className="py-2 text-xs text-muted-foreground">{c.collector}</td>
-                <td className="py-2">
-                  <Badge variant={c.days > 60 ? "destructive" : c.days > 30 ? "secondary" : "outline"} className="text-[10px]">
-                    {c.days}d
-                  </Badge>
-                </td>
-                <td className="py-2">
-                  <BarCell value={c.balance} max={view.topClients[0]?.balance || 1} format={fmtMoney} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      {/* AGING × COLLECTOR HEATMAP */}
-      <section id="aging" className="dashboard-section scroll-mt-20">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Aging × Collector — AR Balance Heatmap</h2>
-          <span className="text-xs text-muted-foreground">Shading scales with $ exposure per cell</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs uppercase text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Collector</th>
-                {AGING_BUCKETS.map((b) => (
-                  <th key={b.key} className="px-3 py-2 text-right font-medium">{b.label}</th>
-                ))}
-                <th className="px-3 py-2 text-right font-medium">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.collectorRows.map((row) => (
-                <tr key={row.collector} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{row.collector}</td>
-                  {AGING_BUCKETS.map((b) => (
-                    <HeatCell key={b.key} value={row.buckets[b.key] || 0} max={view.heatMax}>
-                      <span className="block text-right">{(row.buckets[b.key] || 0) > 0 ? fmtMoney(row.buckets[b.key]) : "—"}</span>
-                    </HeatCell>
+                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={64}>
+                  {view.waterfall.map((d, i) => (
+                    <Cell
+                      key={i}
+                      fill={
+                        d.type === "pos"
+                          ? "hsl(var(--destructive))"
+                          : d.type === "neg"
+                            ? "hsl(var(--success))"
+                            : "hsl(var(--primary))"
+                      }
+                    />
                   ))}
-                  <td className="px-3 py-2 text-right font-mono font-semibold tabular-nums">{fmtMoney(row.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <SectionHeader eyebrow="Period Result" title="Net AR Change" />
+          <div className="mt-6 flex items-baseline gap-2">
+            <span className="text-4xl font-semibold tracking-tight tabular-nums">
+              {netChange >= 0 ? "+" : ""}{fmtMoney(netChange)}
+            </span>
+            <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${netChange >= 0 ? "text-destructive" : "text-success"}`}>
+              {netChange >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+              {netChange >= 0 ? "Portfolio growing" : "Drawing down"}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            New AR less collections for {format(new Date(monthVal + "-01"), "MMM yyyy")}.
+          </p>
+
+          <dl className="mt-6 space-y-3 border-t border-border/60 pt-4 text-sm">
+            <FlowRow label="Opening AR" value={fmtMoney(view.waterfall[0].value)} tone="neutral" />
+            <FlowRow label="+ New AR" value={fmtMoney(view.waterfall[1].value)} tone="up" />
+            <FlowRow label="− Collected" value={fmtMoney(Math.abs(view.waterfall[2].value))} tone="down" />
+            <div className="border-t border-border/60 pt-3">
+              <FlowRow label="Closing AR" value={fmtMoney(view.totalAR)} tone="neutral" bold />
+            </div>
+          </dl>
+        </Card>
       </section>
+
+      {/* ─────────── Concentration ─────────── */}
+      <section id="concentration" className="scroll-mt-24">
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <SectionHeader
+              eyebrow="Risk Concentration"
+              title="Top 10 Client Exposure"
+              caption="Largest balances ranked against the portfolio leader."
+            />
+            <div className="flex items-center gap-3 text-right">
+              <Metric mini label="Top 10 Total" value={fmtMoney(view.top10Total)} />
+              <Metric mini label="% of AR" value={`${view.top10Pct.toFixed(1)}%`} />
+            </div>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+                  <th className="pb-3 pl-1 font-semibold">Rank</th>
+                  <th className="pb-3 font-semibold">Client</th>
+                  <th className="pb-3 font-semibold">Collector</th>
+                  <th className="pb-3 font-semibold">Days Out</th>
+                  <th className="pb-3 pr-1 text-right font-semibold">Balance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {view.topClients.map((c, i) => {
+                  const pct = view.topClients[0]?.balance
+                    ? (c.balance / view.topClients[0].balance) * 100
+                    : 0;
+                  return (
+                    <tr key={c.name} className="group transition-colors hover:bg-muted/30">
+                      <td className="py-3 pl-1 font-mono text-[11px] text-muted-foreground">
+                        {String(i + 1).padStart(2, "0")}
+                      </td>
+                      <td className="py-3 font-medium tracking-tight">{c.name}</td>
+                      <td className="py-3 text-xs text-muted-foreground">{c.collector}</td>
+                      <td className="py-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            c.days > 60
+                              ? "bg-destructive/10 text-destructive"
+                              : c.days > 30
+                                ? "bg-warning/15 text-warning"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {c.days}d
+                        </span>
+                      </td>
+                      <td className="py-3 pr-1">
+                        <div className="flex items-center justify-end gap-3">
+                          <div className="relative h-1 w-24 overflow-hidden rounded-full bg-muted/60">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-secondary"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-20 text-right font-mono text-[13px] font-semibold tabular-nums">
+                            {fmtMoney(c.balance)}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
+      {/* ─────────── Aging matrix ─────────── */}
+      <section id="aging" className="scroll-mt-24">
+        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+          <SectionHeader
+            eyebrow="Portfolio Aging"
+            title="Aging × Collector"
+            caption="Cell intensity scales with dollar exposure across the portfolio."
+          />
+          <div className="mt-6 overflow-hidden rounded-xl border border-border/60">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-muted/40">
+                <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/80">
+                  <th className="px-4 py-3">Collector</th>
+                  {AGING_BUCKETS.map((b) => (
+                    <th key={b.key} className="px-3 py-3 text-right">{b.label}</th>
+                  ))}
+                  <th className="px-4 py-3 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {view.collectorRows.map((row, idx) => (
+                  <tr
+                    key={row.collector}
+                    className={`border-t border-border/40 ${idx % 2 === 1 ? "bg-muted/10" : ""}`}
+                  >
+                    <td className="px-4 py-2.5 font-medium tracking-tight">{row.collector}</td>
+                    {AGING_BUCKETS.map((b) => (
+                      <HeatCell key={b.key} value={row.buckets[b.key] || 0} max={view.heatMax}>
+                        <span className="block text-right text-[12px]">
+                          {(row.buckets[b.key] || 0) > 0 ? fmtMoney(row.buckets[b.key]) : "—"}
+                        </span>
+                      </HeatCell>
+                    ))}
+                    <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold tabular-nums">
+                      {fmtMoney(row.total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+/* ─────────────────── Sub-components ─────────────────── */
+
+function SectionHeader({
+  eyebrow,
+  title,
+  caption,
+}: {
+  eyebrow: string;
+  title: string;
+  caption?: string;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary">{eyebrow}</div>
+      <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+      {caption && <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p>}
     </div>
   );
 }
@@ -389,31 +508,100 @@ export default function ExecutiveInsights() {
 function HeroKpi({
   label,
   value,
-  icon,
+  unit,
   spark,
+  sparkColor = "hsl(var(--secondary))",
   delta,
   accent,
+  sublabel,
 }: {
   label: string;
   value: string;
-  icon: React.ReactNode;
+  unit?: string;
   spark?: number[];
+  sparkColor?: string;
   delta?: React.ReactNode;
   accent?: "ok" | "warn";
+  sublabel?: string;
 }) {
-  const border =
-    accent === "warn" ? "border-l-4 border-l-destructive" : accent === "ok" ? "border-l-4 border-l-secondary" : "";
+  const dot =
+    accent === "warn"
+      ? "bg-destructive shadow-[0_0_0_3px_hsl(var(--destructive)/0.15)]"
+      : accent === "ok"
+        ? "bg-success shadow-[0_0_0_3px_hsl(var(--success)/0.15)]"
+        : "bg-secondary shadow-[0_0_0_3px_hsl(var(--secondary)/0.15)]";
+
   return (
-    <Card className={`p-3 ${border}`}>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <span className="text-muted-foreground/70">{icon}</span>
+    <div className="group relative flex flex-col gap-3 p-5 transition-colors hover:bg-muted/20">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            {label}
+          </span>
+        </div>
+        {delta}
       </div>
-      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
-      <div className="mt-1 flex items-center justify-between">
-        {spark ? <Sparkline values={spark} width={100} height={20} /> : <span />}
-        {delta || <span />}
+
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[28px] font-semibold leading-none tracking-tight tabular-nums text-foreground">
+          {value}
+        </span>
+        {unit && <span className="text-xs font-medium text-muted-foreground">{unit}</span>}
       </div>
-    </Card>
+
+      <div className="flex items-end justify-between">
+        <span className="text-[11px] text-muted-foreground/80">{sublabel}</span>
+        {spark ? (
+          <Sparkline values={spark} width={88} height={24} stroke={sparkColor} fill={`${sparkColor.replace(")", " / 0.12)").replace("hsl(", "hsl(")}`} />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DeltaPill({ prev, curr }: { prev: number; curr: number }) {
+  if (!prev) return <span className="text-[10px] text-muted-foreground">new</span>;
+  const pct = (curr - prev) / prev;
+  const up = pct >= 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+        up ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+      }`}
+    >
+      {up ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+      {Math.abs(pct * 100).toFixed(1)}%
+    </span>
+  );
+}
+
+function FlowRow({
+  label,
+  value,
+  tone,
+  bold,
+}: {
+  label: string;
+  value: string;
+  tone: "up" | "down" | "neutral";
+  bold?: boolean;
+}) {
+  const toneColor =
+    tone === "up" ? "text-destructive" : tone === "down" ? "text-success" : "text-foreground";
+  return (
+    <div className="flex items-baseline justify-between">
+      <dt className={`text-xs ${bold ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</dt>
+      <dd className={`font-mono text-sm tabular-nums ${toneColor} ${bold ? "font-semibold" : ""}`}>{value}</dd>
+    </div>
+  );
+}
+
+function Metric({ label, value, mini }: { label: string; value: string; mini?: boolean }) {
+  return (
+    <div className="text-right">
+      <div className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/70">{label}</div>
+      <div className={`font-mono font-semibold tabular-nums ${mini ? "text-sm" : "text-base"}`}>{value}</div>
+    </div>
   );
 }
