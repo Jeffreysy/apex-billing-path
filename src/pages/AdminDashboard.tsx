@@ -42,7 +42,7 @@ const AdminDashboard = () => {
     { name: "Admin", tasks: unresolvedEscalations.filter((t: any) => ["management", "admin"].includes(t.handoff_queue)).length },
   ];
 
-  const lateClients = Number(kpi?.late_clients) || 0;
+  const lateClients = Number((kpi as any)?.late_clients) || 0;
   const statusPie = [
     { name: "Current", value: currentClients },
     { name: "Late", value: lateClients },
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
           { name: "Collections", icon: Phone, desc: `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
           { name: "Legal", icon: Scale, desc: `${activeCases} active cases` },
           { name: "Financial Oversight", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
-          { name: "Reporting", icon: TrendingUp, desc: `${Number(kpi?.payments_this_month) || 0} payments this month` },
+          { name: "Reporting", icon: TrendingUp, desc: `${Number((kpi as any)?.payments_this_month) || 0} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><dept.icon className="h-4 w-4 text-secondary" />{dept.name}</CardTitle></CardHeader>
