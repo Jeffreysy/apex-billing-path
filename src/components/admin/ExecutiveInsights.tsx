@@ -11,7 +11,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
 } from "recharts";
-import { DollarSign, TrendingUp, Percent, AlertTriangle, Activity } from "lucide-react";
+import { DollarSign, TrendingUp, Percent, AlertTriangle, Activity, ArrowUpRight, ArrowDownRight, Printer, ChevronRight } from "lucide-react";
 
 const AGING_BUCKETS = [
   { key: "current", label: "Current", max: 0 },
