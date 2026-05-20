@@ -47,6 +47,12 @@ function monthOptions(count = 6) {
   });
 }
 
+// Parse "YYYY-MM" as a local date (avoids UTC shift that bumps May→April in negative offsets)
+function monthValToDate(monthVal: string): Date {
+  const [y, m] = monthVal.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, 1);
+}
+
 function useInsightsData() {
   return useQuery({
     queryKey: ["admin-insights-v2"],
