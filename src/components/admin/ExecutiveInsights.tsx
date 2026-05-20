@@ -8,8 +8,7 @@ import {
   format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
 } from "date-fns";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
-  PieChart, Pie,
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
 
