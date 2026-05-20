@@ -6,12 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks, isAfter,
+  format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
 } from "date-fns";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
 } from "recharts";
-import { DollarSign, TrendingUp, Percent, AlertTriangle, Activity, ArrowUpRight, ArrowDownRight, Printer, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const AGING_BUCKETS = [
   { key: "current", label: "Current", max: 0 },
