@@ -51,7 +51,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
   const totalAR = Number(kpi?.total_remaining) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
-  const overdueAR = Number(kpi?.overdue_ar) || clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  const overdueAR = Number((kpi as any)?.overdue_ar) || clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const totalCollectedAll = Number(kpi?.total_collected) || payments.reduce((s, p) => s + p.amount, 0);
 
   const now = new Date();
@@ -118,7 +118,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     ? Math.round(delinquentClients.reduce((s, c) => s + c.daysAging, 0) / delinquentClients.length) : 0;
 
   const completedContracts = clients.filter(c => c.status === "completed").length;
-  const activeContracts = Number(kpi?.active_contracts) || clients.filter(c => c.status === "active" || c.status === "delinquent").length;
+  const activeContracts = Number((kpi as any)?.active_contracts) || clients.filter(c => c.status === "active" || c.status === "delinquent").length;
   const completionRate = activeContracts + completedContracts > 0
     ? Math.round((completedContracts / (activeContracts + completedContracts)) * 100) : 0;
   const totalOwedAll = clients.reduce((s, c) => s + c.totalOwed, 0);
