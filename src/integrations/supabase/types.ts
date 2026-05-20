@@ -8048,6 +8048,27 @@ export type Database = {
       }
     }
     Views: {
+      admin_kpi: {
+        Row: {
+          active_cases: number | null
+          ar_actionable: number | null
+          ar_late: number | null
+          ar_on_plan: number | null
+          collected_this_month: number | null
+          collection_rate_pct: number | null
+          contracts_actionable: number | null
+          contracts_late: number | null
+          contracts_on_plan: number | null
+          current_clients: number | null
+          delinquent_clients: number | null
+          risk_contracts: number | null
+          total_clients: number | null
+          total_collected: number | null
+          total_contracts: number | null
+          total_remaining: number | null
+        }
+        Relationships: []
+      }
       admin_mycase_reconciliation_summary: {
         Row: {
           closed_cases: number | null

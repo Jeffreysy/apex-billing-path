@@ -468,7 +468,7 @@ export function useCollectorWeeklyCoverage(weeksBack = 12) {
         .gte("week_start", since)
         .order("week_start", { ascending: false });
       if (error) throw error;
-      return (data || []) as CollectorWeeklyCoverage[];
+      return (data || []) as unknown as CollectorWeeklyCoverage[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -500,7 +500,7 @@ export function useCollectorClientStatus(collectorName?: string) {
       if (collectorName) query = (query as any).eq("collector", collectorName);
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as CollectorClientStatus[];
+      return (data || []) as unknown as CollectorClientStatus[];
     },
     staleTime: 5 * 60 * 1000,
   });
