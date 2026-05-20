@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows } from "@/hooks/useSupabaseData";
-import { Sparkline, Delta, HeatCell, BarCell } from "@/components/collections/MiniViz";
+import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
