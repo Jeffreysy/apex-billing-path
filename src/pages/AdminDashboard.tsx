@@ -2,6 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
+import ExecutiveInsights from "@/components/admin/ExecutiveInsights";
 import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
@@ -52,6 +53,10 @@ const AdminDashboard = () => {
   return (
     <DashboardLayout title="Admin Dashboard">
       <div className="mb-6"><h1 className="text-2xl font-bold">Admin Dashboard</h1><p className="text-muted-foreground">High-level overview of all departments, KPIs, and firm-wide activity</p></div>
+
+      <ExecutiveInsights />
+
+      <div className="my-8 border-t" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total AR Outstanding" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
