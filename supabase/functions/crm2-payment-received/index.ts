@@ -255,6 +255,7 @@ Deno.serve(async (req) => {
       .from("payments")
       .insert({
         client_id: clientId,
+        contract_id: contract?.id || null,
         amount,
         payment_date: paymentDate,
         payment_method: paymentMethod,
@@ -287,10 +288,16 @@ Deno.serve(async (req) => {
     }
 
     if (contract) {
-      const nextCollected = Number(contract.collected || 0) + amount;
+      // collected is maintained by sync_contract_collected trigger — only update metadata + paid-off status
+      const { data: refreshedContract } = await sb
+        .from("contracts")
+        .select("collected, value")
+        .eq("id", contract.id)
+        .single();
+
+      const nextCollected = refreshedContract?.collected ?? Number(contract.collected || 0) + amount;
       const nextBalance = Math.max(0, Number(contract.value || 0) - nextCollected);
       const contractUpdate: Record<string, unknown> = {
-        collected: nextCollected,
         last_transaction_date: paymentDate,
         last_transaction_amount: amount,
         last_transaction_source: "filevine",

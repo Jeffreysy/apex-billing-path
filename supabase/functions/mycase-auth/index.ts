@@ -3,15 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 /**
  * MyCase OAuth2 Authorization Code Flow handler.
  *
- * Two modes:
- *   GET  /mycase-auth              → redirects to MyCase login
- *   GET  /mycase-auth?code=XYZ     → exchanges code for tokens, stores in mycase_sync_state
- *   POST /mycase-auth              → refreshes access token using stored refresh_token
+ * Endpoints per MyCase docs (https://mycaseapi.stoplight.io):
+ *   Authorize: https://auth.mycase.com/login_sessions/new
+ *   Token:     https://auth.mycase.com/tokens
+ *
+ * Modes:
+ *   GET  /mycase-auth              -> redirects to MyCase login
+ *   GET  /mycase-auth?code=XYZ     -> exchanges code for tokens
+ *   GET  /mycase-auth?debug=true   -> shows diagnostic info
+ *   POST /mycase-auth              -> refreshes access token
  */
 
-const MYCASE_DOMAIN = "grand-rapids-law-group.mycase.com";
-const AUTH_BASE = "https://auth.mycase.com";   // OAuth endpoints
-const API_BASE  = `https://${MYCASE_DOMAIN}`;  // REST API endpoints (unused in auth flow)
+const AUTH_BASE = "https://auth.mycase.com";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -24,7 +27,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// The redirect URI must match what's registered in MyCase
 const REDIRECT_URI = `${supabaseUrl}/functions/v1/mycase-auth`;
 
 Deno.serve(async (req) => {
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
 
   try {
-    // ── POST: refresh the access token ──────────────────────────
+    // -- POST: refresh the access token
     if (req.method === "POST") {
       const { data: state } = await sb
         .from("mycase_sync_state")
@@ -70,7 +72,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── GET with ?code= : exchange authorization code ───────────
+    // -- GET with ?code= : exchange authorization code
     const code = url.searchParams.get("code");
     if (code) {
       const tokens = await exchangeToken({
@@ -92,11 +94,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── GET without code: redirect to MyCase login ──────────────
+    // -- GET with ?debug=true: show diagnostic info
+    if (url.searchParams.get("debug") === "true") {
+      const authorizeUrl = buildAuthorizeUrl();
+      return new Response(
+        `<html><body style="font-family:sans-serif;padding:40px;max-width:700px">
+          <h2>MyCase OAuth — Diagnostic</h2>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Authorize Endpoint</td>
+                <td style="padding:8px;border:1px solid #ccc"><code>${AUTH_BASE}/login_sessions/new</code></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Token Endpoint</td>
+                <td style="padding:8px;border:1px solid #ccc"><code>${AUTH_BASE}/tokens</code></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Client ID</td>
+                <td style="padding:8px;border:1px solid #ccc"><code>${clientId || 'NOT SET'}</code></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Client Secret</td>
+                <td style="padding:8px;border:1px solid #ccc"><code>${clientSecret ? '****' + clientSecret.slice(-4) : 'NOT SET'}</code></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Redirect URI</td>
+                <td style="padding:8px;border:1px solid #ccc"><code>${REDIRECT_URI}</code></td></tr>
+            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Full Authorize URL</td>
+                <td style="padding:8px;border:1px solid #ccc;word-break:break-all"><code>${authorizeUrl}</code></td></tr>
+          </table>
+          <br/>
+          <p><strong>Prerequisites (per MyCase docs):</strong></p>
+          <ol>
+            <li>Client credentials issued by MyCase support</li>
+            <li>Redirect URI registered by MyCase support (they set it, not you)</li>
+            <li>Authorizing user must have <em>"Manage your firm's preferences, billing, and payment options"</em> permission set to <strong>Yes</strong></li>
+          </ol>
+          <br/>
+          <a href="${authorizeUrl}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:6px">Attempt Authorization →</a>
+        </body></html>`,
+        { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      );
+    }
+
+    // -- GET without code: redirect to MyCase login
     return Response.redirect(buildAuthorizeUrl(), 302);
   } catch (err) {
     const message = (err as Error).message;
-    // Store error in sync state
     await sb.from("mycase_sync_state").upsert(
       {
         sync_key: "oauth",
@@ -115,12 +150,11 @@ Deno.serve(async (req) => {
 
 function buildAuthorizeUrl(): string {
   const params = new URLSearchParams({
-    response_type: "code",
     client_id: clientId,
     redirect_uri: REDIRECT_URI,
+    response_type: "code",
   });
-  // OAuth authorize endpoint lives on the firm domain, not auth.mycase.com
-  return `${API_BASE}/oauth/authorize?${params.toString()}`;
+  return `${AUTH_BASE}/login_sessions/new?${params.toString()}`;
 }
 
 interface TokenResponse {
@@ -128,6 +162,8 @@ interface TokenResponse {
   refresh_token: string;
   token_type: string;
   expires_in: number;
+  firm_uuid?: string;
+  scope?: string;
 }
 
 async function exchangeToken(
@@ -139,7 +175,7 @@ async function exchangeToken(
     ...params,
   });
 
-  const resp = await fetch(`${API_BASE}/oauth/token`, {
+  const resp = await fetch(`${AUTH_BASE}/tokens`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -177,6 +213,8 @@ async function storeTokens(
       meta: {
         token_type: tokens.token_type,
         expires_in: tokens.expires_in,
+        firm_uuid: tokens.firm_uuid || null,
+        scope: tokens.scope || null,
         last_refreshed: new Date().toISOString(),
       },
     },

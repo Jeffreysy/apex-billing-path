@@ -267,7 +267,7 @@ function PTPSection() {
 function ARRollForwardSection() {
   const { data: contracts = [] } = useQuery({
     queryKey: ["arrf-contracts"],
-    queryFn: async () => fetchAllRows<any>("contracts"),
+    queryFn: async () => fetchAllRows<any>("ar_dashboard"),
     staleTime: 5 * 60 * 1000,
   });
   const { data: payments = [] } = useQuery({
@@ -296,11 +296,11 @@ function ARRollForwardSection() {
     // Collections (payments that month), Net Movement
     const rows = months.map(m => {
       const newContracts = contracts.filter((c: any) => {
-        if (!c.created_at) return false;
-        const d = new Date(c.created_at);
+        if (!c.start_date) return false;
+        const d = new Date(c.start_date);
         return d >= m.start && d <= m.end;
       });
-      const newAR = newContracts.reduce((s: number, c: any) => s + (Number(c.value) || 0), 0);
+      const newAR = newContracts.reduce((s: number, c: any) => s + (Number(c.total_contract_value) || 0), 0);
 
       const monthPayments = payments.filter((p: any) => {
         if (!p.payment_date) return false;

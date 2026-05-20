@@ -19,6 +19,7 @@ import CollectorWorkspace from "./pages/CollectorWorkspace";
 import EscalationManagementPage from "./pages/EscalationManagementPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
+import DataImportPage from "./pages/DataImportPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/contracts" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ContractsPage /></ProtectedRoute>} />
             <Route path="/clients" element={<ProtectedRoute allowedRoles={CLIENT_ROLES}><ClientLookup /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute allowedRoles={SETTINGS_ROLES}><SettingsPage /></ProtectedRoute>} />
+            <Route path="/import" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><DataImportPage /></ProtectedRoute>} />
             <Route path="/collections/queue" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><CallQueuePage /></ProtectedRoute>} />
             <Route path="/collections/escalations" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><EscalationManagementPage /></ProtectedRoute>} />
             <Route path="/collections/workspace/:accountId" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><CollectorWorkspace /></ProtectedRoute>} />

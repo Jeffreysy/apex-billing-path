@@ -11,6 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  */
 
 const MYCASE_DOMAIN = "grand-rapids-law-group.mycase.com";
+const AUTH_BASE = "https://auth.mycase.com";
 const API_BASE = `https://${MYCASE_DOMAIN}/api/v2`;
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -28,13 +29,29 @@ const normalizeName = (value: string) =>
     .replace(/[^A-Z0-9]/g, "")
     .trim();
 
+async function getSavedCursor(
+  sb: ReturnType<typeof createClient>,
+  entity: string
+): Promise<number> {
+  const syncKey = entity === "all" ? "cases" : entity;
+  const { data } = await sb
+    .from("mycase_sync_state")
+    .select("last_cursor, last_error")
+    .eq("sync_key", syncKey)
+    .maybeSingle();
+  if (data?.last_error && data.last_cursor) {
+    return Math.max(1, parseInt(data.last_cursor, 10) || 1);
+  }
+  return 1;
+}
+
 type SyncEntity = "cases" | "contacts" | "invoices" | "all";
 
 interface SyncRequest {
   entity: SyncEntity;
   page?: number;
   per_page?: number;
-  full_sync?: boolean; // if true, re-sync everything instead of incremental
+  full_sync?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -43,9 +60,10 @@ Deno.serve(async (req) => {
 
   const sb = createClient(supabaseUrl, serviceRoleKey);
 
+  let entity: SyncEntity = "all";
   try {
     const body = (await req.json().catch(() => ({}))) as SyncRequest;
-    const entity = body.entity || "all";
+    entity = body.entity || "all";
     const perPage = body.per_page || 50;
 
     // Get access token (auto-refresh if expired)
@@ -65,22 +83,39 @@ Deno.serve(async (req) => {
 
     const results: Record<string, unknown> = {};
 
+    // Resume from saved cursor if no explicit page was provided
+    const resumePage = body.page ?? await getSavedCursor(sb, entity);
+
     if (entity === "cases" || entity === "all") {
-      results.cases = await syncCases(sb, accessToken, perPage, body.page);
+      const casePage = body.page ?? (entity === "all" ? await getSavedCursor(sb, "cases") : resumePage);
+      results.cases = await syncCases(sb, accessToken, perPage, casePage === 1 ? undefined : casePage);
     }
     if (entity === "contacts" || entity === "all") {
-      results.contacts = await syncContacts(sb, accessToken, perPage, body.page);
+      const contactPage = body.page ?? (entity === "all" ? await getSavedCursor(sb, "contacts") : resumePage);
+      results.contacts = await syncContacts(sb, accessToken, perPage, contactPage === 1 ? undefined : contactPage);
     }
     if (entity === "invoices" || entity === "all") {
-      results.invoices = await syncInvoices(sb, accessToken, perPage, body.page);
+      const invoicePage = body.page ?? (entity === "all" ? await getSavedCursor(sb, "invoices") : resumePage);
+      results.invoices = await syncInvoices(sb, accessToken, perPage, invoicePage === 1 ? undefined : invoicePage);
     }
 
     return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    const errMsg = (err as Error).message;
+    try {
+      await sb.from("mycase_sync_state").upsert(
+        {
+          sync_key: entity === "all" ? "sync_error" : entity,
+          last_error: errMsg,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "sync_key" }
+      );
+    } catch (_) { /* best-effort error persistence */ }
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
+      JSON.stringify({ error: errMsg }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -108,7 +143,7 @@ async function getValidToken(
     return state.access_token;
   }
 
-  // Refresh the token
+  // Refresh the token via auth function
   if (!state.refresh_token) return null;
 
   const refreshResp = await fetch(
@@ -207,7 +242,6 @@ async function syncCases(
       ).trim();
       const description = String(c.description || "").trim();
 
-      // Try to match to existing client
       let matchedClientId: string | null = null;
       let matchedContractId: string | null = null;
       let matchType = "unmatched";
@@ -330,7 +364,7 @@ async function syncCases(
     );
 
     page++;
-  } while (page <= totalPages && !startPage); // if startPage given, only do that one page
+  } while (page <= totalPages && !startPage);
 
   return { processed: totalProcessed, matched: totalMatched, pages: totalPages };
 }

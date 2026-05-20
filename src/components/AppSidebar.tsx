@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings,
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ const sections = [
       { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
       { path: "/contracts", label: "Contracts & AR", icon: FileText },
       { path: "/clients", label: "Client Lookup", icon: Search },
+      { path: "/import", label: "Data Import", icon: Upload },
       { path: "/settings", label: "Settings", icon: Settings },
     ],
   },
@@ -70,6 +71,7 @@ const AppSidebar = () => {
         if (item.path === "/reporting") return canAccessReporting(role);
         if (item.path === "/contracts") return canAccessContracts(role);
         if (item.path === "/clients") return canAccessClients(role);
+        if (item.path === "/import") return canAccessAdmin(role);
         if (item.path === "/settings") return canAccessSettings(role);
         if (item.path.startsWith("/collector/")) return canAccessCollections(role);
         return false;

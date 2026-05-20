@@ -52,6 +52,12 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
   const totalAR = Number(kpi?.total_remaining) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const overdueAR = Number((kpi as any)?.overdue_ar) || clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  const arOnPlan = Number(kpi?.ar_on_plan) || 0;
+  const arLate = Number(kpi?.ar_late) || 0;
+  const arActionable = Number(kpi?.ar_actionable) || 0;
+  const contractsOnPlan = Number(kpi?.contracts_on_plan) || 0;
+  const contractsLate = Number(kpi?.contracts_late) || 0;
+  const contractsActionable = Number(kpi?.contracts_actionable) || 0;
   const totalCollectedAll = Number(kpi?.total_collected) || payments.reduce((s, p) => s + p.amount, 0);
 
   const now = new Date();
@@ -108,8 +114,11 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const latestBookedPaymentDate = paymentRows.find((payment) => payment.payment_date)?.payment_date || null;
   const latestCollectorActivityDate = activityRows.find((activity) => activity.activity_date)?.activity_date || null;
 
-  const forecastWeek = Math.round(weekCollected * 1.08);
-  const forecastMonth = Math.round(monthCollected * 1.05);
+  const activeClients = clients.filter(c => c.status === "active" || c.status === "delinquent");
+  const scheduledMonthly = activeClients.reduce((s, c) => s + c.monthlyPayment, 0);
+  const scheduledWeekly = scheduledMonthly / 4;
+  const forecastWeek = Math.round(scheduledWeekly);
+  const forecastMonth = Math.round(scheduledMonthly);
   const varianceWeek = forecastWeek > 0 ? Math.round(((weekCollected - forecastWeek) / forecastWeek) * 100) : 0;
   const varianceMonth = forecastMonth > 0 ? Math.round(((monthCollected - forecastMonth) / forecastMonth) * 100) : 0;
 
@@ -126,7 +135,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const collectionEffectiveness = Number(kpi?.collection_rate_pct) || (totalOwedAll > 0 ? Math.round((totalPaidAll / totalOwedAll) * 100) : 0);
 
   const agingData = computeARAgingData(clients);
-  const transactionTypes = computeTransactionsByType(payments, clients);
+  const transactionTypes = computeTransactionsByType(payments, clients, paymentRows);
   const dailyCollections = computeDailyCollections(payments);
   const weeklyPast = computeWeeklyPastCollections(payments);
   const monthlyPast = computeMonthlyPastCollections(payments);
@@ -150,9 +159,23 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
         <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <StatCard label="Overdue AR" value={`$${overdueAR.toLocaleString()}`} icon={<AlertTriangle className="h-5 w-5" />} />
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Expected (On-Plan)</p>
+          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">${arOnPlan.toLocaleString()}</p>
+          <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">{contractsOnPlan} contracts</p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Late</p>
+          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-300">${arLate.toLocaleString()}</p>
+          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">{contractsLate} contracts</p>
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Actionable AR</p>
+          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arActionable.toLocaleString()}</p>
+          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsActionable} contracts</p>
+        </div>
         <StatCard
           label="Cash This Week"
           value={`$${weekCollected.toLocaleString()}`}
@@ -165,8 +188,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
           icon={<TrendingUp className="h-5 w-5" />}
           caption={`Booked payments only • Collector logs $${monthCollectorLogged.toLocaleString()}`}
         />
-        <StatCard label="Forecast (Week)" value={`$${forecastWeek.toLocaleString()}`} icon={<Target className="h-5 w-5" />} />
-        <StatCard label="Forecast (Month)" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} />
+        <StatCard label="Scheduled / Mo" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} caption={`Variance ${varianceMonth >= 0 ? "+" : ""}${varianceMonth}%`} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">

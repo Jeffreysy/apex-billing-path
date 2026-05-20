@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCollectionsDashboard, useCollectionActivities } from "@/hooks/useSupabaseData";
+import { useCollectionsDashboard, useCollectionActivities, useHardshipRequests } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ import { ESCALATION_HANDOFF_QUEUES, formatEscalationStatus, formatEscalationValu
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, DollarSign, AlertTriangle, Calendar,
-  Clock, FileText, Users, ChevronRight, Shield, CreditCard,
+  Clock, FileText, Users, ChevronRight, Shield, CreditCard, Handshake,
 } from "lucide-react";
 
 // --- helpers ---
@@ -114,6 +114,14 @@ const CollectorWorkspace = () => {
   const [escalateOpen, setEscalateOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [hardshipOpen, setHardshipOpen] = useState(false);
+
+  // Hardship form state
+  const [hrType, setHrType] = useState("reduced_payment");
+  const [hrReason, setHrReason] = useState("");
+  const [hrProposedPayment, setHrProposedPayment] = useState("");
+  const [hrProposedTerm, setHrProposedTerm] = useState("");
+  const [hrNotes, setHrNotes] = useState("");
 
   // Call form state removed — now handled by CallDocumentationDialog
 
@@ -137,6 +145,12 @@ const CollectorWorkspace = () => {
   const account = useMemo(() => {
     return queue.find((q: any) => q.contract_id === accountId || q.client_id === accountId);
   }, [queue, accountId]);
+
+  // Hardship requests for this client — must be after account is resolved
+  const { data: hardshipRequests = [], isLoading: hrl } = useHardshipRequests(
+    account?.client_id,
+    account?.contract_id,
+  );
 
   // Recent activities for this client
   const recentActivities = useMemo(() => {
@@ -232,6 +246,35 @@ const CollectorWorkspace = () => {
     }
   };
 
+  const handleCreateHardship = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hrReason || !hrType) { toast.error("Reason and type required"); return; }
+    try {
+      const { error } = await supabase.from("hardship_requests").insert({
+        client_id: account?.client_id,
+        contract_id: account?.contract_id || null,
+        requested_by: account?.collector || account?.assigned_collector || "Unknown",
+        reason: hrReason,
+        hardship_type: hrType,
+        current_monthly_payment: Number(account?.monthly_installment) || null,
+        proposed_monthly_payment: hrProposedPayment ? Number(hrProposedPayment) : null,
+        proposed_term_months: hrProposedTerm ? Number(hrProposedTerm) : null,
+        notes: hrNotes || null,
+      });
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["hardship-requests"] });
+      toast.success("Hardship request submitted for review");
+      setHardshipOpen(false);
+      setHrType("reduced_payment");
+      setHrReason("");
+      setHrProposedPayment("");
+      setHrProposedTerm("");
+      setHrNotes("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit hardship request");
+    }
+  };
+
   if (ql || al) {
     return <DashboardLayout title="Workspace"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
   }
@@ -251,9 +294,12 @@ const CollectorWorkspace = () => {
 
   const priority = priorityLabel(account.priority_score);
   const balance = Number(account.balance_remaining) || 0;
-  const storedDaysOut = Number(account.days_past_due) || 0;
-  const dueDateDaysOut = balance > 0 ? Math.max(0, daysBetweenTodayAndDate(account.next_due_date)) : 0;
-  const daysOut = Math.max(storedDaysOut, dueDateDaysOut);
+  const dbDaysOut = Number(account.effective_days_past_due) || 0;
+  const fallbackDaysOut = Math.max(
+    Number(account.days_past_due) || 0,
+    balance > 0 ? Math.max(0, daysBetweenTodayAndDate(account.next_due_date)) : 0,
+  );
+  const daysOut = dbDaysOut > 0 ? dbDaysOut : fallbackDaysOut;
   const delinquencyLabel = daysOut > 0
     ? `${daysOut}d past due`
     : account.delinquency_status || "Current";
@@ -335,6 +381,9 @@ const CollectorWorkspace = () => {
         </Button>
         <Button variant="outline" onClick={() => setFollowUpOpen(true)} className="gap-2">
           <Calendar className="h-4 w-4" /> Set Follow-Up
+        </Button>
+        <Button variant="outline" onClick={() => setHardshipOpen(true)} className="gap-2">
+          <Handshake className="h-4 w-4" /> Offer Restructure
         </Button>
       </div>
 
@@ -447,6 +496,44 @@ const CollectorWorkspace = () => {
                     <span>· {new Date(esc.created_at).toLocaleDateString()}</span>
                   </div>
                   {esc.resolution_notes && <p className="text-xs text-muted-foreground mt-1">{esc.resolution_notes}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* Hardship Requests */}
+        <Section title="Hardship / Restructure Requests" icon={<Handshake className="h-4 w-4" />}>
+          {hrl ? (
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          ) : hardshipRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No restructure requests on file.</p>
+          ) : (
+            <div className="space-y-3 max-h-[250px] overflow-y-auto">
+              {hardshipRequests.map((hr: any) => (
+                <div key={hr.id} className="rounded border p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium capitalize">{hr.hardship_type.replace(/_/g, " ")}</p>
+                    <Badge
+                      variant={
+                        hr.status === "approved" ? "default" :
+                        hr.status === "denied" ? "destructive" :
+                        hr.status === "counter_offered" ? "secondary" : "outline"
+                      }
+                      className="text-xs capitalize"
+                    >
+                      {hr.status.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{hr.reason}</p>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    {hr.proposed_monthly_payment && (
+                      <span>Proposed: ${Number(hr.proposed_monthly_payment).toLocaleString()}/mo</span>
+                    )}
+                    {hr.proposed_term_months && <span>· {hr.proposed_term_months} months</span>}
+                    <span>· {new Date(hr.created_at).toLocaleDateString()}</span>
+                  </div>
+                  {hr.review_notes && <p className="text-xs text-muted-foreground mt-1 italic">{hr.review_notes}</p>}
                 </div>
               ))}
             </div>
@@ -596,6 +683,80 @@ const CollectorWorkspace = () => {
               <Input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} />
             </div>
             <DialogFooter><Button type="submit" disabled={!followUpDate}>Set Follow-Up</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Offer Restructure / Hardship Request */}
+      <Dialog open={hardshipOpen} onOpenChange={setHardshipOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Offer Restructure / Hardship Request</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateHardship} className="space-y-4">
+            <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              Current installment: <strong>${(Number(account?.monthly_installment) || 0).toLocaleString()}/mo</strong>
+              {" · "}Balance remaining: <strong>${(Number(account?.balance_remaining) || 0).toLocaleString()}</strong>
+            </div>
+            <div>
+              <Label>Restructure Type</Label>
+              <Select value={hrType} onValueChange={setHrType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reduced_payment">Reduced monthly payment</SelectItem>
+                  <SelectItem value="extended_term">Extended term (more months)</SelectItem>
+                  <SelectItem value="temporary_pause">Temporary payment pause</SelectItem>
+                  <SelectItem value="settlement_offer">Settlement offer (lump sum)</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Client's Hardship Reason</Label>
+              <Textarea
+                value={hrReason}
+                onChange={e => setHrReason(e.target.value)}
+                placeholder="Client stated reason for hardship..."
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Proposed Monthly Payment ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={hrProposedPayment}
+                  onChange={e => setHrProposedPayment(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label>Proposed Term (months)</Label>
+                <Input
+                  type="number"
+                  value={hrProposedTerm}
+                  onChange={e => setHrProposedTerm(e.target.value)}
+                  placeholder="e.g. 24"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Additional Notes</Label>
+              <Textarea
+                value={hrNotes}
+                onChange={e => setHrNotes(e.target.value)}
+                placeholder="Any additional context for management review..."
+                rows={2}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This request will be sent to management for approval before any changes are made to the contract.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setHardshipOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={!hrReason}>Submit for Review</Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

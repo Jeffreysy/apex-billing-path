@@ -563,19 +563,22 @@ export function computeARAgingData(clients: Client[]) {
   return buckets.map(b => ({ range: b.range, amount: Math.round(b.amount), count: b.count }));
 }
 
-export function computeTransactionsByType(payments: Payment[], clients: Client[]) {
-  const downPaymentTotal = clients.filter(c => c.downPaymentPaid).reduce((s, c) => s + c.downPayment, 0);
-  const completed = payments.filter(p => p.status === "completed");
-  const totalCompleted = completed.reduce((s, p) => s + p.amount, 0);
-
-  return [
-    { type: "down_payment" as const, label: "Down Payment", total: Math.round(downPaymentTotal), count: clients.filter(c => c.downPaymentPaid).length },
-    { type: "monthly_installment" as const, label: "Monthly Installment", total: Math.round(totalCompleted * 0.6), count: Math.floor(completed.length * 0.6) },
-    { type: "consult_fee" as const, label: "Consult Fee", total: Math.round(totalCompleted * 0.12), count: Math.floor(completed.length * 0.1) },
-    { type: "retainer_fee" as const, label: "Retainer Fee", total: Math.round(totalCompleted * 0.15), count: clients.filter(c => c.status !== "new").length },
-    { type: "court_filing" as const, label: "Court Filing", total: Math.round(totalCompleted * 0.08), count: Math.floor(completed.length * 0.05) },
-    { type: "settlement" as const, label: "Settlement", total: Math.round(totalCompleted * 0.05), count: clients.filter(c => c.caseStage === "settlement" || c.caseStage === "closed").length },
-  ];
+export function computeTransactionsByType(_payments: Payment[], _clients: Client[], paymentRows?: any[]) {
+  const rows = paymentRows || [];
+  const typeMap = new Map<string, { total: number; count: number }>();
+  for (const p of rows) {
+    const type = p.payment_type || "Other";
+    const existing = typeMap.get(type) || { total: 0, count: 0 };
+    existing.total += Number(p.amount) || 0;
+    existing.count += 1;
+    typeMap.set(type, existing);
+  }
+  return Array.from(typeMap, ([type, stats]) => ({
+    type,
+    label: type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+    total: Math.round(stats.total),
+    count: stats.count,
+  })).sort((a, b) => b.total - a.total);
 }
 
 export function computeCaseTypeBilling(clients: Client[]) {
@@ -610,39 +613,54 @@ export function computeContractAnalytics(clients: Client[]) {
       return sd >= monthStart && sd <= monthEnd;
     }).length;
 
-    const matured = clients.filter(c => c.status === "completed").length;
-    const delinquent = clients.filter(c => c.status === "delinquent").length;
+    const matured = clients.filter(c => {
+      if (c.status !== "completed" || !c.contractStart) return false;
+      const pctPaid = c.totalOwed > 0 ? c.totalPaid / c.totalOwed : 0;
+      if (pctPaid < 0.95) return false;
+      const endEst = new Date(c.contractStart);
+      endEst.setMonth(endEst.getMonth() + c.installmentMonths);
+      return endEst >= monthStart && endEst <= monthEnd;
+    }).length;
 
-    months.push({ month: monthStr, started, matured: Math.floor(matured / 6), delinquent: Math.floor(delinquent / 6) });
+    const delinquent = clients.filter(c => {
+      if (c.status !== "delinquent" || c.daysAging <= 0) return false;
+      const becameDelinquentEst = new Date();
+      becameDelinquentEst.setDate(becameDelinquentEst.getDate() - c.daysAging);
+      return becameDelinquentEst >= monthStart && becameDelinquentEst <= monthEnd;
+    }).length;
+
+    months.push({ month: monthStr, started, matured, delinquent });
   }
   return months;
 }
 
-export function computeForecastData(clients: Client[]) {
+export function computeForecastData(clients: Client[], collectionRatePct?: number) {
   const activeClients = clients.filter(c => c.status === "active" || c.status === "delinquent");
   const weeklyScheduled = activeClients.reduce((s, c) => s + c.monthlyPayment, 0) / 4;
+  const rate = (collectionRatePct ?? 60) / 100;
 
   return Array.from({ length: 8 }, (_, i) => ({
     period: format(addWeeks(new Date(), i + 1), "MMM dd"),
-    projected: Math.round(weeklyScheduled * (0.85 + Math.random() * 0.3)),
-    pessimistic: Math.round(weeklyScheduled * 0.6),
-    optimistic: Math.round(weeklyScheduled * 1.2),
+    projected: Math.round(weeklyScheduled * rate),
+    pessimistic: Math.round(weeklyScheduled * rate * 0.7),
+    optimistic: Math.round(weeklyScheduled * rate * 1.3),
   }));
 }
 
-export function computeMonthlyForecast(clients: Client[]) {
+export function computeMonthlyForecast(clients: Client[], collectionRatePct?: number) {
   const activeClients = clients.filter(c => c.status === "active" || c.status === "delinquent");
   const monthlyScheduled = activeClients.reduce((s, c) => s + c.monthlyPayment, 0);
+  const rate = (collectionRatePct ?? 60) / 100;
 
   return Array.from({ length: 6 }, (_, i) => ({
     month: format(addMonths(new Date(), i + 1), "MMM yyyy"),
-    projected: Math.round(monthlyScheduled * (0.85 + Math.random() * 0.3)),
-    pessimistic: Math.round(monthlyScheduled * 0.6),
-    optimistic: Math.round(monthlyScheduled * 1.2),
+    projected: Math.round(monthlyScheduled * rate),
+    pessimistic: Math.round(monthlyScheduled * rate * 0.7),
+    optimistic: Math.round(monthlyScheduled * rate * 1.3),
   }));
 }
 
-export function computeWeeklyCollections(payments: Payment[]) {
+export function computeWeeklyCollections(payments: Payment[], weeklyTarget?: number) {
   const weekMap = new Map<string, number>();
   for (const p of payments) {
     if (!p.date) continue;
@@ -651,14 +669,16 @@ export function computeWeeklyCollections(payments: Payment[]) {
     const key = format(ws, "MMM dd");
     weekMap.set(key, (weekMap.get(key) || 0) + p.amount);
   }
-  return Array.from(weekMap, ([week, collected]) => ({
+  const entries = Array.from(weekMap, ([week, collected]) => ({
     week,
     collected: Math.round(collected),
-    target: 80000,
   })).slice(-12);
+  const avgWeekly = entries.length > 0 ? Math.round(entries.reduce((s, e) => s + e.collected, 0) / entries.length) : 0;
+  const target = weeklyTarget ?? avgWeekly;
+  return entries.map(e => ({ ...e, target }));
 }
 
-export function computeMonthlyCollections(payments: Payment[]) {
+export function computeMonthlyCollections(payments: Payment[], monthlyTarget?: number) {
   const monthMap = new Map<string, number>();
   for (const p of payments) {
     if (!p.date) continue;
@@ -666,11 +686,13 @@ export function computeMonthlyCollections(payments: Payment[]) {
     const key = format(d, "MMM yyyy");
     monthMap.set(key, (monthMap.get(key) || 0) + p.amount);
   }
-  return Array.from(monthMap, ([month, collected]) => ({
+  const entries = Array.from(monthMap, ([month, collected]) => ({
     month,
     collected: Math.round(collected),
-    target: 300000,
   })).slice(-6);
+  const avgMonthly = entries.length > 0 ? Math.round(entries.reduce((s, e) => s + e.collected, 0) / entries.length) : 0;
+  const target = monthlyTarget ?? avgMonthly;
+  return entries.map(e => ({ ...e, target }));
 }
 
 export function computeDailyCollections(payments: Payment[]) {
@@ -741,6 +763,45 @@ export function computeMonthlyPastCollections(payments: Payment[]) {
     crm: Math.round(crm),
     total: Math.round(collector + crm),
   })).slice(-6);
+}
+
+export type ClassifiedMonthlyCollection = {
+  month: string;
+  current: number;
+  delinquent: number;
+  unknown: number;
+  total: number;
+  currentCount: number;
+  delinquentCount: number;
+  unknownCount: number;
+};
+
+/** Monthly collections classified by contract schedule: current vs delinquent at time of payment. */
+export function useClassifiedMonthlyCollections(monthsBack = 4) {
+  return useQuery<ClassifiedMonthlyCollection[]>({
+    queryKey: ["classified-monthly-collections", monthsBack],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_classified_monthly_collections", {
+        months_back: monthsBack,
+      });
+      if (error) throw error;
+      return (data || []).map((r: any) => ({
+        month: r.month,
+        current: Math.round(Number(r.current_total) || 0),
+        delinquent: Math.round(Number(r.delinquent_total) || 0),
+        unknown: Math.round(Number(r.unknown_total) || 0),
+        total: Math.round(
+          (Number(r.current_total) || 0) +
+          (Number(r.delinquent_total) || 0) +
+          (Number(r.unknown_total) || 0)
+        ),
+        currentCount: Number(r.current_count) || 0,
+        delinquentCount: Number(r.delinquent_count) || 0,
+        unknownCount: Number(r.unknown_count) || 0,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 }
 
 // ========================

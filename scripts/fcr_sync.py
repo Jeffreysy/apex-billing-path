@@ -1,7 +1,9 @@
 """
-fcr_sync.py — Future Collections Report → Supabase live sync
+fcr_sync.py — Collections Report → Supabase live sync
 Reads the active Excel workbook from OneDrive and inserts any rows newer than
 the latest date already in collection_activities for each collector.
+After inserting, runs link_collection_activities_to_clients() to match
+new activities to AR clients.
 
 Run automatically via Windows Task Scheduler (every 2 hours).
 Logs to: scripts/fcr_sync.log
@@ -17,17 +19,24 @@ from datetime import datetime
 
 SOURCE_FILE = (
     r"C:\Users\JeffreySoto-Gil\OneDrive - elizabethrosariolaw.com"
-    r"\Desktop\Transition file\Future Collections Report (1).xlsx"
+    r"\Downloads\Collections Report UPDATED MA.xlsx"
 )
 TEMP_COPY   = r"C:\Users\JeffreySoto-Gil\AppData\Local\Temp\fcr_sync_copy.xlsx"
 LOG_FILE    = os.path.join(os.path.dirname(__file__), "fcr_sync.log")
 
 SUPABASE_URL = "https://qbrufeewsisljtoegops.supabase.co"
-SUPABASE_KEY = (
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-    ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFicnVmZWV3c2lzbGp0b2Vnb3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNjY1MzAsImV4cCI6MjA4ODY0MjUzMH0"
-    ".JI0cKKy_qDVzNBNsHlt4vDj0rZ2Kp7naNiCrvliNiD4"
+
+# Service role key bypasses RLS — required for inserts.
+# Set via environment variable or fall back to hardcoded anon key (read-only).
+SUPABASE_KEY = os.environ.get(
+    "SUPABASE_SERVICE_ROLE_KEY",
+    os.environ.get("SUPABASE_KEY", ""),
 )
+if not SUPABASE_KEY:
+    print("ERROR: Set SUPABASE_SERVICE_ROLE_KEY environment variable.")
+    print("  Find it at: Supabase Dashboard → Settings → API → service_role key")
+    sys.exit(1)
+
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -35,17 +44,16 @@ HEADERS = {
     "Prefer": "return=minimal",
 }
 
-# Sheet name → canonical collector name stored in Supabase
 SHEETS = {
     "Patricio":       "Patricio D",
     "Maritza":        "Maritza V",
     "Alejandro":      "Alejandro A",
     "Roy Intake":     "Roy Ramos",
-    "Lizbeth Intake": "Lizbeth Castrill\u00f3n",
+    "Lizbeth Intake": "Lizbeth Castrillón",
 }
 
 CHUNK_SIZE  = 25
-CHUNK_DELAY = 0.15  # seconds between chunks to avoid rate limits
+CHUNK_DELAY = 0.15
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -106,13 +114,11 @@ def safe_float(v):
         return None
 
 def parse_dates(series):
-    """Handle both numeric (Excel serial) and string date columns."""
     if series.dtype in ("float64", "int64"):
         return pd.to_datetime(series, unit="D", origin="1899-12-30", errors="coerce")
     return pd.to_datetime(series, errors="coerce")
 
 def get_latest_date(collector: str) -> str | None:
-    """Fetch the most recent activity_date for this collector from Supabase."""
     resp = requests.get(
         f"{SUPABASE_URL}/rest/v1/collection_activities",
         headers=HEADERS,
@@ -161,12 +167,25 @@ def insert_records(records: list) -> tuple[int, int]:
         time.sleep(CHUNK_DELAY)
     return ok, err
 
+def link_activities_to_clients():
+    """Call the DB function that matches unlinked activities to clients."""
+    resp = requests.post(
+        f"{SUPABASE_URL}/rest/v1/rpc/link_collection_activities_to_clients",
+        headers=HEADERS,
+        json={},
+    )
+    if resp.status_code == 200:
+        results = resp.json()
+        for row in results:
+            log.info("  client linking: %s = %s", row["tier"], row["linked_count"])
+    else:
+        log.warning("Client linking RPC failed: %s %s", resp.status_code, resp.text[:200])
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def sync():
     log.info("--- FCR sync started ---")
 
-    # Copy the file so we can read it even if Excel has it open
     try:
         shutil.copy2(SOURCE_FILE, TEMP_COPY)
         log.info("Copied source file to temp")
@@ -187,7 +206,6 @@ def sync():
             log.info("Sheet '%s' not found — skipping", sheet_name)
             continue
 
-        # Find cutoff: latest date already in Supabase for this collector
         cutoff_str = get_latest_date(collector)
         cutoff = pd.to_datetime(cutoff_str) if cutoff_str else pd.Timestamp("2025-01-01")
         log.info("%-20s  cutoff: %s", collector, cutoff.date())
@@ -201,7 +219,6 @@ def sync():
         df["DATE"] = parse_dates(df["DATE"])
         has_lead = "LEAD" in df.columns
 
-        # Keep only new rows with a real activity
         new = df[
             (df["DATE"] > cutoff) &
             df["DATE"].notna() &
@@ -219,6 +236,10 @@ def sync():
         log.info("%-20s  inserted=%d  errors=%d", collector, ok, err)
         total_inserted += ok
         total_errors   += err
+
+    if total_inserted > 0:
+        log.info("Linking new activities to AR clients...")
+        link_activities_to_clients()
 
     log.info("--- Done  inserted=%d  errors=%d ---\n", total_inserted, total_errors)
 

@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import ExecutiveInsights from "@/components/admin/ExecutiveInsights";
-import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, computeWeeklyCollections } from "@/hooks/useSupabaseData";
+import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, useClassifiedMonthlyCollections, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +17,18 @@ const AdminDashboard = () => {
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
-  
-  if (kpiLoading || pl || cal || col || escalationsLoading) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
+  const { data: classifiedCollections = [], isLoading: mcl } = useClassifiedMonthlyCollections(4);
+
+  if (kpiLoading || pl || cal || col || escalationsLoading || mcl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
   const totalAR = Number(kpi?.total_remaining) || 0;
   const totalCollected = Number(kpi?.total_collected) || 0;
+  const arOnPlan = Number(kpi?.ar_on_plan) || 0;
+  const arLate = Number(kpi?.ar_late) || 0;
+  const arActionable = Number(kpi?.ar_actionable) || 0;
+  const contractsOnPlan = Number(kpi?.contracts_on_plan) || 0;
+  const contractsLate = Number(kpi?.contracts_late) || 0;
+  const contractsActionable = Number(kpi?.contracts_actionable) || 0;
   const activeContracts = Number(kpi?.total_contracts) || 0;
   const riskContracts = Number(kpi?.risk_contracts) || 0;
   const totalClients = Number(kpi?.total_clients) || 0;
@@ -32,7 +39,6 @@ const AdminDashboard = () => {
   const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
   const unresolvedCount = unresolvedEscalations.length;
   const openTasks = unresolvedCount;
-  const weeklyData = computeWeeklyCollections(payments);
 
   const deptData = [
     { name: "Collections", tasks: unresolvedEscalations.filter((t: any) => !t.handoff_queue || t.handoff_queue === "collections").length },
@@ -57,11 +63,29 @@ const AdminDashboard = () => {
       <div className="my-8 border-t" />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard label="Total AR Outstanding" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
+        <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
         <StatCard label="Active Imm. Cases" value={String(activeCases)} icon={<Briefcase className="h-5 w-5" />} />
         <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Expected (On-Plan)</p>
+          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">${arOnPlan.toLocaleString()}</p>
+          <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">{contractsOnPlan} contracts paying on schedule</p>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Late (Needs Nudge)</p>
+          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-300">${arLate.toLocaleString()}</p>
+          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">{contractsLate} contracts behind on payments</p>
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Actionable AR</p>
+          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arActionable.toLocaleString()}</p>
+          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsActionable} contracts need collection action</p>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -70,21 +94,22 @@ const AdminDashboard = () => {
         <Badge variant="outline" className="text-xs">Risk Contracts: {riskContracts}</Badge>
         <Badge variant="outline" className="text-xs">Collected This Month: ${collectedThisMonth.toLocaleString()}</Badge>
         <Badge variant={unresolvedCount > 0 ? "destructive" : "outline"} className="text-xs">Unresolved Escalations: {unresolvedCount}</Badge>
-        <Badge variant="outline" className="text-xs">Open Tasks: {openTasks}</Badge>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="dashboard-section lg:col-span-2">
-          <h2 className="mb-4 text-lg font-semibold">Weekly Collections</h2>
+          <h2 className="mb-2 text-lg font-semibold">Monthly Collections (Quarter View)</h2>
+          <p className="mb-3 text-xs text-muted-foreground">Classified by contract schedule: current vs delinquent at time of payment</p>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={weeklyData}>
+            <BarChart data={classifiedCollections}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
-              <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
               <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
               <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
               <Legend />
-              <Bar dataKey="collected" fill="hsl(174 60% 40%)" radius={[4, 4, 0, 0]} name="Collected" />
-              <Bar dataKey="target" fill="hsl(220 70% 22%)" radius={[4, 4, 0, 0]} name="Target" opacity={0.3} />
+              <Bar dataKey="current" stackId="collections" fill="hsl(152 60% 40%)" name="System / Current" />
+              <Bar dataKey="delinquent" stackId="collections" fill="hsl(0 72% 51%)" name="Delinquent Collections" />
+              <Bar dataKey="unknown" stackId="collections" fill="hsl(220 13% 70%)" radius={[4, 4, 0, 0]} name="Unknown / Review" />
             </BarChart>
           </ResponsiveContainer>
         </div>

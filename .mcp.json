@@ -2,7 +2,15 @@
   "mcpServers": {
     "supabase": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=qbrufeewsisljtoegops&read_only=true"
+      "url": "https://mcp.supabase.com/mcp?project_ref=qbrufeewsisljtoegops&read_only=false"
+    },
+    "hubspot": {
+      "type": "http",
+      "url": "https://mcp-na2.hubspot.com/mcp",
+      "oauth": {
+        "clientId": "d3960d05-9b94-4657-a613-9cb94d0eea88",
+        "clientSecret": "4181902a-d29d-49d0-bfc3-22da4966aecf"
+      }
     }
   }
 }

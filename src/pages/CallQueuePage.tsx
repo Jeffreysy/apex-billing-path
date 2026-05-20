@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown, ChevronDown, ChevronUp, Filter, RotateCcw, Search, UserCheck } from "lucide-react";
+import { ArrowUpDown, ChevronDown, ChevronUp, Filter, RotateCcw, Search, UserCheck, AlertCircle } from "lucide-react";
 
 type SortField =
   | "client_name"
@@ -18,6 +18,7 @@ type SortField =
   | "next_due_date"
   | "last_transaction_date";
 type SortDir = "asc" | "desc";
+type TriageTier = "all" | "quick_wins" | "work_list" | "legal_track";
 
 const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
 
@@ -29,6 +30,13 @@ const QUEUE_CRITERIA = [
   { value: "past_due", label: "Past due" },
   { value: "standard", label: "Standard review" },
 ] as const;
+
+const TRIAGE_TIERS: { value: TriageTier; label: string; description: string }[] = [
+  { value: "all", label: "All Accounts", description: "Full queue" },
+  { value: "quick_wins", label: "Quick Wins", description: "Balance < $2K, < 30 days — auto-reminder" },
+  { value: "work_list", label: "Work List", description: "30–90 days — standard outreach" },
+  { value: "legal_track", label: "Legal Track", description: "90+ days or high-balance broken promise" },
+];
 
 function agingBucket(days: number | null): string {
   const value = days || 0;
@@ -113,6 +121,27 @@ function tierBadge(tier: string | null | undefined) {
   }
 }
 
+/** True when a broken promise exists and no contact has been logged in the last 24 hours. */
+function isSlaBreached(item: any, lastContactedMap: Map<string, string>): boolean {
+  if (!item.missed_promise) return false;
+  const rawStamp = item.last_contact_date || lastContactedMap.get(item.client_id);
+  if (!rawStamp) return true;
+  const lastMs = new Date(rawStamp).getTime();
+  return Date.now() - lastMs > 24 * 60 * 60 * 1000;
+}
+
+/** Classify an enriched item into a triage bucket. */
+function getTriageTier(item: any): TriageTier {
+  const days = item.effective_days_past_due || 0;
+  const balance = Number(item.balance_remaining) || 0;
+  const missedPromise = Boolean(item.missed_promise);
+
+  if (days >= 90 || (missedPromise && balance >= 5000)) return "legal_track";
+  if (days >= 30) return "work_list";
+  if (balance < 2000 && days < 30) return "quick_wins";
+  return "work_list";
+}
+
 const CallQueuePage = () => {
   const navigate = useNavigate();
   const { data: queue = [], isLoading: loadingQueue } = useCollectionsDashboard();
@@ -123,6 +152,7 @@ const CallQueuePage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterAging, setFilterAging] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
+  const [triageTier, setTriageTier] = useState<TriageTier>("all");
   const [sortField, setSortField] = useState<SortField>("priority_score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -141,23 +171,46 @@ const CallQueuePage = () => {
     return map;
   }, [activities]);
 
-  const filteredQueue = useMemo(() => {
-    let items = queue
+  const enrichedQueue = useMemo(() => {
+    return queue
       .map((item: any) => {
-        const effectiveDaysPastDue = Math.max(
+        // Prefer DB-computed effective_days_past_due (live from next_due_date vs current_date).
+        // Fall back to frontend computation only if the field is absent (older schema).
+        const dbDays = Number(item.effective_days_past_due) || 0;
+        const fallbackDays = Math.max(
           Number(item.days_past_due) || 0,
           Number(item.balance_remaining) > 0 ? Math.max(0, daysBetweenTodayAndDate(item.next_due_date)) : 0,
         );
-
+        const effectiveDaysPastDue = dbDays > 0 ? dbDays : fallbackDays;
         return {
           ...item,
           effective_days_past_due: effectiveDaysPastDue,
           aging_bucket: agingBucket(effectiveDaysPastDue),
           last_contacted: item.last_contact_date || lastContactedMap.get(item.client_id) || null,
           queue_reason_detail: getQueueReason(item),
+          sla_breached: isSlaBreached(item, lastContactedMap),
+          triage_tier: getTriageTier({ ...item, effective_days_past_due: effectiveDaysPastDue }),
         };
       })
       .filter((item: any) => item.queue_reason_detail);
+  }, [queue, lastContactedMap]);
+
+  // Triage counts for tab labels
+  const triageCounts = useMemo(() => {
+    const counts = { all: 0, quick_wins: 0, work_list: 0, legal_track: 0 };
+    for (const item of enrichedQueue) {
+      counts.all++;
+      counts[item.triage_tier as TriageTier]++;
+    }
+    return counts;
+  }, [enrichedQueue]);
+
+  const filteredQueue = useMemo(() => {
+    let items = enrichedQueue;
+
+    if (triageTier !== "all") {
+      items = items.filter((item: any) => item.triage_tier === triageTier);
+    }
 
     if (search) {
       const needle = search.toLowerCase();
@@ -194,7 +247,12 @@ const CallQueuePage = () => {
     });
 
     return items;
-  }, [filterAging, filterCollector, filterPriority, filterStatus, lastContactedMap, queue, search, sortDir, sortField]);
+  }, [enrichedQueue, triageTier, filterAging, filterCollector, filterPriority, filterStatus, search, sortDir, sortField]);
+
+  const slaBreachCount = useMemo(
+    () => enrichedQueue.filter((item: any) => item.sla_breached).length,
+    [enrichedQueue],
+  );
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -244,13 +302,65 @@ const CallQueuePage = () => {
 
   return (
     <DashboardLayout title="Call Queue">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold">Outbound Call Queue</h1>
         <p className="text-sm text-muted-foreground">
-          {filteredQueue.length} of {queue.length} accounts. Sorted by {sortField.replace(/_/g, " ")} ({sortDir}).
+          {filteredQueue.length} of {enrichedQueue.length} accounts. Sorted by {sortField.replace(/_/g, " ")} ({sortDir}).
         </p>
       </div>
 
+      {/* SLA alert banner */}
+      {slaBreachCount > 0 && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>
+            <strong>{slaBreachCount} broken promise{slaBreachCount > 1 ? "s" : ""}</strong> with no callback in 24 hours — call these accounts first.
+          </span>
+          {triageTier !== "all" || filterStatus !== "broken_promise" ? (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="ml-auto h-6 text-xs"
+              onClick={() => setFilterStatus("broken_promise")}
+            >
+              Show only
+            </Button>
+          ) : null}
+        </div>
+      )}
+
+      {/* Triage tier tabs */}
+      <div className="mb-4 flex gap-2 flex-wrap">
+        {TRIAGE_TIERS.map((tier) => (
+          <button
+            key={tier.value}
+            onClick={() => setTriageTier(tier.value)}
+            title={tier.description}
+            className={[
+              "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+              triageTier === tier.value
+                ? tier.value === "legal_track"
+                  ? "border-destructive bg-destructive text-destructive-foreground"
+                  : tier.value === "quick_wins"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background text-muted-foreground hover:bg-muted",
+            ].join(" ")}
+          >
+            {tier.label}
+            <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
+              {triageCounts[tier.value]}
+            </span>
+          </button>
+        ))}
+        {triageTier !== "all" && (
+          <p className="self-center text-xs text-muted-foreground">
+            {TRIAGE_TIERS.find((t) => t.value === triageTier)?.description}
+          </p>
+        )}
+      </div>
+
+      {/* Filters row */}
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-[200px] flex-1">
           <div className="relative">
@@ -331,6 +441,7 @@ const CallQueuePage = () => {
         )}
       </div>
 
+      {/* Table */}
       <div className="overflow-x-auto rounded-lg border bg-card">
         <table className="w-full text-sm">
           <thead>
@@ -374,16 +485,29 @@ const CallQueuePage = () => {
               const priority = priorityLabel(item.priority_score);
               const tier = tierBadge(item.queue_tier);
               const daysOut = item.effective_days_past_due || 0;
+              const slaBreached = item.sla_breached;
 
               return (
                 <tr
                   key={itemId}
-                  className="cursor-pointer border-b transition-colors hover:bg-muted/20 last:border-0"
+                  className={[
+                    "cursor-pointer border-b transition-colors last:border-0",
+                    slaBreached ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-muted/20",
+                  ].join(" ")}
                   onClick={() => navigate(`/collections/workspace/${itemId}`)}
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium">{item.client_name}</p>
-                    <p className="text-xs text-muted-foreground">{item.phone || "—"}</p>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="font-medium">{item.client_name}</p>
+                        <p className="text-xs text-muted-foreground">{item.phone || "—"}</p>
+                      </div>
+                      {slaBreached && (
+                        <Badge variant="destructive" className="gap-1 text-[10px] py-0 px-1.5 shrink-0">
+                          <AlertCircle className="h-2.5 w-2.5" /> Call overdue
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-xs text-muted-foreground">{item.case_number || "—"}</td>
                   <td className="px-3 py-3 font-medium">${(Number(item.balance_remaining) || 0).toLocaleString()}</td>

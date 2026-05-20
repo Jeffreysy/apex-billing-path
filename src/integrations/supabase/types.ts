@@ -3100,6 +3100,13 @@ export type Database = {
             foreignKeyName: "hardship_requests_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
+            referencedRelation: "ar_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "hardship_requests_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
             referencedRelation: "ar_migration_contracts"
             referencedColumns: ["id"]
           },
@@ -10961,3 +10968,5 @@ export const Constants = {
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.95.4 (currently installed v2.84.5)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import StatCard from "@/components/StatCard";
 import { useMergedClients, usePaymentsData, computeForecastData, computeMonthlyForecast, computeCaseTypeBilling } from "@/hooks/useSupabaseData";
 import { Target, TrendingUp, ArrowDownRight, BarChart3 } from "lucide-react";
+import { startOfWeek, format } from "date-fns";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
@@ -25,14 +26,27 @@ const ForecastingTab = () => {
   const avgCollectorPayment = completedPayments.length > 0
     ? Math.round(completedPayments.reduce((s, p) => s + p.amount, 0) / completedPayments.length) : 0;
 
-  const actualWeek = completedPayments.slice(0, 15).reduce((s, p) => s + p.amount, 0);
+  const now = new Date();
+  const actualByWeek = new Map<string, number>();
+  for (const p of completedPayments) {
+    if (!p.date) continue;
+    const d = new Date(p.date);
+    const ws = startOfWeek(d, { weekStartsOn: 1 });
+    const key = format(ws, "MMM dd");
+    actualByWeek.set(key, (actualByWeek.get(key) || 0) + p.amount);
+  }
+  const recentWeeks = Array.from(actualByWeek.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, 4)
+    .reverse();
+
   const actualVsForecast = useMemo(() => {
     return weeklyForecast.slice(0, 4).map((w, i) => ({
       period: w.period,
       forecast: w.projected,
-      actual: i === 0 ? actualWeek : Math.round(w.projected * (0.85 + Math.random() * 0.3)),
+      actual: recentWeeks[i] ? Math.round(recentWeeks[i][1]) : 0,
     }));
-  }, [weeklyForecast, actualWeek]);
+  }, [weeklyForecast, recentWeeks]);
 
   return (
     <div className="space-y-6">

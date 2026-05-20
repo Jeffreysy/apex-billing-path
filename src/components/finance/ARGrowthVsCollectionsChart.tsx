@@ -20,8 +20,8 @@ function useARGrowthVsCollections() {
   return useQuery({
     queryKey: ["ar-growth-vs-collections"],
     queryFn: async () => {
-      const [contracts, payments, activities] = await Promise.all([
-        fetchAllRows<any>("contracts"),
+      const [arRows, payments, activities] = await Promise.all([
+        fetchAllRows<any>("ar_dashboard"),
         fetchAllRows<any>("payments_clean"),
         fetchAllRows<any>("collection_activities", {
           filter: (q: any) => q.gt("collected_amount", 0),
@@ -29,9 +29,9 @@ function useARGrowthVsCollections() {
       ]);
 
       const arByMonth: Record<string, number> = {};
-      contracts.forEach((c: any) => {
+      arRows.forEach((c: any) => {
         const m = c.start_date?.substring(0, 7);
-        if (m) arByMonth[m] = (arByMonth[m] || 0) + Number(c.value || 0);
+        if (m) arByMonth[m] = (arByMonth[m] || 0) + Number(c.total_contract_value || 0);
       });
 
       const collByMonth: Record<string, number> = {};
