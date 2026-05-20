@@ -106,3 +106,15 @@
     @apply text-sm text-muted-foreground;
   }
 }
+
+/* Print layout for reporting packets */
+@media print {
+  aside, [data-sidebar], header.sticky {
+    display: none !important;
+  }
+  .ml-64 { margin-left: 0 !important; }
+  .print-hide { display: none !important; }
+  body { background: white !important; }
+  section { break-inside: avoid; page-break-inside: avoid; }
+  table { font-size: 10px !important; }
+}
