@@ -71,6 +71,7 @@ export default function ExecutiveInsights() {
     if (!data) return null;
     const ar = data.ar.filter((r: any) => r.delinquency_status !== "Paid");
     const payments = data.payments;
+    const activities = data.activities || [];
 
     // ---------- Weekly collections (8w sparkline) ----------
     const weeks: { key: string; total: number }[] = [];
@@ -120,20 +121,6 @@ export default function ExecutiveInsights() {
     );
     const dso = totalAR > 0 ? Math.round(dsoNumerator / totalAR) : 0;
 
-    // ---------- Top 10 AR concentration ----------
-    const byClient: Record<string, { name: string; balance: number; days: number; collector: string }> = {};
-    ar.forEach((r: any) => {
-      const name = r.client_name || "Unknown";
-      if (!byClient[name]) byClient[name] = { name, balance: 0, days: 0, collector: r.collector || "Unassigned" };
-      byClient[name].balance += Number(r.remaining_balance) || 0;
-      byClient[name].days = Math.max(byClient[name].days, Number(r.days_past_due) || 0);
-    });
-    const topClients = Object.values(byClient)
-      .sort((a, b) => b.balance - a.balance)
-      .slice(0, 10);
-    const top10Total = topClients.reduce((s, c) => s + c.balance, 0);
-    const top10Pct = totalAR > 0 ? (top10Total / totalAR) * 100 : 0;
-
     // ---------- Aging × Collector heatmap ----------
     const collectorBuckets: Record<string, Record<string, number>> = {};
     ar.forEach((r: any) => {
@@ -174,6 +161,66 @@ export default function ExecutiveInsights() {
       { name: "Closing AR", value: totalAR, type: "balance" },
     ];
 
+    // ---------- Collector time & activity (selected month) ----------
+    const inMonth = (d: string | null | undefined) => {
+      if (!d) return false;
+      const dt = new Date(d);
+      return dt >= monthStart && dt <= monthEnd;
+    };
+    const failedOutcomes = ["failed", "refund", "disputed", "disconnected", "no collection"];
+    const isFailedOutcome = (o: string | null) => {
+      const v = (o || "").toLowerCase().trim();
+      return failedOutcomes.some((x) => v.includes(x));
+    };
+
+    const collectorActivity: Record<
+      string,
+      { collector: string; minutes: number; activities: number; payments: number; collected: number; commission: number; failed: number }
+    > = {};
+    const failedList: any[] = [];
+
+    activities.forEach((a: any) => {
+      if (!inMonth(a.activity_date)) return;
+      if (a.is_junk) return;
+      const c = a.collector || "Unassigned";
+      collectorActivity[c] = collectorActivity[c] || {
+        collector: c, minutes: 0, activities: 0, payments: 0, collected: 0, commission: 0, failed: 0,
+      };
+      const row = collectorActivity[c];
+      row.activities += 1;
+      row.minutes += Number(a.duration_minutes) || 0;
+      row.collected += Number(a.collected_amount) || 0;
+      row.commission += Number(a.commission) || 0;
+      if ((Number(a.collected_amount) || 0) > 0) row.payments += 1;
+      if (isFailedOutcome(a.outcome)) {
+        row.failed += 1;
+        failedList.push(a);
+      }
+    });
+    const collectorActivityRows = Object.values(collectorActivity).sort((a, b) => b.collected - a.collected);
+    const failedRecent = failedList
+      .sort((a, b) => (b.activity_date || "").localeCompare(a.activity_date || ""))
+      .slice(0, 10);
+    const failedTotal = failedList.length;
+
+    // ---------- Bucket movement (collections by aging bucket, selected month) ----------
+    const BUCKET_ORDER = ["Current", "1-30", "31-60", "61-90", "91-120", "120+"];
+    const bucketMovement: Record<string, { collected: number; count: number }> = {};
+    payments.forEach((p: any) => {
+      if (!inMonth(p.payment_date)) return;
+      const b = p.aging_bucket || "Current";
+      bucketMovement[b] = bucketMovement[b] || { collected: 0, count: 0 };
+      bucketMovement[b].collected += Number(p.amount) || 0;
+      bucketMovement[b].count += 1;
+    });
+    const bucketRows = BUCKET_ORDER
+      .map((b) => ({ bucket: b, ...(bucketMovement[b] || { collected: 0, count: 0 }) }))
+      .filter((r) => r.collected > 0 || r.count > 0);
+    const bucketMax = Math.max(1, ...bucketRows.map((r) => r.collected));
+    const recoveredFromDelinquent = bucketRows
+      .filter((r) => r.bucket !== "Current")
+      .reduce((s, r) => s + r.collected, 0);
+
     return {
       weeklySeries,
       collSpark,
@@ -182,12 +229,15 @@ export default function ExecutiveInsights() {
       totalAR,
       atRisk,
       dso,
-      topClients,
-      top10Total,
-      top10Pct,
       collectorRows,
       heatMax,
       waterfall,
+      collectorActivityRows,
+      failedRecent,
+      failedTotal,
+      bucketRows,
+      bucketMax,
+      recoveredFromDelinquent,
     };
   }, [data, monthVal]);
 
@@ -198,8 +248,10 @@ export default function ExecutiveInsights() {
   const sections = [
     { id: "hero", label: "Executive" },
     { id: "flow", label: "Money Flow" },
-    { id: "concentration", label: "Concentration" },
     { id: "aging", label: "Aging × Collector" },
+    { id: "activity", label: "Collector Activity" },
+    { id: "movement", label: "Bucket Movement" },
+    { id: "failed", label: "Failed / Issues" },
   ];
 
   const coverage = view.totalAR > 0 ? (view.curr.collected / view.totalAR) * 100 : 0;
