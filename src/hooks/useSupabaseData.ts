@@ -1087,3 +1087,11 @@ export function useControllerArchivedReview() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useControllerMonthlyTrend() {
+  return useQuery({
+    queryKey: ["controller-monthly-trend"],
+    queryFn: async () => fetchAllRows<any>("v_controller_monthly_trend"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
