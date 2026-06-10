@@ -34,6 +34,7 @@ const sections = [
       { path: "/collections/escalations", label: "Escalations", icon: AlertTriangle },
       { path: "/legal", label: "Legal", icon: Scale },
       { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
+      { path: "/controller-ar", label: "Controller AR", icon: TrendingUp },
       { path: "/reporting", label: "Reporting & Forecast", icon: TrendingUp },
       { path: "/contracts", label: "Contracts & AR", icon: FileText },
       { path: "/clients", label: "Client Lookup", icon: Search },
@@ -68,6 +69,7 @@ const AppSidebar = () => {
         }
         if (item.path === "/legal") return canAccessLegal(role);
         if (item.path === "/financial-oversight") return canAccessFinancial(role);
+        if (item.path === "/controller-ar") return canAccessFinancial(role);
         if (item.path === "/reporting") return canAccessReporting(role);
         if (item.path === "/contracts") return canAccessContracts(role);
         if (item.path === "/clients") return canAccessClients(role);

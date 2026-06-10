@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
 import FinancialOversightDashboard from "./pages/FinancialOversightDashboard";
+import ControllerAROversightDashboard from "./pages/ControllerAROversightDashboard";
 import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/legal" element={<ProtectedRoute allowedRoles={LEGAL_ROLES}><LegalDashboard /></ProtectedRoute>} />
             <Route path="/ar-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
             <Route path="/financial-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
+            <Route path="/controller-ar" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ControllerAROversightDashboard /></ProtectedRoute>} />
             <Route path="/reporting" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ReportingPage /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ContractsPage /></ProtectedRoute>} />
             <Route path="/clients" element={<ProtectedRoute allowedRoles={CLIENT_ROLES}><ClientLookup /></ProtectedRoute>} />

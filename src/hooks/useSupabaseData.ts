@@ -850,6 +850,73 @@ export function useHardshipRequests(clientId: string | null | undefined, contrac
   });
 }
 
+// ═══════════════════════════════════════════════════════════
+// AR Origination / Portfolio Growth hooks (powered by database views)
+// ═══════════════════════════════════════════════════════════
+
+/** AR portfolio growth by year — cohort analysis */
+export function useARPortfolioYearly() {
+  return useQuery({
+    queryKey: ["ar-portfolio-yearly"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_ar_portfolio_yearly")
+        .select("*")
+        .order("cohort_year", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** AR portfolio growth by month — new cases, cumulative AR, collection rates */
+export function useARPortfolioMonthly() {
+  return useQuery({
+    queryKey: ["ar-portfolio-monthly"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_ar_portfolio_monthly")
+        .select("*")
+        .order("cohort_month", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Monthly cashflow — AR created vs collected, net AR change */
+export function useARMonthlyCashflow() {
+  return useQuery({
+    queryKey: ["ar-monthly-cashflow"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_ar_monthly_cashflow")
+        .select("*")
+        .order("month", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Payment staleness summary — aggregated by bucket and status */
+export function useARStalenessSummary() {
+  return useQuery({
+    queryKey: ["ar-staleness-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_ar_staleness_summary")
+        .select("*");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** All pending hardship requests (used in admin/management views). */
 export function useAllHardshipRequests(statusFilter?: string) {
   return useQuery<HardshipRequest[]>({
@@ -867,5 +934,156 @@ export function useAllHardshipRequests(statusFilter?: string) {
       return (data || []) as HardshipRequest[];
     },
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+// ========================
+// CONTROLLER AR OVERSIGHT HOOKS
+// ========================
+
+export function useControllerBucketAging() {
+  return useQuery({
+    queryKey: ["controller-bucket-aging"],
+    queryFn: async () => fetchAllRows<any>("v_controller_bucket_ar_aging", { orderBy: "snapshot_date", ascending: false }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerMonthlyCollections() {
+  return useQuery({
+    queryKey: ["controller-monthly-collections"],
+    queryFn: async () => fetchAllRows<any>("v_controller_monthly_collections"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerCollectorMonthly() {
+  return useQuery({
+    queryKey: ["controller-collector-monthly"],
+    queryFn: async () => fetchAllRows<any>("v_controller_collector_monthly"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerDelinquentExposure() {
+  return useQuery({
+    queryKey: ["controller-delinquent-exposure"],
+    queryFn: async () => fetchAllRows<any>("v_controller_delinquent_exposure"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerAutopayForecast() {
+  return useQuery({
+    queryKey: ["controller-autopay-forecast"],
+    queryFn: async () => fetchAllRows<any>("v_controller_autopay_forecast"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerSnapshotDelta() {
+  return useQuery({
+    queryKey: ["controller-snapshot-delta"],
+    queryFn: async () => fetchAllRows<any>("v_controller_ar_snapshot_delta", { orderBy: "snapshot_date", ascending: false }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerInstallmentRate() {
+  return useQuery({
+    queryKey: ["controller-installment-rate"],
+    queryFn: async () => fetchAllRows<any>("v_controller_installment_rate"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerBucketCollections() {
+  return useQuery({
+    queryKey: ["controller-bucket-collections"],
+    queryFn: async () => fetchAllRows<any>("v_controller_bucket_collections"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerBucketContracts() {
+  return useQuery({
+    queryKey: ["controller-bucket-contracts"],
+    queryFn: async () => fetchAllRows<any>("v_controller_bucket_contracts"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerInstallmentCompletion() {
+  return useQuery({
+    queryKey: ["controller-installment-completion"],
+    queryFn: async () => fetchAllRows<any>("v_controller_installment_completion"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerInstallmentMaturity() {
+  return useQuery({
+    queryKey: ["controller-installment-maturity"],
+    queryFn: async () => fetchAllRows<any>("v_controller_installment_maturity"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerInstallmentGap() {
+  return useQuery({
+    queryKey: ["controller-installment-gap"],
+    queryFn: async () => fetchAllRows<any>("v_controller_installment_gap"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerInstallmentTiers() {
+  return useQuery({
+    queryKey: ["controller-installment-tiers"],
+    queryFn: async () => fetchAllRows<any>("v_controller_installment_tiers"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerAutomationClients() {
+  return useQuery({
+    queryKey: ["controller-automation-clients"],
+    queryFn: async () => fetchAllRows<any>("v_controller_automation_clients"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerAutomationSummary() {
+  return useQuery({
+    queryKey: ["controller-automation-summary"],
+    queryFn: async () => fetchAllRows<any>("v_controller_automation_summary"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerGrowthVsCollections() {
+  return useQuery({
+    queryKey: ["controller-growth-vs-collections"],
+    queryFn: async () => fetchAllRows<any>("v_controller_growth_vs_collections"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerTrueExposure() {
+  return useQuery({
+    queryKey: ["controller-true-exposure"],
+    queryFn: async () => {
+      const rows = await fetchAllRows<any>("v_controller_true_ar_exposure");
+      return rows[0] || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useControllerArchivedReview() {
+  return useQuery({
+    queryKey: ["controller-archived-review"],
+    queryFn: async () => fetchAllRows<any>("v_controller_archived_review"),
+    staleTime: 5 * 60 * 1000,
   });
 }
