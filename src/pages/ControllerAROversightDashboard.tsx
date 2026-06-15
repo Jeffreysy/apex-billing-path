@@ -22,6 +22,7 @@ import {
   useControllerAutomationSummary,
   useControllerGrowthVsCollections,
   useControllerTrueExposure,
+  useControllerARCashflow,
 } from "@/hooks/useSupabaseData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -83,6 +84,7 @@ const ControllerAROversightDashboard = () => {
   const { data: autoSummary = [], isLoading: l15 } = useControllerAutomationSummary();
   const { data: growthData = [], isLoading: l16 } = useControllerGrowthVsCollections();
   const { data: trueExposure, isLoading: l17 } = useControllerTrueExposure();
+  const { data: cashflowData = [], isLoading: l18 } = useControllerARCashflow();
 
   const [autoSearch, setAutoSearch] = useState("");
   const [autoFilter, setAutoFilter] = useState("all");
@@ -268,6 +270,7 @@ const ControllerAROversightDashboard = () => {
 
       <Tabs defaultValue="aging">
         <TabsList className="mb-4 flex-wrap">
+          <TabsTrigger value="cashflow">AR Cashflow</TabsTrigger>
           <TabsTrigger value="growth">Growth vs Collections</TabsTrigger>
           <TabsTrigger value="aging">Aging Buckets</TabsTrigger>
           <TabsTrigger value="installments">Installment View</TabsTrigger>
@@ -276,6 +279,129 @@ const ControllerAROversightDashboard = () => {
           <TabsTrigger value="delinquent">Delinquent Exposure</TabsTrigger>
           <TabsTrigger value="automation">Automation Clients</TabsTrigger>
         </TabsList>
+
+        {/* ── TAB: AR Cashflow ── */}
+        <TabsContent value="cashflow" className="space-y-6">
+          <div className="rounded-lg border bg-card p-4 mb-2">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">AR Cashflow Analysis</span> — obligation created vs cash received vs receivable generated.
+              Source: MyCase cases (open_date + invoice &gt; $250) cross-referenced to LawPay first payments.
+            </p>
+          </div>
+
+          {/* KPI cards */}
+          {(() => {
+            const complete = cashflowData.filter((r: any) => r.data_quality === 'complete');
+            const latest = complete.length > 0 ? complete[complete.length - 1] : cashflowData[cashflowData.length - 1];
+            const totalCases = cashflowData.reduce((s: number, r: any) => s + (Number(r.new_cases) || 0), 0);
+            const totalContract = cashflowData.reduce((s: number, r: any) => s + (Number(r.contract_value) || 0), 0);
+            const totalCollected = cashflowData.reduce((s: number, r: any) => s + (Number(r.total_collected) || 0), 0);
+            const totalNet = cashflowData.reduce((s: number, r: any) => s + (Number(r.net_ar_movement) || 0), 0);
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard icon={Users} label="Total Cases (13 mo)" value={totalCases.toLocaleString()} sub={`Avg ${Math.round(totalCases / Math.max(cashflowData.length, 1))}/mo`} />
+                <KpiCard icon={DollarSign} label="Total Contract Value" value={fmt(totalContract)} sub={`Avg case ${fmt(totalContract / Math.max(totalCases, 1))}`} />
+                <KpiCard icon={CreditCard} label="Total Collected" value={fmt(totalCollected)} sub={`${((totalCollected / Math.max(totalContract, 1)) * 100).toFixed(0)}% of contract`} />
+                <KpiCard icon={totalNet < 0 ? TrendingDown : TrendingUp} label="Net AR Movement" value={fmt(totalNet)}
+                  sub={totalNet < 0 ? 'AR shrinking (good)' : 'AR growing'}
+                  color={totalNet < 0 ? 'text-green-600' : 'text-destructive'} />
+              </div>
+            );
+          })()}
+
+          {/* Cashflow chart */}
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="text-sm font-semibold mb-3">AR Created vs Collections (Monthly)</h3>
+            <ResponsiveContainer width="100%" height={350}>
+              <ComposedChart data={cashflowData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tickFormatter={v => fmt(v)} tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(v: number) => fmt(v)} />
+                <Legend />
+                <Bar dataKey="contract_value" fill="hsl(152 60% 40%)" name="Contract Value" opacity={0.7} />
+                <Bar dataKey="down_payments" fill="hsl(38 92% 50%)" name="Cash Day 1" />
+                <Bar dataKey="total_collected" fill="hsl(200 70% 50%)" name="Collections" />
+                <Line type="monotone" dataKey="net_ar_movement" stroke="hsl(0 84% 60%)" strokeWidth={2} name="Net AR Movement" dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Collection Coverage chart */}
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="text-sm font-semibold mb-3">Collection Coverage % (Collections / AR Created)</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={cashflowData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tickFormatter={v => `${v}%`} tick={{ fontSize: 10 }} domain={[0, 200]} />
+                <Tooltip formatter={(v: number) => `${Number(v).toFixed(1)}%`} />
+                <Area type="monotone" dataKey="collection_coverage_pct" stroke="hsl(200 70% 50%)" fill="hsl(200 70% 50%)" fillOpacity={0.2} name="Coverage %" />
+                {/* 100% reference line */}
+                <Area type="monotone" dataKey={() => 100} stroke="hsl(0 0% 60%)" strokeDasharray="5 5" fill="none" name="100% target" />
+              </AreaChart>
+            </ResponsiveContainer>
+            <p className="text-xs text-muted-foreground mt-2">Above 100% = collections outpacing new AR (book shrinking). Below 100% = AR growing.</p>
+          </div>
+
+          {/* Detailed table */}
+          <div className="rounded-lg border bg-card p-4">
+            <h3 className="text-sm font-semibold mb-3">Monthly AR Cashflow Detail</h3>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Cases</TableHead>
+                    <TableHead className="text-right">Contract Value</TableHead>
+                    <TableHead className="text-right">Avg Case</TableHead>
+                    <TableHead className="text-right">Cash Day 1</TableHead>
+                    <TableHead className="text-right">DP%</TableHead>
+                    <TableHead className="text-right">AR Created</TableHead>
+                    <TableHead className="text-right">Collected</TableHead>
+                    <TableHead className="text-right">Net Movement</TableHead>
+                    <TableHead>Trend</TableHead>
+                    <TableHead className="text-right">Coll Cover</TableHead>
+                    <TableHead className="text-right">Firm AR</TableHead>
+                    <TableHead>Quality</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cashflowData.map((r: any, i: number) => {
+                    const net = Number(r.net_ar_movement) || 0;
+                    return (
+                      <TableRow key={i} className={r.data_quality === 'migration_gap' ? 'bg-amber-50/50' : ''}>
+                        <TableCell className="font-mono text-xs">{r.label}</TableCell>
+                        <TableCell className="text-right font-mono">{Number(r.new_cases).toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono font-semibold">{fmt(r.contract_value)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(r.avg_contract)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(r.down_payments)}</TableCell>
+                        <TableCell className="text-right font-mono">{pct(r.dp_pct)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(r.ar_created)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(r.total_collected)}</TableCell>
+                        <TableCell className={`text-right font-mono font-semibold ${net < 0 ? 'text-green-600' : 'text-destructive'}`}>
+                          {net < 0 ? '' : '+'}{fmt(net)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={r.ar_trend === 'Shrinking' ? 'secondary' : 'destructive'} className="text-[10px]">
+                            {r.ar_trend}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{pct(r.collection_coverage_pct)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(r.ending_firm_ar)}</TableCell>
+                        <TableCell>
+                          <Badge variant={r.data_quality === 'complete' ? 'default' : r.data_quality === 'migration_gap' ? 'destructive' : 'secondary'} className="text-[9px]">
+                            {r.data_quality}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
 
         {/* ── TAB: Growth vs Collections ── */}
         <TabsContent value="growth" className="space-y-6">

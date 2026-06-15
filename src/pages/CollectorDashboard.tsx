@@ -24,7 +24,7 @@ import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 const LEAD_COLLECTOR = "Alejandro A";
 
 // Known collectors — update here when the team changes
-const KNOWN_COLLECTORS = ["Alejandro A", "Maritza R", "Adrian S"];
+const KNOWN_COLLECTORS = ["Alejandro A", "Maritza V", "Patricio D"];
 
 function normalizeCollectorName(value: string | null | undefined) {
   return (value || "").trim().toLowerCase();

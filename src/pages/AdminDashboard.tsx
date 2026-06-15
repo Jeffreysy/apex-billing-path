@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const COLORS = ["hsl(220 70% 22%)", "hsl(174 60% 40%)", "hsl(38 92% 50%)", "hsl(152 60% 40%)", "hsl(0 72% 51%)"];
+const COLORS = ["hsl(152 60% 40%)", "hsl(38 92% 50%)", "hsl(0 72% 51%)", "hsl(220 13% 65%)", "hsl(174 60% 40%)"];
 
 const AdminDashboard = () => {
   const { data: kpi, isLoading: kpiLoading } = useAdminKPI();
@@ -25,9 +25,11 @@ const AdminDashboard = () => {
   const totalCollected = Number(kpi?.total_collected) || 0;
   const arOnPlan = Number(kpi?.ar_on_plan) || 0;
   const arLate = Number(kpi?.ar_late) || 0;
+  const arDelinquent = Number(kpi?.ar_delinquent) || 0;
   const arActionable = Number(kpi?.ar_actionable) || 0;
   const contractsOnPlan = Number(kpi?.contracts_on_plan) || 0;
   const contractsLate = Number(kpi?.contracts_late) || 0;
+  const contractsDelinquent = Number(kpi?.contracts_delinquent) || 0;
   const contractsActionable = Number(kpi?.contracts_actionable) || 0;
   const activeContracts = Number(kpi?.total_contracts) || 0;
   const riskContracts = Number(kpi?.risk_contracts) || 0;
@@ -47,11 +49,14 @@ const AdminDashboard = () => {
     { name: "Admin", tasks: unresolvedEscalations.filter((t: any) => ["management", "admin"].includes(t.handoff_queue)).length },
   ];
 
-  const lateClients = Number((kpi as any)?.late_clients) || 0;
+  const lateClients = Number(kpi?.late_clients) || 0;
+  const unclassifiedClients = Number(kpi?.unclassified_clients) || 0;
+  const paymentsThisMonth = Number(kpi?.payments_this_month) || 0;
   const statusPie = [
     { name: "Current", value: currentClients },
     { name: "Late", value: lateClients },
     { name: "Delinquent", value: delinquent },
+    { name: "Unclassified", value: unclassifiedClients },
   ];
 
   return (
@@ -70,9 +75,9 @@ const AdminDashboard = () => {
         <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Expected (On-Plan)</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">On-Plan (Current)</p>
           <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">${arOnPlan.toLocaleString()}</p>
           <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">{contractsOnPlan} contracts paying on schedule</p>
         </div>
@@ -82,9 +87,14 @@ const AdminDashboard = () => {
           <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">{contractsLate} contracts behind on payments</p>
         </div>
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Actionable AR</p>
-          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arActionable.toLocaleString()}</p>
-          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsActionable} contracts need collection action</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Delinquent</p>
+          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arDelinquent.toLocaleString()}</p>
+          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsDelinquent} contracts past due</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Unclassified</p>
+          <p className="mt-1 text-lg font-bold text-slate-700 dark:text-slate-300">${arActionable.toLocaleString()}</p>
+          <p className="text-[10px] text-slate-600/70 dark:text-slate-400/70">{contractsActionable} contracts need status assignment</p>
         </div>
       </div>
 
@@ -127,7 +137,7 @@ const AdminDashboard = () => {
           { name: "Collections", icon: Phone, desc: `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
           { name: "Legal", icon: Scale, desc: `${activeCases} active cases` },
           { name: "Financial Oversight", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
-          { name: "Reporting", icon: TrendingUp, desc: `${Number((kpi as any)?.payments_this_month) || 0} payments this month` },
+          { name: "Reporting", icon: TrendingUp, desc: `${paymentsThisMonth} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><dept.icon className="h-4 w-4 text-secondary" />{dept.name}</CardTitle></CardHeader>

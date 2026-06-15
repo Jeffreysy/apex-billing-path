@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   useAdminKPI, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
+  useControllerARCashflow,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
@@ -15,7 +16,7 @@ import {
   Clock, AlertTriangle, Gauge, ArrowUpRight, Activity, Percent,
 } from "lucide-react";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +47,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
   const { data: activityRows = [], isLoading: al } = useCollectionActivityRows();
+  const { data: cashflowData = [] } = useControllerARCashflow();
 
   const isLoading = cl || pl || prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
@@ -157,50 +159,86 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     { label: "100%", count: completedContracts },
   ];
 
+  const cfFmt = (n: number | string | null | undefined): string => {
+    const v = Number(n) || 0;
+    if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+    if (Math.abs(v) >= 1_000) return `$${(v / 1_000).toFixed(1)}k`;
+    return `$${Math.round(v).toLocaleString()}`;
+  };
+  const cfTotalCases = cashflowData.reduce((s: number, r: any) => s + (Number(r.new_cases) || 0), 0);
+  const cfTotalContract = cashflowData.reduce((s: number, r: any) => s + (Number(r.contract_value) || 0), 0);
+  const cfTotalCollected = cashflowData.reduce((s: number, r: any) => s + (Number(r.total_collected) || 0), 0);
+  const cfTotalNet = cashflowData.reduce((s: number, r: any) => s + (Number(r.net_ar_movement) || 0), 0);
+  const cfLatest = cashflowData.length > 0 ? cashflowData[cashflowData.length - 1] : null;
+  const cfComplete = cashflowData.filter((r: any) => r.data_quality === 'complete');
+  const cfLatestComplete = cfComplete.length > 0 ? cfComplete[cfComplete.length - 1] : cfLatest;
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Expected (On-Plan)</p>
-          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">${arOnPlan.toLocaleString()}</p>
-          <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">{contractsOnPlan} contracts</p>
+      {/* ── AR CASHFLOW KPIs (MyCase + LawPay Verified) ── */}
+      <div className="rounded-lg border bg-card p-3">
+        <p className="text-xs font-semibold text-muted-foreground mb-2">AR CASHFLOW — MyCase Cases + LawPay Verified</p>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Firm AR</p>
+            <p className="mt-1 text-xl font-bold">{cfFmt(cfLatest?.ending_firm_ar)}</p>
+            <p className="text-[10px] text-muted-foreground">{cfLatest?.label || ''}</p>
+          </div>
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New Cases (Latest)</p>
+            <p className="mt-1 text-xl font-bold">{cfLatestComplete?.new_cases || 0}</p>
+            <p className="text-[10px] text-muted-foreground">{cfLatestComplete?.label} • Avg {cfFmt(cfLatestComplete?.avg_contract)}/case</p>
+          </div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Total Collected (13mo)</p>
+            <p className="mt-1 text-xl font-bold text-emerald-700">{cfFmt(cfTotalCollected)}</p>
+            <p className="text-[10px] text-emerald-600/70">{((cfTotalCollected / Math.max(cfTotalContract, 1)) * 100).toFixed(0)}% of contract value</p>
+          </div>
+          <div className={`rounded-lg border px-4 py-3 ${cfTotalNet < 0 ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950' : 'border-red-200 bg-red-50'}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net AR Movement (13mo)</p>
+            <p className={`mt-1 text-xl font-bold ${cfTotalNet < 0 ? 'text-emerald-700' : 'text-red-700'}`}>{cfFmt(cfTotalNet)}</p>
+            <p className="text-[10px] text-muted-foreground">{cfTotalNet < 0 ? 'AR shrinking (collecting > new)' : 'AR growing'}</p>
+          </div>
+          <StatCard
+            label="Cash This Month"
+            value={`$${monthCollected.toLocaleString()}`}
+            icon={<TrendingUp className="h-5 w-5" />}
+            caption={`Collector logs $${monthCollectorLogged.toLocaleString()}`}
+          />
+          <StatCard label="Scheduled / Mo" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} caption={`Variance ${varianceMonth >= 0 ? "+" : ""}${varianceMonth}%`} />
         </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Late</p>
-          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-300">${arLate.toLocaleString()}</p>
-          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">{contractsLate} contracts</p>
-        </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Actionable AR</p>
-          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arActionable.toLocaleString()}</p>
-          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsActionable} contracts</p>
-        </div>
-        <StatCard
-          label="Cash This Week"
-          value={`$${weekCollected.toLocaleString()}`}
-          icon={<TrendingUp className="h-5 w-5" />}
-          caption={`Booked payments only • Collector logs $${weekCollectorLogged.toLocaleString()}`}
-        />
-        <StatCard
-          label="Cash This Month"
-          value={`$${monthCollected.toLocaleString()}`}
-          icon={<TrendingUp className="h-5 w-5" />}
-          caption={`Booked payments only • Collector logs $${monthCollectorLogged.toLocaleString()}`}
-        />
-        <StatCard label="Scheduled / Mo" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} caption={`Variance ${varianceMonth >= 0 ? "+" : ""}${varianceMonth}%`} />
       </div>
 
+      {/* ── AR Created vs Collections Chart ── */}
+      {cashflowData.length > 0 && (
+        <div className="rounded-lg border bg-card p-4">
+          <h2 className="text-lg font-semibold mb-1">AR Created vs Collections</h2>
+          <p className="text-xs text-muted-foreground mb-3">Contract value (new cases) vs total collected vs net AR movement — source: MyCase + LawPay</p>
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={cashflowData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tickFormatter={v => cfFmt(v)} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+              <Tooltip formatter={(v: number) => cfFmt(v)} />
+              <Legend />
+              <Bar dataKey="contract_value" fill="hsl(152 60% 40%)" name="Contract Value" opacity={0.7} />
+              <Bar dataKey="down_payments" fill="hsl(38 92% 50%)" name="Cash Day 1" />
+              <Bar dataKey="total_collected" fill="hsl(200 70% 50%)" name="Collections" />
+              <Line type="monotone" dataKey="net_ar_movement" stroke="hsl(0 84% 60%)" strokeWidth={2} name="Net Movement" dot={{ r: 3 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* ── Operational KPIs ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+        <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
         <StatCard label="Avg DSO" value={`${avgDSO} days`} icon={<Clock className="h-5 w-5" />} />
         <StatCard label="Collection Rate" value={`${collectionEffectiveness}%`} icon={<Gauge className="h-5 w-5" />} />
-        <StatCard label="Plan Completion" value={`${completionRate}%`} icon={<Percent className="h-5 w-5" />} />
         <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
         <StatCard label="Fully Paid" value={String(completedContracts)} icon={<CheckCircle className="h-5 w-5" />} />
-        <StatCard label="Variance (Week)" value={`${varianceWeek > 0 ? "+" : ""}${varianceWeek}%`} icon={<Activity className="h-5 w-5" />} />
+        <StatCard label="Plan Completion" value={`${completionRate}%`} icon={<Percent className="h-5 w-5" />} />
       </div>
-
-      <ARGrowthVsCollectionsChart />
 
       <div className="dashboard-section space-y-4">
         <div className="flex items-start justify-between gap-3">

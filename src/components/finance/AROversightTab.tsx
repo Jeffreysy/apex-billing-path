@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, parseISO, differenceInDays } from "date-fns";
-import { CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, TrendingDown, Download, Phone } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, AlertTriangle, TrendingUp, TrendingDown, Download, Phone, ArrowUpRight } from "lucide-react";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
@@ -434,37 +434,52 @@ function StaleQueueSection() {
 
   const today = new Date();
 
-  const stale = useMemo(() => {
-    return clients
-      .filter((c: any) => {
-        const d = detailsById[c.client_id];
-        if (!d) return false;
-        // Active contracts only with remaining balance
-        if ((Number(c.remaining_balance) || 0) <= 0) return false;
-        if (c.delinquency_status === "Paid") return false;
-        const lt = d.last_transaction_date;
-        if (!lt) return true; // never paid
-        return differenceInDays(today, parseISO(lt)) >= 60;
-      })
-      .map((c: any) => {
-        const d = detailsById[c.client_id] || {};
-        const lt = d.last_transaction_date;
-        const daysSince = lt ? differenceInDays(today, parseISO(lt)) : null;
-        return {
-          contract_id: c.contract_id,
-          client_id: c.client_id,
-          client_name: c.client_name,
-          collector: c.collector || "Unassigned",
-          phone: d.phone || c.phone || "",
-          email: d.email || c.email || "",
-          remaining_balance: Number(c.remaining_balance) || 0,
-          last_transaction_date: lt || "Never",
-          days_since_last_payment: daysSince ?? 9999,
-          days_past_due: c.days_past_due || 0,
-          next_due_date: c.next_due_date || "",
-        };
-      })
-      .sort((a, b) => b.remaining_balance - a.remaining_balance);
+  const { stale, neverPaid } = useMemo(() => {
+    const staleList: any[] = [];
+    const neverPaidList: any[] = [];
+
+    for (const c of clients) {
+      const d = detailsById[c.client_id];
+      if (!d) continue;
+      const bal = Number(c.remaining_balance) || 0;
+      if (bal <= 0) continue;
+      if (c.delinquency_status === "Paid") continue;
+
+      const lt = d.last_transaction_date;
+      const collected = Number(c.amount_collected) || 0;
+      const hasCollected = collected > 0;
+      const isStale = lt ? differenceInDays(today, parseISO(lt)) >= 60 : true;
+
+      if (!isStale) continue;
+
+      const daysSince = lt ? differenceInDays(today, parseISO(lt)) : null;
+      const row = {
+        contract_id: c.contract_id,
+        client_id: c.client_id,
+        client_name: c.client_name,
+        collector: c.collector || "Unassigned",
+        phone: d.phone || c.phone || "",
+        email: d.email || c.email || "",
+        remaining_balance: bal,
+        amount_collected: collected,
+        last_transaction_date: lt || (hasCollected ? "No date" : "Never"),
+        days_since_last_payment: daysSince ?? 9999,
+        days_past_due: c.days_past_due || 0,
+        next_due_date: c.next_due_date || "",
+        start_date: c.start_date || "",
+        case_stage: d.case_stage || "",
+      };
+
+      if (!hasCollected && !lt) {
+        neverPaidList.push(row);
+      } else {
+        staleList.push(row);
+      }
+    }
+
+    staleList.sort((a, b) => b.remaining_balance - a.remaining_balance);
+    neverPaidList.sort((a, b) => b.remaining_balance - a.remaining_balance);
+    return { stale: staleList, neverPaid: neverPaidList };
   }, [clients, detailsById]);
 
   const totalAtRisk = stale.reduce((s, r) => s + r.remaining_balance, 0);
@@ -508,9 +523,12 @@ function StaleQueueSection() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Never Paid</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Sales Review</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stale.filter(s => s.last_transaction_date === "Never").length}</div>
+            <div className="text-2xl font-bold flex items-center gap-1">
+              <ArrowUpRight className="h-5 w-5 text-blue-600" />{neverPaid.length}
+            </div>
+            <p className="text-xs text-muted-foreground">Never collected — route to sales</p>
           </CardContent>
         </Card>
       </div>
@@ -572,7 +590,9 @@ function StaleQueueSection() {
                       <TableCell className="text-sm">{s.collector}</TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(s.remaining_balance)}</TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
-                        {s.last_transaction_date === "Never" ? (
+                        {s.last_transaction_date === "No date" ? (
+                          <span className="text-amber-600">No date</span>
+                        ) : s.last_transaction_date === "Never" ? (
                           <Badge variant="destructive" className="text-[10px]">Never</Badge>
                         ) : (
                           `${s.days_since_last_payment}d ago`
@@ -590,6 +610,57 @@ function StaleQueueSection() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sales Review — never collected, route to sales */}
+      {neverPaid.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ArrowUpRight className="h-4 w-4 text-blue-600" />
+                  Sales Review — Never Collected ({neverPaid.length})
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Zero payments received — {fmt(neverPaid.reduce((s, r) => s + r.remaining_balance, 0))} outstanding. Route to sales, not collectors.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => downloadCsv(`sales-review-never-paid-${format(new Date(), "yyyy-MM-dd")}.csv`, neverPaid)}>
+                <Download className="mr-1 h-3 w-3" />Export ({neverPaid.length})
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Case Stage</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>Contact</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {neverPaid.slice(0, 50).map(s => (
+                    <TableRow key={s.contract_id}>
+                      <TableCell className="font-medium text-sm">{s.client_name}</TableCell>
+                      <TableCell className="text-xs">{s.case_stage || <span className="text-muted-foreground">—</span>}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{fmt(s.remaining_balance)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{s.start_date || "—"}</TableCell>
+                      <TableCell className="text-xs">
+                        {s.phone && <div className="flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</div>}
+                        {s.email && <div className="text-muted-foreground truncate max-w-[180px]">{s.email}</div>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

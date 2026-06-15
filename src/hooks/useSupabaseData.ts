@@ -1095,3 +1095,11 @@ export function useControllerMonthlyTrend() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useControllerARCashflow() {
+  return useQuery({
+    queryKey: ["controller-ar-cashflow"],
+    queryFn: async () => fetchAllRows<any>("v_controller_ar_cashflow"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
