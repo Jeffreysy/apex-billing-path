@@ -1103,3 +1103,22 @@ export function useControllerARCashflow() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// Live AR right now: latest MyCase snapshot baseline net of LawPay payments since (de-duplicated).
+// Single-row view; caller reads [0].
+export function useARLiveMovement() {
+  return useQuery({
+    queryKey: ["ar-live-movement"],
+    queryFn: async () => fetchAllRows<any>("v_ar_live_movement"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Daily-stamped AR trend log (one row per day, written by the ar-live-trend-daily cron).
+export function useARLiveTrend() {
+  return useQuery({
+    queryKey: ["ar-live-trend"],
+    queryFn: async () => fetchAllRows<any>("ar_live_trend"),
+    staleTime: 5 * 60 * 1000,
+  });
+}

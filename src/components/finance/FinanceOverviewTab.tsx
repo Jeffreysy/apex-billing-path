@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   useAdminKPI, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
-  useControllerARCashflow,
+  useControllerARCashflow, useARLiveMovement, useARLiveTrend,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
@@ -48,6 +48,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
   const { data: activityRows = [], isLoading: al } = useCollectionActivityRows();
   const { data: cashflowData = [] } = useControllerARCashflow();
+  const { data: liveMovementRows = [] } = useARLiveMovement();
+  const { data: liveTrendRows = [] } = useARLiveTrend();
 
   const isLoading = cl || pl || prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
@@ -173,8 +175,59 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const cfComplete = cashflowData.filter((r: any) => r.data_quality === 'complete');
   const cfLatestComplete = cfComplete.length > 0 ? cfComplete[cfComplete.length - 1] : cfLatest;
 
+  // ── Live AR (MyCase snapshot baseline net of LawPay since) ──
+  const live = (liveMovementRows as any[])[0] || null;
+  const liveTrend = [...(liveTrendRows as any[])]
+    .filter((r) => r.capture_date && r.live_ar != null)
+    .sort((a, b) => String(a.capture_date).localeCompare(String(b.capture_date)))
+    .map((r) => ({ date: String(r.capture_date).slice(5), live_ar: Number(r.live_ar) }));
+  const usd = (n: number | string | null | undefined) => `$${Math.round(Number(n) || 0).toLocaleString()}`;
+
   return (
     <div className="space-y-6">
+      {/* ── LIVE AR (MyCase snapshot baseline + live LawPay feed) ── */}
+      {live && (
+        <div className="rounded-lg border bg-card p-3">
+          <div className="mb-2 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-emerald-600" />
+            <p className="text-xs font-semibold text-muted-foreground">LIVE AR — MyCase baseline + LawPay live feed</p>
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> live
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950 lg:col-span-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Live AR Now</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-700">{usd(live.live_ar)}</p>
+              <p className="text-[10px] text-emerald-600/70">as of {live.as_of ? new Date(live.as_of).toLocaleDateString() : "now"}</p>
+            </div>
+            <div className="rounded-lg border px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Snapshot Baseline</p>
+              <p className="mt-1 text-xl font-bold">{usd(live.baseline_ar)}</p>
+              <p className="text-[10px] text-muted-foreground">MyCase {live.baseline_date} • {Number(live.baseline_invoices).toLocaleString()} invoices</p>
+            </div>
+            <div className="rounded-lg border px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Collected Since (LawPay)</p>
+              <p className="mt-1 text-xl font-bold text-emerald-700">−{usd(live.ar_paid_down_since)}</p>
+              <p className="text-[10px] text-muted-foreground">{Number(live.lawpay_payments_since).toLocaleString()} payments • {live.days_since_baseline}d since baseline</p>
+            </div>
+            <div className="rounded-lg border px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Live AR Trend</p>
+              {liveTrend.length > 1 ? (
+                <ResponsiveContainer width="100%" height={48}>
+                  <LineChart data={liveTrend}>
+                    <Line type="monotone" dataKey="live_ar" stroke="hsl(152 60% 40%)" strokeWidth={2} dot={false} />
+                    <Tooltip formatter={(v: number) => usd(v)} labelFormatter={(l) => `Day ${l}`} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="mt-2 text-[10px] text-muted-foreground">Builds daily — first point {live.baseline_date ? "logged today" : "pending"}. LawPay tracks paydowns; new invoices need the next MyCase snapshot.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── AR CASHFLOW KPIs (MyCase + LawPay Verified) ── */}
       <div className="rounded-lg border bg-card p-3">
         <p className="text-xs font-semibold text-muted-foreground mb-2">AR CASHFLOW — MyCase Cases + LawPay Verified</p>
