@@ -168,6 +168,31 @@ const ClientLookup = () => {
             </div>
           </div>
 
+          {(() => {
+            if (!myCase?.cases?.length) return null;
+            const horizon = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
+            const sol = myCase.cases
+              .filter((c: any) => c.sol_date && !c.is_closed && c.sol_date <= horizon)
+              .sort((a: any, b: any) => String(a.sol_date).localeCompare(String(b.sol_date)));
+            if (!sol.length) return null;
+            return (
+              <div className="rounded-lg border-2 border-destructive/50 bg-destructive/10 p-4">
+                <div className="flex items-center gap-2 font-semibold text-destructive"><AlertTriangle className="h-5 w-5" />SOL / Filing Deadline</div>
+                <div className="mt-2 space-y-1">
+                  {sol.map((c: any) => {
+                    const days = Math.round((new Date(c.sol_date).getTime() - Date.now()) / 864e5);
+                    return (
+                      <div key={c.mycase_case_id} className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate">{c.case_number} · {c.practice_area || "—"} · {c.case_stage || "—"}</span>
+                        <span className="shrink-0 font-medium">{c.sol_date} {days < 0 ? `(${Math.abs(days)}d past — verify filed)` : `(in ${days}d)`}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {myCase && (myCase.contact || (myCase.cases?.length ?? 0) > 0) && (
             <div className="grid gap-6 lg:grid-cols-2">
               {myCase.contact && (

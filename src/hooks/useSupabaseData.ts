@@ -580,6 +580,25 @@ export function useMyCaseClient360(clientId: string | null) {
   });
 }
 
+/** SOL / filing-deadline watch — OPEN MyCase cases that carry a statute-of-limitations date.
+ *  Reads mycase_cases directly (same access the client-detail MyCase sections already use). */
+export function useSolDeadlineWatch() {
+  return useQuery({
+    queryKey: ["sol-deadline-watch"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mycase_cases")
+        .select("mycase_case_id, case_number, case_name, practice_area, case_stage, status, lead_attorney, sol_date, outstanding_balance, matched_client_id")
+        .eq("is_closed", false)
+        .not("sol_date", "is", null)
+        .order("sol_date", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {

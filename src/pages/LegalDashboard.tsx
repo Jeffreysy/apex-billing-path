@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
-import { useEscalations, useLegalKPI } from "@/hooks/useSupabaseData";
+import { useEscalations, useLegalKPI, useSolDeadlineWatch } from "@/hooks/useSupabaseData";
 import {
   Scale, AlertTriangle, CheckCircle, Briefcase, TrendingUp, Users,
   FileText, Shield, ShieldAlert, Gavel, FolderOpen, ArrowUpRight, ArrowDownRight,
@@ -58,6 +58,7 @@ const LegalDashboard = () => {
   const { data: kpiRaw, isLoading } = useLegalKPI(selectedYear);
   const kpi = kpiRaw as any;
   const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
+  const { data: solCases = [] } = useSolDeadlineWatch();
 
   if (isLoading || escalationsLoading || !kpi) {
     return (
@@ -115,6 +116,37 @@ const LegalDashboard = () => {
           ))}
         </div>
       </div>
+
+      {(() => {
+        if (!solCases?.length) return null;
+        const now = Date.now();
+        const today = new Date(now).toISOString().slice(0, 10);
+        const horizon = new Date(now + 90 * 864e5).toISOString().slice(0, 10);
+        const upcoming = solCases
+          .filter((c: any) => c.sol_date >= today && c.sol_date <= horizon)
+          .sort((a: any, b: any) => String(a.sol_date).localeCompare(String(b.sol_date)));
+        const pastDue = solCases.filter((c: any) => c.sol_date < today);
+        if (!upcoming.length && !pastDue.length) return null;
+        return (
+          <div className="mb-6 rounded-lg border-2 border-destructive/40 bg-destructive/5 p-4">
+            <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-destructive"><AlertTriangle className="h-5 w-5" />SOL / Filing Deadline Watch</h2>
+            <p className="mb-3 text-xs text-muted-foreground">{upcoming.length} within 90 days · {pastDue.length} past their SOL date (verify filing — many advanced-stage cases were filed on time). Source: MyCase sol_date.</p>
+            {upcoming.length > 0 && (
+              <div className="max-h-72 space-y-1.5 overflow-y-auto">
+                {upcoming.map((c: any) => {
+                  const days = Math.round((new Date(c.sol_date).getTime() - now) / 864e5);
+                  return (
+                    <div key={c.mycase_case_id} className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-1.5 text-sm">
+                      <span className="min-w-0 truncate"><span className="font-medium">{c.case_name || c.case_number}</span><span className="ml-2 text-xs text-muted-foreground">{c.case_number} · {c.practice_area || "—"} · {c.case_stage || "—"}</span></span>
+                      <span className="flex shrink-0 items-center gap-2"><span className="text-xs text-muted-foreground">{c.sol_date}</span><Badge variant="destructive" className="text-[10px]">in {days}d</Badge></span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* KPI Row 1 */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
