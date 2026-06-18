@@ -1,8 +1,8 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
-import { useArWaterfall, useArForwardProjection, useArClientMovement } from "@/hooks/useSupabaseData";
+import { useArWaterfall, useArForwardProjection, useArClientMovement, useArPlanFreshness } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, CalendarClock, TrendingDown, Layers } from "lucide-react";
+import { DollarSign, CalendarClock, TrendingDown, Layers, AlertTriangle, CheckCircle } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -15,6 +15,7 @@ const ArMovementDashboard = () => {
   const { data: wf = [], isLoading: l1 } = useArWaterfall();
   const { data: proj = [], isLoading: l2 } = useArForwardProjection();
   const { data: movers = [] } = useArClientMovement();
+  const { data: fresh } = useArPlanFreshness();
 
   if (l1 || l2) {
     return <DashboardLayout title="AR Movement"><div className="p-8 text-center text-muted-foreground">Loading AR movement...</div></DashboardLayout>;
@@ -33,10 +34,17 @@ const ArMovementDashboard = () => {
 
   return (
     <DashboardLayout title="AR Movement & Projection">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold">AR Movement &amp; Projection</h1>
-        <p className="text-muted-foreground text-sm">Penny-exact AR roll-forward (actuals) + payment-plan collections forecast. AR snapshots to {last?.period_date ?? "—"}; plan schedule as of Jun 10.</p>
+        <p className="text-muted-foreground text-sm">Penny-exact AR roll-forward (actuals) + payment-plan collections forecast. AR snapshots to {last?.period_date ?? "—"}; plan schedule as of {fresh?.plans_as_of ?? "—"}.</p>
       </div>
+
+      {fresh && (
+        <div className={`mb-6 flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm ${fresh.is_stale ? "border-destructive/40 bg-destructive/5" : "border-secondary/40 bg-secondary/10"}`}>
+          {fresh.is_stale ? <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" /> : <CheckCircle className="h-4 w-4 shrink-0 text-secondary" />}
+          <span>Payment-plan data is <strong>{fresh.days_old} day{fresh.days_old === 1 ? "" : "s"} old</strong> (scraped {fresh.plans_as_of}).{fresh.is_stale ? " Re-scrape from MyCase to bring the forecast current." : " Current — refreshed within the last week."}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard label="Current AR" value={fmtM(currentAr)} icon={<DollarSign className="h-5 w-5" />} />

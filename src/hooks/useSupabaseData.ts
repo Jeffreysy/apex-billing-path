@@ -659,6 +659,19 @@ export function useArClientMovement() {
   });
 }
 
+/** Payment-plan data freshness (scrape date + age + stale flag) */
+export function useArPlanFreshness() {
+  return useQuery({
+    queryKey: ["ar-plan-freshness"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_payment_plan_freshness").select("*").maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {
