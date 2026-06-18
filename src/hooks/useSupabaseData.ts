@@ -538,6 +538,40 @@ export function useCaseMilestones() {
   });
 }
 
+/** Full MyCase records for one client: contact, cases, invoices, payment-level ledger, payment plans.
+ *  Fetched per-selected-client (server-side filter by matched_client_id) so we never pull the 150K-row
+ *  transaction table wholesale. Transactions/plans are linked by the client's MyCase invoice numbers. */
+export function useMyCaseClient360(clientId: string | null) {
+  return useQuery({
+    queryKey: ["mycase-client-360", clientId],
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      if (!clientId) return null;
+      const [contactsRes, casesRes, invoicesRes] = await Promise.all([
+        supabase.from("mycase_contacts").select("*").eq("matched_client_id", clientId),
+        supabase.from("mycase_cases").select("*").eq("matched_client_id", clientId).order("open_date", { ascending: false }),
+        supabase.from("mycase_invoices").select("*").eq("matched_client_id", clientId),
+      ]);
+      const contacts = contactsRes.data ?? [];
+      const cases = casesRes.data ?? [];
+      const invoices = invoicesRes.data ?? [];
+      const invoiceNos = Array.from(new Set(invoices.map((i: any) => i.invoice_number).filter(Boolean)));
+      let transactions: any[] = [];
+      let plans: any[] = [];
+      if (invoiceNos.length > 0) {
+        const [txRes, planRes] = await Promise.all([
+          supabase.from("mycase_transaction_history").select("*").in("invoice_number", invoiceNos).order("payment_date", { ascending: false }),
+          supabase.from("mycase_payment_plans").select("*").in("invoice_number", invoiceNos),
+        ]);
+        transactions = txRes.data ?? [];
+        plans = planRes.data ?? [];
+      }
+      return { contact: contacts[0] ?? null, contacts, cases, invoices, transactions, plans };
+    },
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {

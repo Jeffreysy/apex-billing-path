@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, useMyCaseClient360, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ const ClientLookup = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { data: myCase } = useMyCaseClient360(selectedClientId);
 
   // Deep-link support: ?clientId=... or ?contractId=... selects a client on load
   useEffect(() => {
@@ -167,6 +168,53 @@ const ClientLookup = () => {
             </div>
           </div>
 
+          {myCase && (myCase.contact || (myCase.cases?.length ?? 0) > 0) && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {myCase.contact && (
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Phone className="h-4 w-4 text-secondary" />Contact Details · MyCase</CardTitle></CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Full Name</span><span className="font-medium">{myCase.contact.full_name || selectedClient.name}</span></div><Separator />
+                    <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="font-medium">{myCase.contact.email || "—"}</span></div><Separator />
+                    <div className="flex justify-between"><span className="text-muted-foreground">Cell</span><span className="font-medium">{myCase.contact.cell_phone_number || "—"}</span></div><Separator />
+                    <div className="flex justify-between"><span className="text-muted-foreground">Work</span><span className="font-medium">{myCase.contact.work_phone_number || "—"}</span></div><Separator />
+                    <div className="flex justify-between"><span className="text-muted-foreground">Home</span><span className="font-medium">{myCase.contact.home_phone_number || "—"}</span></div><Separator />
+                    <div className="flex justify-between"><span className="text-muted-foreground">Contact Group</span><span className="font-medium">{myCase.contact.contact_group || "—"}</span></div>
+                    {myCase.contact.company && <><Separator /><div className="flex justify-between"><span className="text-muted-foreground">Company</span><span className="font-medium">{myCase.contact.company}</span></div></>}
+                    {myCase.contact.birthdate && <><Separator /><div className="flex justify-between"><span className="text-muted-foreground">Birthdate</span><span className="font-medium">{myCase.contact.birthdate}</span></div></>}
+                  </CardContent>
+                </Card>
+              )}
+              {(myCase.cases?.length ?? 0) > 0 && (
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Scale className="h-4 w-4 text-secondary" />MyCase Cases ({myCase.cases.length})</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="max-h-72 space-y-2 overflow-y-auto">
+                      {myCase.cases.map((c: any) => (
+                        <div key={c.id} className="rounded-md border px-3 py-2 text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{c.case_name || c.case_number}</span>
+                            <Badge variant={c.is_closed ? "secondary" : "default"} className="shrink-0 text-xs capitalize">{c.case_stage || c.status || "—"}</Badge>
+                          </div>
+                          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                            <span>Practice: {c.practice_area || "—"}</span>
+                            <span>Attorney: {c.lead_attorney || "—"}</span>
+                            <span>Billing: {c.billing_type || "—"}</span>
+                            <span>Flat fee: {c.flat_fee != null ? `$${Number(c.flat_fee).toLocaleString()}` : "—"}</span>
+                            <span>Balance: {c.outstanding_balance != null ? `$${Number(c.outstanding_balance).toLocaleString()}` : "—"}</span>
+                            <span>SOL: {c.sol_date || "—"}</span>
+                            <span>Opened: {c.open_date || "—"}</span>
+                            {c.is_closed && <span>Closed: {c.closed_date || "—"}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-secondary" />Case Specifics</CardTitle></CardHeader>
@@ -274,6 +322,48 @@ const ClientLookup = () => {
               </CardContent>
             </Card>
           </div>
+
+          {myCase && (((myCase.transactions?.length ?? 0) > 0) || ((myCase.plans?.length ?? 0) > 0)) && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><CreditCard className="h-4 w-4 text-secondary" />MyCase Payment Ledger ({myCase.transactions?.length ?? 0})</CardTitle></CardHeader>
+                <CardContent>
+                  {(myCase.transactions?.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">No MyCase transactions.</p> : (
+                    <div className="max-h-72 space-y-2 overflow-y-auto">
+                      {myCase.transactions.map((t: any) => (
+                        <div key={t.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <div>
+                            <span className="font-medium">${Number(t.amount).toLocaleString()}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{t.method || "—"}</span>
+                            {t.entered_by && <span className="ml-2 text-[10px] text-muted-foreground">by {t.entered_by}</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={t.status === "Completed" ? "default" : t.status === "Failed" ? "destructive" : "outline"} className="text-xs">{t.status || "—"}</Badge>
+                            <span className="text-xs text-muted-foreground">{t.payment_date || "—"}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              {(myCase.plans?.length ?? 0) > 0 && (
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Calendar className="h-4 w-4 text-secondary" />Payment Plan</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {myCase.plans.map((pl: any) => (
+                      <div key={pl.id} className="rounded-md border px-3 py-2 space-y-1">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-semibold">${Number(pl.total || 0).toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Paid</span><span>${Number(pl.paid || 0).toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Installments</span><span>{pl.installments_paid ?? 0} / {pl.total_installments ?? "—"}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Next Due</span><span>{pl.next_due_date || "—"}{pl.next_amount ? ` ($${Number(pl.next_amount).toLocaleString()})` : ""}</span></div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center">
