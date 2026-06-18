@@ -17,6 +17,7 @@ import CollectorDashboard from "./pages/CollectorDashboard";
 import ClientLookup from "./pages/ClientLookup";
 import CallQueuePage from "./pages/CallQueuePage";
 import CollectorWorkspace from "./pages/CollectorWorkspace";
+import ArMovementDashboard from "./pages/ArMovementDashboard";
 import EscalationManagementPage from "./pages/EscalationManagementPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/legal" element={<ProtectedRoute allowedRoles={LEGAL_ROLES}><LegalDashboard /></ProtectedRoute>} />
             <Route path="/ar-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
             <Route path="/financial-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
+            <Route path="/ar-movement" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ArMovementDashboard /></ProtectedRoute>} />
             <Route path="/controller-ar" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ControllerAROversightDashboard /></ProtectedRoute>} />
             <Route path="/reporting" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ReportingPage /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ContractsPage /></ProtectedRoute>} />

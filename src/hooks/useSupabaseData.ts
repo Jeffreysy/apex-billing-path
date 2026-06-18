@@ -620,6 +620,45 @@ export function useClientContact(clientId: string | null, clientName?: string | 
   });
 }
 
+/** AR roll-forward per snapshot period (penny-exact) */
+export function useArWaterfall() {
+  return useQuery({
+    queryKey: ["ar-waterfall"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_ar_waterfall").select("*").order("period_date", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Expected collections per future month from payment plans */
+export function useArForwardProjection() {
+  return useQuery({
+    queryKey: ["ar-forward-projection"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_ar_forward_projection").select("*").order("proj_month", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Latest-period per-client AR movement (top movers) */
+export function useArClientMovement() {
+  return useQuery({
+    queryKey: ["ar-client-movement"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_ar_client_movement").select("*").neq("movement", "UNCHANGED").order("delta", { ascending: true }).limit(40);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {
