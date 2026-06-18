@@ -323,14 +323,30 @@ const ClientLookup = () => {
             </Card>
           </div>
 
-          {myCase && (((myCase.transactions?.length ?? 0) > 0) || ((myCase.plans?.length ?? 0) > 0)) && (
+          {myCase && (((myCase.transactions?.length ?? 0) > 0) || ((myCase.lawpayRecent?.length ?? 0) > 0) || ((myCase.plans?.length ?? 0) > 0)) && (
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
-                <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><CreditCard className="h-4 w-4 text-secondary" />MyCase Payment Ledger ({myCase.transactions?.length ?? 0})</CardTitle></CardHeader>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base"><CreditCard className="h-4 w-4 text-secondary" />Payment Ledger ({(myCase.transactions?.length ?? 0) + (myCase.lawpayRecent?.length ?? 0)})</CardTitle>
+                  <p className="text-[11px] text-muted-foreground">MyCase synced through {myCase.mycaseThrough || "—"}{(myCase.lawpayRecent?.length ?? 0) > 0 ? ` · ${myCase.lawpayRecent.length} newer payment(s) from LawPay` : ""}</p>
+                </CardHeader>
                 <CardContent>
-                  {(myCase.transactions?.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">No MyCase transactions.</p> : (
+                  {((myCase.transactions?.length ?? 0) + (myCase.lawpayRecent?.length ?? 0)) === 0 ? <p className="text-sm text-muted-foreground">No payments on record.</p> : (
                     <div className="max-h-72 space-y-2 overflow-y-auto">
-                      {myCase.transactions.map((t: any) => (
+                      {(myCase.lawpayRecent ?? []).map((t: any) => (
+                        <div key={`lp-${t.id}`} className="flex items-center justify-between rounded-md border border-secondary/40 bg-secondary/5 px-3 py-2 text-sm">
+                          <div>
+                            <span className="font-medium">${Number(t.amount).toLocaleString()}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{t.card_brand || t.payment_method || "Card"}{t.card_last_four ? ` ••${t.card_last_four}` : ""}</span>
+                            <span className="ml-2 text-[10px] text-secondary">LawPay · pending MyCase sync</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="text-xs">Completed</Badge>
+                            <span className="text-xs text-muted-foreground">{t.payment_date || "—"}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {(myCase.transactions ?? []).map((t: any) => (
                         <div key={t.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
                           <div>
                             <span className="font-medium">${Number(t.amount).toLocaleString()}</span>

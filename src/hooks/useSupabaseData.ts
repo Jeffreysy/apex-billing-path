@@ -548,14 +548,16 @@ export function useMyCaseClient360(clientId: string | null) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!clientId) return null;
-      const [contactsRes, casesRes, invoicesRes] = await Promise.all([
+      const [contactsRes, casesRes, invoicesRes, lawpayRes] = await Promise.all([
         supabase.from("mycase_contacts").select("*").eq("matched_client_id", clientId),
         supabase.from("mycase_cases").select("*").eq("matched_client_id", clientId).order("open_date", { ascending: false }),
         supabase.from("mycase_invoices").select("*").eq("matched_client_id", clientId),
+        supabase.from("lawpay_transactions").select("*").eq("client_id", clientId).eq("status", "COMPLETED").order("payment_date", { ascending: false }),
       ]);
       const contacts = contactsRes.data ?? [];
       const cases = casesRes.data ?? [];
       const invoices = invoicesRes.data ?? [];
+      const lawpay = lawpayRes.data ?? [];
       const invoiceNos = Array.from(new Set(invoices.map((i: any) => i.invoice_number).filter(Boolean)));
       let transactions: any[] = [];
       let plans: any[] = [];
@@ -567,7 +569,13 @@ export function useMyCaseClient360(clientId: string | null) {
         transactions = txRes.data ?? [];
         plans = planRes.data ?? [];
       }
-      return { contact: contacts[0] ?? null, contacts, cases, invoices, transactions, plans };
+      // MyCase transaction_history is synced unevenly (currently lags ~weeks). Blend in fresher LawPay
+      // card payments that post-date this client's latest MyCase-recorded payment, so the ledger surfaces
+      // recent activity instead of silently cutting off at the stale sync date.
+      const mycaseThrough = transactions.reduce(
+        (m: string | null, t: any) => (t.payment_date && (!m || t.payment_date > m) ? t.payment_date : m), null as string | null);
+      const lawpayRecent = lawpay.filter((l: any) => l.payment_date && (!mycaseThrough || l.payment_date > mycaseThrough));
+      return { contact: contacts[0] ?? null, contacts, cases, invoices, transactions, plans, lawpayRecent, mycaseThrough };
     },
   });
 }
