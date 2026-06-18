@@ -599,6 +599,27 @@ export function useSolDeadlineWatch() {
   });
 }
 
+/** Best MyCase contact for one client — verified client_id match first, then exact-name fallback (flagged).
+ *  Used to surface dial-able phones in the collector workspace where contracts.phone is mostly null. */
+export function useClientContact(clientId: string | null, clientName?: string | null) {
+  return useQuery({
+    queryKey: ["client-contact", clientId, clientName],
+    enabled: !!clientId || !!clientName,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      if (clientId) {
+        const { data } = await supabase.from("mycase_contacts").select("*").eq("matched_client_id", clientId).limit(1);
+        if (data && data.length) return { contact: data[0] as any, source: "client_id" as const };
+      }
+      if (clientName && clientName.trim()) {
+        const { data } = await supabase.from("mycase_contacts").select("*").ilike("full_name", clientName.trim()).limit(1);
+        if (data && data.length) return { contact: data[0] as any, source: "name_match" as const };
+      }
+      return { contact: null as any, source: "none" as const };
+    },
+  });
+}
+
 // --- Computation helpers (work on hook data) ---
 
 export function computeARAgingData(clients: Client[]) {

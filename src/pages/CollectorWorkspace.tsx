@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCollectionsDashboard, useCollectionActivities, useHardshipRequests } from "@/hooks/useSupabaseData";
+import { useCollectionsDashboard, useCollectionActivities, useHardshipRequests, useClientContact } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +151,9 @@ const CollectorWorkspace = () => {
     account?.client_id,
     account?.contract_id,
   );
+
+  // Dial-able contact from MyCase (contracts.phone is mostly null)
+  const { data: contactInfo } = useClientContact(account?.client_id ?? null, account?.client_name ?? null);
 
   // Recent activities for this client
   const recentActivities = useMemo(() => {
@@ -325,8 +328,27 @@ const CollectorWorkspace = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">{account.client_name}</h1>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                <span>{account.phone || "No phone"}</span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-0.5">
+                {(() => {
+                  const c = contactInfo?.contact;
+                  const phones = [
+                    c?.cell_phone_number ? { label: "Cell", num: c.cell_phone_number } : null,
+                    c?.work_phone_number ? { label: "Work", num: c.work_phone_number } : null,
+                    c?.home_phone_number ? { label: "Home", num: c.home_phone_number } : null,
+                  ].filter(Boolean) as { label: string; num: string }[];
+                  if (phones.length === 0 && account.phone) phones.push({ label: "Phone", num: account.phone });
+                  if (phones.length === 0) return <span>No phone on file</span>;
+                  return (
+                    <>
+                      {phones.map(p => (
+                        <a key={p.label} href={`tel:${String(p.num).replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+                          <Phone className="h-3 w-3" />{p.label}: {p.num}
+                        </a>
+                      ))}
+                      {contactInfo?.source === "name_match" && <Badge variant="outline" className="text-[9px]">name-matched · verify</Badge>}
+                    </>
+                  );
+                })()}
                 <span>·</span>
                 <span>{account.case_number || "No case #"}</span>
                 <span>·</span>
