@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AROriginationTab from "@/components/finance/AROriginationTab";
+import AROversightTab from "@/components/finance/AROversightTab";
 
 const AROversightDashboard = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
@@ -43,10 +43,10 @@ const AROversightDashboard = () => {
       <Tabs defaultValue="overview" className="mb-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="origination">AR Origination & Growth</TabsTrigger>
+          <TabsTrigger value="origination">AR Oversight</TabsTrigger>
         </TabsList>
         <TabsContent value="origination">
-          <AROriginationTab />
+          <AROversightTab />
         </TabsContent>
         <TabsContent value="overview">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
