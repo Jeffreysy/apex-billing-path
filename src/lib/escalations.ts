@@ -1,6 +1,15 @@
 export const ESCALATION_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 export const ESCALATION_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
-export const ESCALATION_ASSIGNEES = ["Alejandro A", "Patricio D", "Maritza V", "Management", "Legal"] as const;
+// Non-collector escalation targets. The COLLECTOR portion of the assignee list is supplied by the
+// LIVE roster (useCollectorRoster()) inside each consuming component — never a static copy — so a
+// roster change flows through automatically. This module can't call a hook, hence the split.
+export const ESCALATION_FIXED_ASSIGNEES = ["Management", "Legal"] as const;
+
+// Full assignee list = live collectors first, then the fixed targets. Callers pass the roster from
+// useCollectorRoster().collectors.
+export function buildEscalationAssignees(collectors: string[]): string[] {
+  return [...collectors, ...ESCALATION_FIXED_ASSIGNEES];
+}
 export const ESCALATION_SOURCE_CONTEXTS = ["inbound_call", "outbound_call", "pending_task", "admin_follow_up", "attorney_request", "customer_care_request", "refund_follow_up", "compliance_review", "other"] as const;
 export const ESCALATION_HANDOFF_QUEUES = ["legal", "case_management", "compliance", "customer_care", "management", "sales", "billing_ops", "other"] as const;
 

@@ -2,17 +2,14 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { format, subDays, startOfMonth, endOfMonth, addMonths, startOfWeek, eachDayOfInterval } from "date-fns";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
+import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useCollectorRoster } from "@/hooks/useSupabaseData";
 import MonthFilter, { type MonthOption } from "@/components/MonthFilter";
 import CollapsibleSection from "@/components/collections/CollapsibleSection";
 import { Sparkline, BarCell, PctBar, HeatCell, Delta } from "@/components/collections/MiniViz";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import {
-  TEAM_MEMBERS,
-  COLLECTORS,
   INTAKE,
-  TEAM_ROLES,
   ORIGIN_BUCKETS,
   OUTCOME_BUCKETS,
   AGING_BUCKETS,
@@ -23,7 +20,12 @@ import {
   agingBucket,
   fmtMoney,
   fmtPct,
+  type TeamRole,
 } from "@/lib/teamRoles";
+// COLLECTORS / TEAM_MEMBERS / TEAM_ROLES are resolved LIVE from `collector_roster` via
+// useCollectorRoster() inside the component (see the roster block below) — never the static
+// fallback — so a roster addition like Hiram Perez is enumerated instead of silently dropped.
+// INTAKE stays static (collector_roster has no intake rows).
 
 type Activity = {
   id: string;
@@ -85,9 +87,11 @@ function emptyAgg(): Agg {
 }
 
 // Build per-team aggregate from a flat list of activities scoped to one period.
-function aggregate(rows: Activity[], today: string): Record<string, Agg> {
+// `teamMembers` is the LIVE roster (collectors + intake) — passed in so the map is seeded for
+// every current collector (including roster additions), never a hardcoded set.
+function aggregate(rows: Activity[], today: string, teamMembers: string[]): Record<string, Agg> {
   const map: Record<string, Agg> = {};
-  for (const m of TEAM_MEMBERS) map[m] = emptyAgg();
+  for (const m of teamMembers) map[m] = emptyAgg();
   for (const r of rows) {
     const a = map[r.collector!];
     if (!a) continue;
@@ -129,6 +133,21 @@ const CollectionsDashboard = () => {
   const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
   const selected = opts.find(o => o.value === month) ?? opts[0];
 
+  // ===== Live roster (source of truth = collector_roster WHERE active) =====
+  // Every collector-iterating loop, KPI total, scorecard, and CSV export below derives its
+  // collector set from `COLLECTORS` here — the live roster, not a hardcoded list — so a roster
+  // change (e.g. Hiram Perez being added) flows through automatically. INTAKE stays static
+  // because collector_roster has no intake rows. TEAM_ROLES is rebuilt from these two so the
+  // `TEAM_ROLES[collector]` membership gate used throughout admits every live collector.
+  const { collectors: COLLECTORS } = useCollectorRoster();
+  const TEAM_MEMBERS = useMemo(() => [...COLLECTORS, ...INTAKE], [COLLECTORS]);
+  const TEAM_ROLES = useMemo(() => {
+    const m: Record<string, TeamRole> = {};
+    for (const n of COLLECTORS) m[n] = "Collector";
+    for (const n of INTAKE) m[n] = "Intake";
+    return m;
+  }, [COLLECTORS]);
+
   // Fetch 10 weeks before month start (for sparklines + prior-period deltas) through month end.
   const windowStart = format(subDays(selected.from!, 70), "yyyy-MM-dd");
   const windowEnd = format(selected.to!, "yyyy-MM-dd");
@@ -143,27 +162,62 @@ const CollectionsDashboard = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Certified per-collector cash (v_activity_collected_by_collector_weekly) — de-duplicated.
+  const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
+
   const monthStart = format(selected.from!, "yyyy-MM-dd");
   const monthEnd = format(selected.to!, "yyyy-MM-dd");
   const today = format(new Date(), "yyyy-MM-dd");
 
   const inMonth = useMemo(
     () => rows.filter(r => r.activity_date >= monthStart && r.activity_date <= monthEnd && r.collector && TEAM_ROLES[r.collector]),
-    [rows, monthStart, monthEnd],
+    [rows, monthStart, monthEnd, TEAM_ROLES],
   );
   const priorMonthStart = format(addMonths(selected.from!, -1), "yyyy-MM-dd");
   const priorMonthEnd = format(subDays(selected.from!, 1), "yyyy-MM-dd");
   const inPriorMonth = useMemo(
     () => rows.filter(r => r.activity_date >= priorMonthStart && r.activity_date <= priorMonthEnd && r.collector && TEAM_ROLES[r.collector]),
-    [rows, priorMonthStart, priorMonthEnd],
+    [rows, priorMonthStart, priorMonthEnd, TEAM_ROLES],
   );
   const priorWindow = useMemo(
     () => rows.filter(r => r.activity_date < monthStart && r.activity_date >= format(subDays(selected.from!, 31), "yyyy-MM-dd") && r.collector && TEAM_ROLES[r.collector]),
-    [rows, monthStart, selected.from],
+    [rows, monthStart, selected.from, TEAM_ROLES],
   );
 
-  const agg = useMemo(() => aggregate(inMonth, today), [inMonth, today]);
-  const aggPrior = useMemo(() => aggregate(inPriorMonth, today), [inPriorMonth, today]);
+  // Certified per-collector $ maps (keyed by the collector name in the view, which matches the roster).
+  const priorMonthVal = format(addMonths(selected.from!, -1), "yyyy-MM");
+  const certByCollectorMonth = useMemo(
+    () => certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === month),
+    [byCollectorWeeks, month],
+  );
+  const certByCollectorPrior = useMemo(
+    () => certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === priorMonthVal),
+    [byCollectorWeeks, priorMonthVal],
+  );
+  // Team (human collector) certified $ per week — drives the 8-week KPI sparklines.
+  const certByWeekTeam = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of byCollectorWeeks) {
+      if (r.is_autopay_credit) continue;      // exclude System-Auto (pure auto-pay)
+      if (!TEAM_ROLES[r.collector]) continue;  // only the collections team roster shown here
+      m.set(r.week_start, (m.get(r.week_start) ?? 0) + r.certified_collected);
+    }
+    return m;
+  }, [byCollectorWeeks, TEAM_ROLES]);
+
+  // Override ONLY the per-collector monthly `collected` with the certified de-duplicated figure; every
+  // other Agg field (calls, minutes, today, aging, origin $) stays raw. This flows consistently to the
+  // KPI hero, scorecard, comparison, CSV, and bar scaling. Intake / non-roster names resolve to 0.
+  const agg = useMemo(() => {
+    const m = aggregate(inMonth, today, TEAM_MEMBERS);
+    for (const name of Object.keys(m)) m[name].collected = certByCollectorMonth.get(name) ?? 0;
+    return m;
+  }, [inMonth, today, certByCollectorMonth, TEAM_MEMBERS]);
+  const aggPrior = useMemo(() => {
+    const m = aggregate(inPriorMonth, today, TEAM_MEMBERS);
+    for (const name of Object.keys(m)) m[name].collected = certByCollectorPrior.get(name) ?? 0;
+    return m;
+  }, [inPriorMonth, today, certByCollectorPrior, TEAM_MEMBERS]);
 
   // ===== New Client Contacts grid =====
   const newContacts = useMemo(() => {
@@ -193,7 +247,7 @@ const CollectionsDashboard = () => {
       seen.set(r.collector, sset);
     }
     return grid;
-  }, [inMonth, priorWindow]);
+  }, [inMonth, priorWindow, TEAM_MEMBERS]);
 
   // ===== KPI hero (with prior-month deltas + 8-week sparklines) =====
   const teamKpi = useMemo(() => {
@@ -243,14 +297,16 @@ const CollectionsDashboard = () => {
       b.collected += Number(r.collected_amount) || 0;
       b.commission += Number(r.commission) || 0;
     }
+    // `collected` (and the avg-per-call it drives) come from the certified per-week team figure, not the
+    // raw bucket sum; activities/calls/connected/commission stay raw.
     return {
       activities: buckets.map(b => b.activities),
-      collected: buckets.map(b => b.collected),
-      avgPerCall: buckets.map(b => (b.calls ? b.collected / b.calls : 0)),
+      collected: buckets.map(b => certByWeekTeam.get(b.key) ?? 0),
+      avgPerCall: buckets.map(b => (b.calls ? (certByWeekTeam.get(b.key) ?? 0) / b.calls : 0)),
       commission: buckets.map(b => b.commission),
       collectionRate: buckets.map(b => (b.calls ? b.connected / b.calls : 0)),
     };
-  }, [rows, selected.to]);
+  }, [rows, selected.to, certByWeekTeam, TEAM_ROLES]);
 
   // Per-collector 14-day daily $ collected (sparkline column).
   const dailyTrend = useMemo(() => {
@@ -261,7 +317,7 @@ const CollectionsDashboard = () => {
       out[m] = days.map(d => a.dailyCollected[d] || 0);
     }
     return out;
-  }, [agg, selected.to]);
+  }, [agg, selected.to, TEAM_MEMBERS]);
 
   const maxTeamCollected = Math.max(1, ...TEAM_MEMBERS.map(m => agg[m].collected));
 
@@ -324,6 +380,7 @@ const CollectionsDashboard = () => {
         <CollapsibleSection
           id="collectors"
           title="Collectors — MTD Scorecard"
+          subtitle="$ Collected and Avg $/Call are certified (de-duplicated); $ Today and the 14-Day Trend are raw same-day logs."
           csv={{
             filename: `collectors-scorecard-${month}`,
             headers: ["Team Member", "Calls", "$ Collected", "Avg $/Call", "Avg Duration (min)", "Commission", "Coll. Rate", "$ Today", "Call/Day", "Connected/Day"],
@@ -522,7 +579,7 @@ const CollectionsDashboard = () => {
         <CollapsibleSection
           id="aging"
           title="Aging Breakdown — MTD"
-          subtitle="Collected $ by delinquency bucket (collectors only)"
+          subtitle="Collected $ by delinquency bucket (collectors only) — raw collector logs; no certified per-bucket source."
           csv={{
             filename: `aging-${month}`,
             headers: ["Team Member", ...AGING_BUCKETS, "Total"],
@@ -564,9 +621,9 @@ const CollectionsDashboard = () => {
           />
         </CollapsibleSection>
 
-        <OriginMatrixSection id="origin-count" title={`Collection Origin Breakdown — ${selected.label}`} subtitle="Count of collected payments by origin" agg={agg} field="originCount" format={v => v.toLocaleString()} totalLabel="TOTAL" month={month} />
-        <OriginMatrixSection id="origin-dollars" title={`Collection $ by Origin — ${selected.label}`} subtitle="Dollar amounts collected by origin" agg={agg} field="originDollars" format={v => fmtMoney(v)} totalLabel="TOTAL $" month={month} />
-        <OriginMatrixSection id="origin-calls" title={`All Calls by Origin — ${selected.label}`} subtitle="Count of all inbound+outbound calls by origin" agg={agg} field="allCallsByOrigin" format={v => v.toLocaleString()} totalLabel="TOTAL CALLS" month={month} />
+        <OriginMatrixSection id="origin-count" title={`Collection Origin Breakdown — ${selected.label}`} subtitle="Count of collected payments by origin" agg={agg} field="originCount" format={v => v.toLocaleString()} totalLabel="TOTAL" month={month} members={TEAM_MEMBERS} roles={TEAM_ROLES} />
+        <OriginMatrixSection id="origin-dollars" title={`Collection $ by Origin — ${selected.label}`} subtitle="Dollar amounts collected by origin — raw collector logs; no certified per-origin source" agg={agg} field="originDollars" format={v => fmtMoney(v)} totalLabel="TOTAL $" month={month} members={TEAM_MEMBERS} roles={TEAM_ROLES} />
+        <OriginMatrixSection id="origin-calls" title={`All Calls by Origin — ${selected.label}`} subtitle="Count of all inbound+outbound calls by origin" agg={agg} field="allCallsByOrigin" format={v => v.toLocaleString()} totalLabel="TOTAL CALLS" month={month} members={TEAM_MEMBERS} roles={TEAM_ROLES} />
 
         {isLoading && <p className="text-xs text-muted-foreground">Loading activity…</p>}
       </div>
@@ -650,7 +707,7 @@ function HeatMatrix({
 
 // ---- Origin Matrix Section (with heatmap + totals + %) ----
 function OriginMatrixSection({
-  id, title, subtitle, agg, field, format: fmt, totalLabel, month,
+  id, title, subtitle, agg, field, format: fmt, totalLabel, month, members, roles,
 }: {
   id: string;
   title: string;
@@ -660,11 +717,13 @@ function OriginMatrixSection({
   format: (v: number) => string;
   totalLabel: string;
   month: string;
+  members: string[];
+  roles: Record<string, TeamRole>;
 }) {
-  const memberRows = TEAM_MEMBERS.map(name => {
+  const memberRows = members.map(name => {
     const a = agg[name];
     const row = ORIGIN_BUCKETS.map(b => a[field][b] || 0);
-    return { name, role: TEAM_ROLES[name], row, total: row.reduce((s, n) => s + n, 0) };
+    return { name, role: roles[name], row, total: row.reduce((s, n) => s + n, 0) };
   });
   const grand = memberRows.reduce((s, r) => s + r.total, 0);
   const columnTotals = ORIGIN_BUCKETS.map((_, i) => memberRows.reduce((s, r) => s + r.row[i], 0));

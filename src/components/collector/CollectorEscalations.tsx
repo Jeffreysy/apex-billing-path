@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  ESCALATION_ASSIGNEES,
+  buildEscalationAssignees,
   ESCALATION_STATUSES,
   formatEscalationStatus,
   getEscalationPriorityBadgeVariant,
   getEscalationStatusBadgeVariant,
 } from "@/lib/escalations";
+import { useCollectorRoster } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle, Clock, Shield, CreditCard, ExternalLink } from "lucide-react";
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
@@ -38,6 +39,9 @@ interface Props {
 const CollectorEscalations = ({ collectorName, isLead }: Props) => {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  // Assignee list is built from the LIVE roster (collectors) + fixed targets — no static copy.
+  const { collectors } = useCollectorRoster();
+  const assignees = buildEscalationAssignees(collectors);
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<PaymentTarget | null>(null);
 
@@ -204,7 +208,7 @@ const CollectorEscalations = ({ collectorName, isLead }: Props) => {
             <div><Label className="text-xs">Assign To</Label>
               <Select value={newAssignee} onValueChange={setNewAssignee}>
                 <SelectTrigger className="text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{ESCALATION_ASSIGNEES.map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}</SelectContent>
+                <SelectContent>{assignees.map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="text-xs">Notes</Label>

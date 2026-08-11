@@ -15,8 +15,10 @@ import {
   DollarSign, Calendar, Search, Filter, CheckCircle, XCircle,
   Clock, AlertTriangle, ArrowUpDown,
 } from "lucide-react";
+import { useCollectorRoster } from "@/hooks/useSupabaseData";
 
-const COLLECTORS = ["Alejandro A", "Maritza V"];
+// The collector filter is populated from the LIVE roster (useCollectorRoster()) inside the
+// component — not a static list — so every active collector is selectable.
 const STATUSES = ["pending", "kept", "broken", "partial", "rescheduled"];
 
 function statusBadge(status: string) {
@@ -35,6 +37,7 @@ function fmt(n: number | null) {
 
 const PaymentCommitmentsPage = () => {
   const qc = useQueryClient();
+  const { collectors: COLLECTORS } = useCollectorRoster();
 
   const { data: commitments = [], isLoading } = useQuery({
     queryKey: ["all-payment-commitments"],

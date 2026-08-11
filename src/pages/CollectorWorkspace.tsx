@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCollectionsDashboard, useCollectionActivities, useHardshipRequests, useClientContact } from "@/hooks/useSupabaseData";
+import { useCollectionsDashboard, useCollectionActivities, useHardshipRequests, useClientContact, useCollectorRoster } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -65,9 +65,11 @@ function priorityLabel(score: number | null) {
 
 
 
-const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
+// The handoff "Select person" dropdown derives its collector options from the LIVE roster
+// (useCollectorRoster()) inside the component — not a static list.
 
 const CollectorWorkspace = () => {
+  const { collectors: COLLECTORS } = useCollectorRoster();
   const { accountId } = useParams<{ accountId: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();

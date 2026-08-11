@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Search, Filter, Phone, ArrowUpDown, Calendar, Clock,
 } from "lucide-react";
+import { useCollectorRoster } from "@/hooks/useSupabaseData";
 
-const COLLECTORS = ["Alejandro A", "Maritza V"];
+// The collector filter is populated from the LIVE roster (collector_roster WHERE active) via
+// useCollectorRoster() inside the component — not a hardcoded fallback list — so every active
+// collector (including roster additions like Hiram Perez) is selectable.
 const OUTCOMES = [
   "payment_taken", "promise_to_pay", "no_answer", "left_voicemail",
   "callback_scheduled", "disputed", "wrong_number", "client_satisfied",
@@ -35,6 +38,7 @@ function fmt(n: number | null) {
 }
 
 const DailyActivityLogPage = () => {
+  const { collectors: COLLECTORS } = useCollectorRoster();
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ["daily-activity-log"],
     queryFn: async () => {
@@ -117,6 +121,10 @@ const DailyActivityLogPage = () => {
             value={new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(stats.collected)}
           />
         </div>
+        <p className="text-[10px] text-muted-foreground">
+          Collected Today and the Collected column are raw same-day / per-row logs — no certified daily source.
+          Certified de-duplicated collections are on the Collections KPI and Executive dashboards.
+        </p>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">

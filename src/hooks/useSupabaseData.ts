@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Client, Payment, CallLog, Collector, CaseStage } from "@/data/mockData";
 import { format, subDays, addWeeks, addMonths, startOfWeek } from "date-fns";
 import { ESCALATION_STATUSES, isEscalationUnresolved } from "@/lib/escalations";
+import { ACTIVE_COLLECTORS, LEAD_COLLECTOR } from "@/lib/teamRoles";
 
 // --- Status/field mapping helpers ---
 
@@ -43,6 +44,38 @@ function mapOutcome(outcome: string | null): CallLog["outcome"] {
   if (o.includes("dispute")) return "disputed";
   if (o.includes("completed") || o.includes("success")) return "payment_taken";
   return "no_answer";
+}
+
+// --- Collector roster (live source of truth) ---
+// Reads the ACTIVE roster from Supabase `collector_roster` — the certified canonical source
+// (supabase-auditor migration 20260729175949) — and falls back to the static ACTIVE_COLLECTORS
+// when the read is loading, empty, or RLS-blocked, so the UI never renders an empty roster.
+// NOTE: `collector_roster` isn't in the generated types.ts yet, hence the scoped `any` cast;
+// regenerate types (`npx supabase gen types`) to drop it.
+export function useCollectorRoster() {
+  const query = useQuery({
+    queryKey: ["collector-roster"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("collector_roster")
+        .select("collector_name, active")
+        .eq("active", true)
+        .order("collector_name");
+      if (error) throw error;
+      return ((data ?? []) as Array<{ collector_name: string | null }>)
+        .map((r) => (r.collector_name || "").trim())
+        .filter(Boolean);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const hasLive = Array.isArray(query.data) && query.data.length > 0;
+  return {
+    collectors: hasLive ? (query.data as string[]) : ACTIVE_COLLECTORS,
+    lead: LEAD_COLLECTOR,
+    isLoading: query.isLoading,
+    isFallback: !hasLive,
+  };
 }
 
 // --- Paginated fetch helper ---
@@ -104,6 +137,21 @@ export function useAdminKPI() {
     queryKey: ["admin-kpi"],
     queryFn: async () => {
       const { data, error } = await supabase.from("admin_kpi").select("*").limit(1);
+      if (error) throw error;
+      return (data && data[0]) || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 1b. Firm-wide certified financial summary — single-row pinned snapshot.
+ *  Source of truth for canonical Total AR (ar_total) and month movement
+ *  (ar_additions / ar_reductions / ar_net_movement). VP-certified. */
+export function useFirmFinancialSummary() {
+  return useQuery({
+    queryKey: ["firm-financial-summary"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("v_firm_financial_summary").select("*").limit(1);
       if (error) throw error;
       return (data && data[0]) || null;
     },
@@ -240,9 +288,10 @@ export function useMergedClients() {
   return useQuery({
     queryKey: ["merged-clients"],
     queryFn: async () => {
-      const rawRows = await fetchAllRows<any>("ar_dashboard");
-      // Exclude "Paid" contracts — these have bad remaining balances and aren't collectible
-      const rows = rawRows.filter((r) => r.delinquency_status !== "Paid");
+      // Keep ALL ar_dashboard rows — do NOT drop delinquency_status = 'Paid'. The 08-04 client-ar + VP
+      // ruling LOCKED that those "Paid"-but-open rows are REAL AR (~$104K; "Paid" is a stale contracts
+      // label bled via the unreliable invoice_number join). Matches ExecutiveInsights + the certified book.
+      const rows = await fetchAllRows<any>("ar_dashboard");
 
       return rows.map((row): Client => {
         const totalOwed = Number(row.total_contract_value) || 0;
@@ -372,6 +421,113 @@ export function useCollectionActivityRows() {
     },
     staleTime: 5 * 60 * 1000,
   });
+}
+
+// --- Certified weekly collected cash (de-duplicated source of record) ---
+// Reads public.v_activity_collected_weekly — the VP-certified SoR that counts each payment ONCE.
+// The raw client-side SUM(collection_activities.collected_amount) double-counts collector "Collected"
+// call logs against the canonical LawPay payment_received rows (re-ingested with jittered start_times);
+// recent weeks ran 25-33% inflated. `certified_collected` is the firm-wide de-duplicated weekly cash
+// to display; `certified_collector` / `certified_auto_payment` split it (collector vs auto-pay).
+// The view is granted SELECT to authenticated + anon (not security_invoker), so the app reads it
+// directly. It is NOT in the generated types.ts yet, hence the scoped `any` cast — regenerate types
+// (`npx supabase gen types`) to drop it. Rows come back ascending by week_start. On a read failure the
+// series is empty (the UI shows a "certified data unavailable" note) — it deliberately does NOT fall
+// back to the inflated raw sum: the UI must agree with the certified SoR, never re-introduce the drift.
+export interface ActivityCollectedWeek {
+  week_start: string;
+  raw_collected: number;
+  certified_collected: number;
+  certified_auto_payment: number;
+  certified_collector: number;
+  duplication_excess: number;
+  duplication_pct: number;
+  payment_events: number;
+  money_rows: number;
+}
+
+export function useActivityCollectedWeekly() {
+  return useQuery<ActivityCollectedWeek[]>({
+    queryKey: ["activity-collected-weekly"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_activity_collected_weekly")
+        .select(
+          "week_start, raw_collected, certified_collected, certified_auto_payment, certified_collector, duplication_excess, duplication_pct, payment_events, money_rows",
+        )
+        .order("week_start", { ascending: true });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        week_start: String(r.week_start),
+        raw_collected: Number(r.raw_collected) || 0,
+        certified_collected: Number(r.certified_collected) || 0,
+        certified_auto_payment: Number(r.certified_auto_payment) || 0,
+        certified_collector: Number(r.certified_collector) || 0,
+        duplication_excess: Number(r.duplication_excess) || 0,
+        duplication_pct: Number(r.duplication_pct) || 0,
+        payment_events: Number(r.payment_events) || 0,
+        money_rows: Number(r.money_rows) || 0,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// --- Certified weekly collected, split BY collector (de-duplicated) ---
+// Reads public.v_activity_collected_by_collector_weekly — the VP-certified per-collector companion to
+// v_activity_collected_weekly. Each payment is counted ONCE and credited to the HUMAN collector who
+// logged it; pure auto-pay events with no human touch are held under collector 'System-Auto' with
+// is_autopay_credit=true. VERIFIED to tie to the firm view every week (per-week SUM = certified_collected;
+// is_autopay_credit=false sum = certified_collector; =true sum = certified_auto_payment; diff 0.00).
+// Same grant profile (authenticated/anon SELECT), not security_invoker. Not in types.ts yet (scoped
+// `any` cast). Empty on read failure — callers must NOT fall back to the raw collected_amount sum.
+export interface ActivityCollectedByCollectorWeek {
+  week_start: string;
+  collector: string;
+  is_autopay_credit: boolean;
+  payment_events: number;
+  certified_collected: number;
+}
+
+export function useActivityCollectedByCollectorWeekly() {
+  return useQuery<ActivityCollectedByCollectorWeek[]>({
+    queryKey: ["activity-collected-by-collector-weekly"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_activity_collected_by_collector_weekly")
+        .select("week_start, collector, is_autopay_credit, payment_events, certified_collected")
+        .order("week_start", { ascending: true });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        week_start: String(r.week_start),
+        collector: String(r.collector ?? "").trim(),
+        is_autopay_credit: r.is_autopay_credit === true,
+        payment_events: Number(r.payment_events) || 0,
+        certified_collected: Number(r.certified_collected) || 0,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Build a { collectorKey -> certified $ } map from the by-collector rows, summing the weeks a caller
+// scopes in (a selected month, the last N weeks, etc.). `keyFn` lets callers normalize the collector
+// name to match their own roster keying (default: the trimmed name as stored in the view). Set
+// `humanOnly` to drop the System-Auto auto-pay bucket for human-collector tables.
+export function certifiedCollectedByCollector(
+  rows: ActivityCollectedByCollectorWeek[] | undefined,
+  weekInScope: (weekStart: string) => boolean,
+  opts?: { humanOnly?: boolean; keyFn?: (collector: string) => string },
+): Map<string, number> {
+  const keyFn = opts?.keyFn ?? ((c: string) => c);
+  const out = new Map<string, number>();
+  for (const r of rows ?? []) {
+    if (opts?.humanOnly && r.is_autopay_credit) continue;
+    if (!weekInScope(r.week_start)) continue;
+    const k = keyFn(r.collector);
+    out.set(k, (out.get(k) ?? 0) + r.certified_collected);
+  }
+  return out;
 }
 
 /** 6. Collectors — from collector_performance view, current month (falls back to latest).
@@ -640,6 +796,19 @@ export function useArForwardProjection() {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.from("v_ar_forward_projection").select("*").order("proj_month", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** 12-month AR landscape trend (total AR, MoM change, collected %, 180+ aging share) */
+export function useArLandscapeTrend() {
+  return useQuery({
+    queryKey: ["ar-landscape-trend"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("v_ar_landscape_trend").select("*").order("month", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
@@ -1210,22 +1379,6 @@ export function useControllerTrueExposure() {
       const rows = await fetchAllRows<any>("v_controller_true_ar_exposure");
       return rows[0] || null;
     },
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useControllerArchivedReview() {
-  return useQuery({
-    queryKey: ["controller-archived-review"],
-    queryFn: async () => fetchAllRows<any>("v_controller_archived_review"),
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useControllerMonthlyTrend() {
-  return useQuery({
-    queryKey: ["controller-monthly-trend"],
-    queryFn: async () => fetchAllRows<any>("v_controller_monthly_trend"),
     staleTime: 5 * 60 * 1000,
   });
 }

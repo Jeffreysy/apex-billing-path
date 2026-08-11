@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useCollectionActivityRows, useCollectionsDashboard } from "@/hooks/useSupabaseData";
+import { useCollectionActivityRows, useCollectionsDashboard, useCollectorRoster } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +20,8 @@ type SortField =
 type SortDir = "asc" | "desc";
 type TriageTier = "all" | "quick_wins" | "work_list" | "legal_track";
 
-const COLLECTORS = ["Alejandro A", "Patricio D", "Maritza V"];
+// The collector filter + the Assign-to-Collector dialog derive their options from the LIVE roster
+// (useCollectorRoster()) inside the component — not a static list.
 
 const QUEUE_CRITERIA = [
   { value: "broken_promise", label: "Broken promise" },
@@ -143,6 +144,7 @@ function getTriageTier(item: any): TriageTier {
 }
 
 const CallQueuePage = () => {
+  const { collectors: COLLECTORS } = useCollectorRoster();
   const navigate = useNavigate();
   const { data: queue = [], isLoading: loadingQueue } = useCollectionsDashboard();
   const { data: activities = [], isLoading: loadingActivities } = useCollectionActivityRows();

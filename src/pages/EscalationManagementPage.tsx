@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  ESCALATION_ASSIGNEES,
   ESCALATION_HANDOFF_QUEUES,
   ESCALATION_PRIORITIES,
   ESCALATION_SOURCE_CONTEXTS,
@@ -20,6 +19,7 @@ import {
   getDefaultHandoffQueue,
   getEscalationStatusBadgeVariant,
 } from "@/lib/escalations";
+import { useCollectorRoster } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
 import { AlertTriangle, Search, Filter, CheckCircle, Clock, ArrowUpDown, Shield } from "lucide-react";
 
@@ -48,6 +48,8 @@ function statusBadge(status: string) {
 }
 
 const EscalationManagementPage = () => {
+  // Collector options for reassignment come from the LIVE roster — not a static list.
+  const { collectors } = useCollectorRoster();
   const qc = useQueryClient();
 
   const { data: escalations = [], isLoading } = useQuery({
@@ -299,7 +301,7 @@ const EscalationManagementPage = () => {
                     <SelectItem value="Compliance" className="text-xs">Compliance</SelectItem>
                     <SelectItem value="CC/Nidiana" className="text-xs">CC/Nidiana</SelectItem>
                     <SelectItem value="Stephen/Jeffrey" className="text-xs">Stephen/Jeffrey</SelectItem>
-                    {ESCALATION_ASSIGNEES.filter(a => !["Management", "Legal"].includes(a)).map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
+                    {collectors.map(a => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
