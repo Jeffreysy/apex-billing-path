@@ -3,7 +3,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useCollectionsDashboard } from "@/hooks/useSupabaseData";
+import { useCollectionsDashboard, useCollectorRoster, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector } from "@/hooks/useSupabaseData";
 import { DollarSign, Phone, Clock, Users, Percent, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,8 @@ import CollectorCommitments from "@/components/collector/CollectorCommitments";
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
-// Lead collector — update here if the lead changes
-const LEAD_COLLECTOR = "Alejandro A";
-
-// Known collectors — update here when the team changes
-const KNOWN_COLLECTORS = ["Alejandro A", "Maritza V", "Patricio D"];
+// LEAD_COLLECTOR and the known-collector roster now come from the live roster
+// (`useCollectorRoster()`), resolved inside the component — no hardcoded team list here.
 
 function normalizeCollectorName(value: string | null | undefined) {
   return (value || "").trim().toLowerCase();
@@ -36,7 +33,8 @@ function fmt(n: number) {
 
 const CollectorDashboard = () => {
   const { collectorId } = useParams<{ collectorId: string }>();
-  const collectorName = decodeURIComponent(collectorId || "");
+  const collectorName = decodeURIComponent(collectorId || "").trim();
+  const { collectors: KNOWN_COLLECTORS, lead: LEAD_COLLECTOR } = useCollectorRoster();
 
   // All collection_activities for known collectors
   const { data: allActivities = [], isLoading: loadingAct } = useQuery({
@@ -68,6 +66,9 @@ const CollectorDashboard = () => {
   });
 
   const { data: allQueue = [], isLoading: loadingQueue } = useCollectionsDashboard();
+  // Certified per-collector cash (v_activity_collected_by_collector_weekly) — de-duplicated, credited to
+  // the human who logged the payment.
+  const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
 
   const navigate = useNavigate();
   const [payOpen, setPayOpen] = useState(false);
@@ -97,6 +98,12 @@ const CollectorDashboard = () => {
 
   // Filter activities by selected month — must be before early returns to respect hook order
   const monthActivities = useMemo(() => filterByMonth(allActivities, "activity_date", month), [allActivities, month]);
+
+  // Certified $ per collector for the selected month, keyed by normalized name to match buildStats.
+  const certByCollectorMonth = useMemo(
+    () => certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === month, { keyFn: normalizeCollectorName }),
+    [byCollectorWeeks, month],
+  );
 
   const CALL_TYPES = ["outbound_call", "inbound_call"];
 
@@ -138,7 +145,10 @@ const CollectorDashboard = () => {
     return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
   }
 
-  if (!KNOWN_COLLECTORS.includes(collectorName)) {
+  const isKnownCollector = KNOWN_COLLECTORS.some(
+    (c) => normalizeCollectorName(c) === normalizeCollectorName(collectorName)
+  );
+  if (!isKnownCollector) {
     return <DashboardLayout><p className="text-muted-foreground p-8">Collector "{collectorName}" not found.</p></DashboardLayout>;
   }
 
@@ -161,7 +171,11 @@ const CollectorDashboard = () => {
 
     const allCountedRows = [...ownRows, ...systemPaymentRows];
     return {
-      totalCollected: allCountedRows.reduce((s, a) => s + (Number(a.collected_amount) || 0), 0),
+      // Certified de-duplicated $ credited to this human collector (v_activity_collected_by_collector_weekly),
+      // month-scoped. Supersedes the raw own-rows + auto-pay-on-worked-clients sum, per Jeff's "credit the
+      // human collector" model (pure auto-pay now lands under System-Auto). Commission / calls / payment
+      // count stay raw.
+      totalCollected: certByCollectorMonth.get(normName) ?? 0,
       totalCommission: ownRows.reduce((s, a) => s + (Number(a.commission) || 0), 0),
       callsMade: ownRows.length,
       paymentsTaken: allCountedRows.filter(a => (Number(a.collected_amount) || 0) > 0).length,
@@ -350,7 +364,8 @@ const CollectorDashboard = () => {
             <div>
               <h2 className="text-lg font-semibold">{isLead ? "Team Recent Payments" : "My Recent Payments"}</h2>
               <p className="text-xs text-muted-foreground">
-                Payment rows only. Latest logged activity: {latestActivity ? latestActivity.activity_date : "No activity yet"}
+                Raw logged payment rows (may include auto-pay on worked clients) — may not sum to the certified totals above.
+                Latest logged activity: {latestActivity ? latestActivity.activity_date : "No activity yet"}
               </p>
             </div>
             <Badge variant="outline">{month}</Badge>

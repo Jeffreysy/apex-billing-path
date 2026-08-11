@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
+import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,12 +57,18 @@ function useInsightsData() {
   return useQuery({
     queryKey: ["admin-insights-v2"],
     queryFn: async () => {
-      const [ar, payments, activities] = await Promise.all([
-        fetchAllRows<any>("ar_dashboard"),
-        fetchAllRows<any>("payments_clean"),
-        fetchAllRows<any>("collection_activities"),
+      const [ar, payments, activities, firmSummaryRows] = await Promise.all([
+        // Stable ORDER BY on a unique key is REQUIRED: fetchAllRows paginates via .range()
+        // (LIMIT/OFFSET). Without a deterministic sort, PostgREST can skip/duplicate rows
+        // across pages, silently under-counting large tables — payments_clean (~19k) and
+        // collection_activities (~42k) were losing ~40-60% of rows, halving month totals.
+        fetchAllRows<any>("ar_dashboard", { orderBy: "invoice_number" }),
+        fetchAllRows<any>("payments_clean", { orderBy: "id" }),
+        fetchAllRows<any>("collection_activities", { orderBy: "id" }),
+        // VP-certified firm-wide snapshot (single row) — authoritative month new-AR source.
+        fetchAllRows<any>("v_firm_financial_summary"),
       ]);
-      return { ar, payments, activities };
+      return { ar, payments, activities, firmSummary: firmSummaryRows?.[0] ?? null };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -72,10 +78,17 @@ export default function ExecutiveInsights() {
   const [monthVal, setMonthVal] = useState(format(new Date(), "yyyy-MM"));
   const months = monthOptions(6);
   const { data, isLoading } = useInsightsData();
+  // Certified per-collector cash (v_activity_collected_by_collector_weekly) — replaces the raw
+  // SUM(collection_activities.collected_amount) in the collector table below.
+  const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
 
   const view = useMemo(() => {
     if (!data) return null;
-    const ar = data.ar.filter((r: any) => r.delinquency_status !== "Paid");
+    // AR universe = every ar_dashboard row (all carry amount_due > 0 and excluded_from_ar = false).
+    // Do NOT drop delinquency_status = 'Paid': client-ar + VP LOCKED that the 31 "Paid"-but-open
+    // rows are REAL AR ($104,050, $0 actually paid off) — "Paid" is a stale contracts-table label
+    // bled in via the unreliable invoice_number join. Filtering them understated AR by ~$104K.
+    const ar = data.ar;
     const payments = data.payments;
     const activities = data.activities || [];
 
@@ -106,6 +119,21 @@ export default function ExecutiveInsights() {
     const prevMonth = format(subMonths(monthValToDate(monthVal), 1), "yyyy-MM");
     const curr = monthAggs[monthVal] || { collected: 0, count: 0 };
     const prev = monthAggs[prevMonth] || { collected: 0, count: 0 };
+
+    // MTD-vs-MTD: when the selected month is the current (incomplete) month, compare only
+    // through today's day-of-month in the prior month, so the delta pill isn't partial-vs-full.
+    const isCurrentMonth = monthVal === format(new Date(), "yyyy-MM");
+    const cutoffDay = new Date().getDate();
+    let prevComparable = prev.collected;
+    if (isCurrentMonth) {
+      prevComparable = 0;
+      payments.forEach((p: any) => {
+        const ds = (p.payment_date || "").substring(0, 10); // YYYY-MM-DD
+        if (ds.substring(0, 7) !== prevMonth) return;
+        const day = Number(ds.substring(8, 10));
+        if (day && day <= cutoffDay) prevComparable += Number(p.amount) || 0;
+      });
+    }
 
     // last 8 months sparkline of collections
     const collSpark: number[] = [];
@@ -152,19 +180,44 @@ export default function ExecutiveInsights() {
     // ---------- Money flow (waterfall) for selected month ----------
     const monthStart = startOfMonth(monthValToDate(monthVal));
     const monthEnd = endOfMonth(monthStart);
-    const arAddedThisMonth = ar
+    const startDateAdded = ar
       .filter((r: any) => {
         const d = r.start_date ? new Date(r.start_date) : null;
         return d && d >= monthStart && d <= monthEnd;
       })
       .reduce((s: number, r: any) => s + (Number(r.total_contract_value) || 0), 0);
+    // New AR: for the CURRENT month, read the VP-certified live-snapshot additions
+    // (v_firm_financial_summary.ar_additions). ar_dashboard.start_date comes from the frozen
+    // aging file and is structurally ~$0, so it undercounts real new AR. Past months have no
+    // month-keyed certified source, so they fall back to the start_date calc (unchanged).
+    const firmSummary = (data as any).firmSummary;
+    // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
+    // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor, incl-"Paid" basis). Fall back to the row-sum
+    // only if the certified row is unavailable, so the AR tile never renders empty.
+    const arTotalCertified = firmSummary && firmSummary.ar_total != null ? Number(firmSummary.ar_total) || 0 : totalAR;
+    const arAddedThisMonth =
+      isCurrentMonth && firmSummary && firmSummary.ar_additions != null
+        ? Number(firmSummary.ar_additions) || 0
+        : startDateAdded;
     const collectedMonth = curr.collected;
-    const openingAR = totalAR + collectedMonth - arAddedThisMonth;
+    // Money-flow decomposition. For the CURRENT month, use the VP-certified month movement
+    // from v_firm_financial_summary (additions / reductions / net) so the card matches the
+    // firm's official AR movement (Aug: additions $166,368 − reductions $251,590 = −$85,222)
+    // instead of an incommensurate "new AR − MTD cash" figure that would read as growth.
+    // "Reductions" include collections + write-offs/adjustments, so it legitimately differs
+    // from the cash-basis "Collected" hero tile. Past months fall back to the cash-basis
+    // identity (mathematically identical to the prior behavior).
+    const certifiedMovement = isCurrentMonth && firmSummary && firmSummary.ar_net_movement != null;
+    const reductionsMonth = certifiedMovement ? Number(firmSummary.ar_reductions) || 0 : collectedMonth;
+    const netMovement = certifiedMovement
+      ? Number(firmSummary.ar_net_movement) || 0
+      : arAddedThisMonth - reductionsMonth;
+    const openingAR = arTotalCertified - netMovement;
     const waterfall = [
       { name: "Opening AR", value: openingAR, type: "balance" },
       { name: "+ New AR", value: arAddedThisMonth, type: "pos" },
-      { name: "− Collected", value: -collectedMonth, type: "neg" },
-      { name: "Closing AR", value: totalAR, type: "balance" },
+      { name: certifiedMovement ? "− Reductions" : "− Collected", value: -reductionsMonth, type: "neg" },
+      { name: "Closing AR", value: arTotalCertified, type: "balance" },
     ];
 
     // ---------- Collector time & activity (selected month) ----------
@@ -194,7 +247,11 @@ export default function ExecutiveInsights() {
       };
       const row = collectorActivity[c];
       row.activities += 1;
-      row.minutes += Number(a.duration_minutes) || 0;
+      // A single activity's logged duration cannot be negative; a bad/reversal row
+      // (e.g. duration_minutes = -1005) must not drag the collector's hours below zero.
+      // Clamp per-row at 0 so "Hours" is always truthful. Root-cause data fix is owned
+      // by collections-activity-agent (bad source rows), this is display sanitation only.
+      row.minutes += Math.max(0, Number(a.duration_minutes) || 0);
       row.collected += Number(a.collected_amount) || 0;
       row.commission += Number(a.commission) || 0;
       if ((Number(a.collected_amount) || 0) > 0) row.payments += 1;
@@ -232,7 +289,10 @@ export default function ExecutiveInsights() {
       collSpark,
       curr,
       prev,
+      prevComparable,
+      isCurrentMonth,
       totalAR,
+      arTotalCertified,
       atRisk,
       dso,
       collectorRows,
@@ -247,6 +307,17 @@ export default function ExecutiveInsights() {
     };
   }, [data, monthVal]);
 
+  // Collector-table "Collected" repointed to the certified per-collector figure for the selected month
+  // (de-duplicated, credited to the human who logged the payment; System-Auto holds pure auto-pay).
+  // Hours / Activities / Payments / Commission stay raw. Re-sorted by the certified amount.
+  const collectorRowsCertified = useMemo(() => {
+    const rows = view?.collectorActivityRows ?? [];
+    const cert = certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === monthVal);
+    return rows
+      .map((r) => ({ ...r, collected: cert.get(r.collector) ?? 0 }))
+      .sort((a, b) => b.collected - a.collected);
+  }, [view, byCollectorWeeks, monthVal]);
+
   if (isLoading || !view) {
     return <div className="p-6 text-center text-sm text-muted-foreground">Loading executive insights…</div>;
   }
@@ -260,7 +331,6 @@ export default function ExecutiveInsights() {
     { id: "failed", label: "Failed / Issues" },
   ];
 
-  const coverage = view.totalAR > 0 ? (view.curr.collected / view.totalAR) * 100 : 0;
   const netChange = view.waterfall[1].value + view.waterfall[2].value;
   const monthLabel = format(monthValToDate(monthVal), "MMMM yyyy");
 
@@ -314,10 +384,10 @@ export default function ExecutiveInsights() {
 
       {/* ─────────── Hero KPI band ─────────── */}
       <section id="hero" className="scroll-mt-24">
-        <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-muted/30 shadow-[0_1px_0_0_hsl(var(--border)),0_24px_60px_-30px_hsl(var(--primary)/0.25)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-5">
+        <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-muted/30 shadow-[0_1px_0_0_hsl(var(--border)),0_24px_60px_-30px_hsl(var(--primary)/0.25)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
           <HeroKpi
             label="Total AR"
-            value={fmtMoney(view.totalAR)}
+            value={fmtMoney(view.arTotalCertified)}
             spark={view.weeklySeries}
             sparkColor="hsl(var(--primary))"
             sublabel="Outstanding balance"
@@ -327,15 +397,8 @@ export default function ExecutiveInsights() {
             value={fmtMoney(view.curr.collected)}
             spark={view.collSpark}
             sparkColor="hsl(var(--secondary))"
-            delta={<DeltaPill prev={view.prev.collected} curr={view.curr.collected} />}
-            sublabel="vs prior month"
-          />
-          <HeroKpi
-            label="Coverage Ratio"
-            value={`${coverage.toFixed(1)}%`}
-            spark={view.collSpark}
-            sparkColor="hsl(var(--secondary))"
-            sublabel="Collected / AR"
+            delta={<DeltaPill prev={view.prevComparable} curr={view.curr.collected} />}
+            sublabel={view.isCurrentMonth ? "vs prior month (MTD)" : "vs prior month"}
           />
           <HeroKpi
             label="Weighted DSO"
@@ -365,11 +428,11 @@ export default function ExecutiveInsights() {
             const opening = view.waterfall[0].value;
             const newAR = view.waterfall[1].value;
             const collected = Math.abs(view.waterfall[2].value);
-            const closing = view.totalAR;
+            const closing = view.arTotalCertified;
             const pieData = [
               { name: "Opening AR", value: Math.max(0, opening), color: "hsl(var(--primary))" },
               { name: "+ New AR", value: Math.max(0, newAR), color: "hsl(var(--destructive))" },
-              { name: "− Collected", value: Math.max(0, collected), color: "hsl(var(--success))" },
+              { name: view.waterfall[2].name, value: Math.max(0, collected), color: "hsl(var(--success))" },
             ].filter((d) => d.value > 0);
             const total = pieData.reduce((s, d) => s + d.value, 0) || 1;
             return (
@@ -440,15 +503,15 @@ export default function ExecutiveInsights() {
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            New AR less collections for {format(monthValToDate(monthVal), "MMM yyyy")}.
+            Net AR movement for {format(monthValToDate(monthVal), "MMM yyyy")} (new AR less reductions).
           </p>
 
           <dl className="mt-6 space-y-3 border-t border-border/60 pt-4 text-sm">
             <FlowRow label="Opening AR" value={fmtMoney(view.waterfall[0].value)} tone="neutral" />
             <FlowRow label="+ New AR" value={fmtMoney(view.waterfall[1].value)} tone="up" />
-            <FlowRow label="− Collected" value={fmtMoney(Math.abs(view.waterfall[2].value))} tone="down" />
+            <FlowRow label={view.waterfall[2].name} value={fmtMoney(Math.abs(view.waterfall[2].value))} tone="down" />
             <div className="border-t border-border/60 pt-3">
-              <FlowRow label="Closing AR" value={fmtMoney(view.totalAR)} tone="neutral" bold />
+              <FlowRow label="Closing AR" value={fmtMoney(view.arTotalCertified)} tone="neutral" bold />
             </div>
           </dl>
         </Card>
@@ -520,9 +583,9 @@ export default function ExecutiveInsights() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {view.collectorActivityRows.length === 0 ? (
+                {collectorRowsCertified.length === 0 ? (
                   <tr><td colSpan={7} className="py-6 text-center text-xs text-muted-foreground">No activity logged this month.</td></tr>
-                ) : view.collectorActivityRows.map((r) => (
+                ) : collectorRowsCertified.map((r) => (
                   <tr key={r.collector} className="transition-colors hover:bg-muted/30">
                     <td className="py-2.5 pl-1 font-medium tracking-tight">{r.collector}</td>
                     <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{(r.minutes / 60).toFixed(1)}</td>

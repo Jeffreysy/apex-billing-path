@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
+import { fetchAllRows, useActivityCollectedWeekly, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector } from "@/hooks/useSupabaseData";
 import MonthFilter, { filterByMonth, getMonthOptions } from "@/components/MonthFilter";
 import { format } from "date-fns";
 import {
@@ -56,22 +56,40 @@ const CollectionsKPITab = () => {
   const filteredCommitments = useMemo(() => filterByMonth(commitments, "promised_date", month), [commitments, month]);
   const filteredEscalations = useMemo(() => filterByMonth(escalations, "created_at", month), [escalations, month]);
 
+  // Certified, de-duplicated weekly cash (v_activity_collected_weekly), scoped to the selected month by
+  // week_start. Drives the "Total Collected" KPI and "Weekly Collection Trend" so both agree with the SoR
+  // instead of the raw SUM(collection_activities.collected_amount), which is inflated 25-33%/wk.
+  // Note: a week is attributed to the month of its Monday (week_start); weeks straddling a month boundary
+  // land wholly in the earlier month. A certified monthly view would remove that edge effect (VP follow-up).
+  const { data: certifiedWeeks = [] } = useActivityCollectedWeekly();
+  const certifiedMonthWeeks = useMemo(
+    () => certifiedWeeks.filter((w) => w.week_start.slice(0, 7) === month),
+    [certifiedWeeks, month],
+  );
+  // Per-collector certified $ for the selected month (keyed by the collector name in the view).
+  const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
+  const certByCollector = useMemo(
+    () => certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === month),
+    [byCollectorWeeks, month],
+  );
+
+  // Calls/contacts/commission stay raw (per-collector activity); "Collected" is certified per-collector.
   const collectorStats = useMemo(() => {
-    const map: Record<string, { calls: number; collected: number; contacts: number; minutes: number; commission: number }> = {};
+    const map: Record<string, { calls: number; contacts: number; minutes: number; commission: number }> = {};
     filtered.forEach(a => {
       const c = a.collector || "Unknown";
-      if (!map[c]) map[c] = { calls: 0, collected: 0, contacts: 0, minutes: 0, commission: 0 };
+      if (!map[c]) map[c] = { calls: 0, contacts: 0, minutes: 0, commission: 0 };
       map[c].calls++;
-      map[c].collected += a.collected_amount || 0;
       map[c].commission += a.commission || 0;
       map[c].minutes += a.duration_minutes || 0;
       if (a.outcome && !["no_answer", "wrong_number", "left_voicemail"].includes(a.outcome)) map[c].contacts++;
     });
     return Object.entries(map).map(([name, s]) => ({
       name, ...s,
+      collected: certByCollector.get(name) ?? 0,
       contactRate: s.calls > 0 ? Math.round((s.contacts / s.calls) * 100) : 0,
     })).sort((a, b) => b.collected - a.collected);
-  }, [filtered]);
+  }, [filtered, certByCollector]);
 
   const outcomeData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -79,30 +97,23 @@ const CollectionsKPITab = () => {
     return Object.entries(map).map(([name, value]) => ({ name: name.replace(/_/g, " "), value })).sort((a, b) => b.value - a.value);
   }, [filtered]);
 
-  const weeklyData = useMemo(() => {
-    const weeks: Record<string, { calls: number; collected: number }> = {};
-    filtered.forEach(a => {
-      if (!a.activity_date) return;
-      const d = new Date(a.activity_date);
-      const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toISOString().slice(0, 10);
-      if (!weeks[key]) weeks[key] = { calls: 0, collected: 0 };
-      weeks[key].calls++; weeks[key].collected += a.collected_amount || 0;
-    });
-    return Object.entries(weeks).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 8).reverse()
-      .map(([week, s]) => ({ week: week.slice(5), ...s }));
-  }, [filtered]);
+  // Weekly trend — CERTIFIED de-duplicated cash (v_activity_collected_weekly), month-scoped, ascending.
+  const weeklyData = useMemo(
+    () => certifiedMonthWeeks.map((w) => ({ week: w.week_start.slice(5), collected: w.certified_collected })),
+    [certifiedMonthWeeks],
+  );
 
   const kpis = useMemo(() => {
     const totalCalls = filtered.length;
-    const totalCollected = filtered.reduce((s, a) => s + (a.collected_amount || 0), 0);
+    // Certified de-duplicated cash for the selected month (was raw SUM(collected_amount), inflated).
+    const totalCollected = certifiedMonthWeeks.reduce((s, w) => s + w.certified_collected, 0);
     const totalCommission = filtered.reduce((s, a) => s + (a.commission || 0), 0);
     const pendingCommitments = filteredCommitments.filter(c => c.status === "pending").length;
     const keptRate = filteredCommitments.length > 0
       ? Math.round((filteredCommitments.filter(c => c.status === "kept").length / filteredCommitments.length) * 100) : 0;
     const openEscalations = filteredEscalations.filter(e => e.status === "open" || e.status === "in_progress").length;
     return { totalCalls, totalCollected, totalCommission, pendingCommitments, keptRate, openEscalations };
-  }, [filtered, filteredCommitments, filteredEscalations]);
+  }, [filtered, filteredCommitments, filteredEscalations, certifiedMonthWeeks]);
 
   return (
     <div className="space-y-4">
@@ -149,15 +160,19 @@ const CollectionsKPITab = () => {
 
       <div className="rounded-lg border bg-card p-4">
         <h2 className="text-sm font-semibold text-foreground mb-3">Weekly Collection Trend</h2>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={weeklyData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="week" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip contentStyle={{ fontSize: 11 }} formatter={(value: number) => fmt(value)} />
-            <Bar dataKey="collected" name="Collected" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {weeklyData.length === 0 ? (
+          <p className="py-12 text-center text-xs text-muted-foreground">No certified collections for this month.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="week" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip contentStyle={{ fontSize: 11 }} formatter={(value: number) => fmt(value)} />
+              <Bar dataKey="collected" name="Collected" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div className="rounded-lg border bg-card overflow-auto">

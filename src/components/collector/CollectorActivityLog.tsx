@@ -131,6 +131,7 @@ const CollectorActivityLog = ({ collectorName, isLead }: Props) => {
           <Clock className="h-3 w-3 mx-auto text-primary mb-1" />
           <p className="text-xs text-muted-foreground">Collected Today</p>
           <p className="text-sm font-bold">{fmt(stats.collected)}</p>
+          <p className="text-[9px] text-muted-foreground/70">raw same-day log</p>
         </div>
       </div>
 

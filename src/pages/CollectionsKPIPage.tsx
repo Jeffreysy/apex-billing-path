@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivityCollectedWeekly, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector } from "@/hooks/useSupabaseData";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -50,14 +51,29 @@ const CollectionsKPIPage = () => {
     },
   });
 
-  // Collector performance
+  // Certified, de-duplicated weekly cash. Firm series (v_activity_collected_weekly) drives the
+  // "Weekly Collection Trend" chart + "Collected (8 wks)" KPI; the by-collector series
+  // (v_activity_collected_by_collector_weekly) drives the per-collector "Collected" column.
+  const { data: certifiedWeeks = [] } = useActivityCollectedWeekly();
+  const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
+
+  // Per-collector certified $ over the same last-8-weeks window the KPI/trend show. Keyed by the
+  // collector name as stored in the view (System-Auto carries the auto-pay bucket), so the column
+  // sums back to the firm "Collected (8 wks)" KPI.
+  const certByCollector = useMemo(() => {
+    const weeks = [...new Set(byCollectorWeeks.map(r => r.week_start))].sort();
+    const last8 = new Set(weeks.slice(-8));
+    return certifiedCollectedByCollector(byCollectorWeeks, (wk) => last8.has(wk));
+  }, [byCollectorWeeks]);
+
+  // Collector performance — calls/contacts/commission stay raw (per-collector activity); "Collected"
+  // is the certified de-duplicated per-collector figure.
   const collectorStats = useMemo(() => {
-    const map: Record<string, { calls: number; collected: number; contacts: number; minutes: number; commission: number }> = {};
+    const map: Record<string, { calls: number; contacts: number; minutes: number; commission: number }> = {};
     activities.forEach(a => {
       const c = a.collector || "Unknown";
-      if (!map[c]) map[c] = { calls: 0, collected: 0, contacts: 0, minutes: 0, commission: 0 };
+      if (!map[c]) map[c] = { calls: 0, contacts: 0, minutes: 0, commission: 0 };
       map[c].calls++;
-      map[c].collected += a.collected_amount || 0;
       map[c].commission += a.commission || 0;
       map[c].minutes += a.duration_minutes || 0;
       if (a.outcome && !["no_answer", "wrong_number", "left_voicemail"].includes(a.outcome)) map[c].contacts++;
@@ -65,9 +81,10 @@ const CollectionsKPIPage = () => {
     return Object.entries(map).map(([name, s]) => ({
       name,
       ...s,
+      collected: certByCollector.get(name) ?? 0,
       contactRate: s.calls > 0 ? Math.round((s.contacts / s.calls) * 100) : 0,
     })).sort((a, b) => b.collected - a.collected);
-  }, [activities]);
+  }, [activities, certByCollector]);
 
   // Outcome distribution
   const outcomeData = useMemo(() => {
@@ -81,30 +98,20 @@ const CollectionsKPIPage = () => {
       .sort((a, b) => b.value - a.value);
   }, [activities]);
 
-  // Weekly trend (last 4 weeks)
-  const weeklyData = useMemo(() => {
-    const weeks: Record<string, { calls: number; collected: number }> = {};
-    activities.forEach(a => {
-      if (!a.activity_date) return;
-      const d = new Date(a.activity_date);
-      const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toISOString().slice(0, 10);
-      if (!weeks[key]) weeks[key] = { calls: 0, collected: 0 };
-      weeks[key].calls++;
-      weeks[key].collected += a.collected_amount || 0;
-    });
-    return Object.entries(weeks)
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .slice(0, 8)
-      .reverse()
-      .map(([week, s]) => ({ week: week.slice(5), ...s }));
-  }, [activities]);
+  // Weekly trend (last 8 weeks) — CERTIFIED de-duplicated cash from v_activity_collected_weekly.
+  // Was a client-side SUM(collection_activities.collected_amount), inflated 25-33%/wk by the
+  // collector-log vs LawPay payment_received duplication. Hook returns weeks ascending by week_start.
+  const weeklyData = useMemo(
+    () => certifiedWeeks.slice(-8).map((w) => ({ week: w.week_start.slice(5), collected: w.certified_collected })),
+    [certifiedWeeks],
+  );
 
   // Summary KPIs
   const kpis = useMemo(() => {
     const totalCalls = activities.length;
-    const totalCollected = activities.reduce((s, a) => s + (a.collected_amount || 0), 0);
+    // Certified cash over the same 8-week window the trend chart shows, so the KPI foots to the bars
+    // and agrees with the SoR. (Was SUM(collection_activities.collected_amount) over 1000 rows — inflated.)
+    const totalCollected = certifiedWeeks.slice(-8).reduce((s, w) => s + w.certified_collected, 0);
     const totalCommission = activities.reduce((s, a) => s + (a.commission || 0), 0);
     const pendingCommitments = commitments.filter(c => c.status === "pending").length;
     const keptRate = commitments.length > 0
@@ -112,7 +119,7 @@ const CollectionsKPIPage = () => {
       : 0;
     const openEscalations = escalations.filter(e => e.status === "open" || e.status === "in_progress").length;
     return { totalCalls, totalCollected, totalCommission, pendingCommitments, keptRate, openEscalations };
-  }, [activities, commitments, escalations]);
+  }, [activities, commitments, escalations, certifiedWeeks]);
 
   return (
     <DashboardLayout>
@@ -125,7 +132,7 @@ const CollectionsKPIPage = () => {
         {/* Top KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <KpiCard icon={Phone} label="Total Calls" value={kpis.totalCalls.toLocaleString()} />
-          <KpiCard icon={DollarSign} label="Total Collected" value={fmt(kpis.totalCollected)} />
+          <KpiCard icon={DollarSign} label="Collected (8 wks)" value={fmt(kpis.totalCollected)} />
           <KpiCard icon={TrendingUp} label="Commission" value={fmt(kpis.totalCommission)} />
           <KpiCard icon={Target} label="Pending Commits" value={kpis.pendingCommitments} />
           <KpiCard icon={CheckCircle} label="Commit Kept %" value={`${kpis.keptRate}%`} />
@@ -163,18 +170,22 @@ const CollectionsKPIPage = () => {
           </div>
         </div>
 
-        {/* Weekly trend */}
+        {/* Weekly trend — certified de-duplicated cash (v_activity_collected_weekly) */}
         <div className="rounded-lg border bg-card p-4">
           <h2 className="text-sm font-semibold text-foreground mb-3">Weekly Collection Trend</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="week" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={{ fontSize: 11 }} formatter={(value: number) => fmt(value)} />
-              <Bar dataKey="collected" name="Collected" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {weeklyData.length === 0 ? (
+            <p className="py-12 text-center text-xs text-muted-foreground">Certified weekly collections unavailable.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="week" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: 11 }} formatter={(value: number) => fmt(value)} />
+                <Bar dataKey="collected" name="Collected" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Collector table */}
