@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useCollectionActivities, useImmigrationCases, useCaseMilestones, useMyCaseClient360, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
+import { useMergedClients, useCollectors, usePaymentsData, useClientActivityHistory, useImmigrationCases, useCaseMilestones, useMyCaseClient360, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,19 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckCircle, MessageSquare, Tag, Scale, Calendar, CreditCard } from "lucide-react";
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
+import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
 const ClientLookup = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: collectors = [] } = useCollectors();
   const { data: payments = [] } = usePaymentsData();
-  const { data: callLogs = [] } = useCollectionActivities();
   const { data: immigrationCases = [] } = useImmigrationCases();
   const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: myCase } = useMyCaseClient360(selectedClientId);
+
+  // `selectedClientId` is the contract_id (Client.id === ar_dashboard.contract_id). The MyCase/LawPay/AR
+  // world joins on the canonical client_id — so resolve the client first and drive the 360 + history off
+  // `clientId`, never the contract_id (the old bug that left the entire MyCase 360 block silently empty).
+  const selectedClient = useMemo(() => clients.find(c => c.id === selectedClientId) || null, [selectedClientId, clients]);
+  const { data: myCase } = useMyCaseClient360(selectedClient?.clientId ?? null);
+  const { data: clientCalls = [] } = useClientActivityHistory(selectedClient?.clientId ?? null, selectedClient?.name ?? null);
 
   // Deep-link support: ?clientId=... or ?contractId=... selects a client on load
   useEffect(() => {
@@ -52,17 +59,17 @@ const ClientLookup = () => {
     return clients.filter(c => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
   }, [search, clients]);
 
-  const selectedClient = useMemo(() => clients.find(c => c.id === selectedClientId) || null, [selectedClientId, clients]);
-
+  // Payments key on client_id when both sides carry one; fall back to exact-name only when the id is absent.
   const clientPayments = useMemo(
-    () => selectedClient ? payments.filter(p => p.clientName.toLowerCase() === selectedClient.name.toLowerCase()).sort((a, b) => b.date.localeCompare(a.date)) : [],
+    () => selectedClient ? payments.filter(p =>
+      (selectedClient.clientId && p.clientId)
+        ? p.clientId === selectedClient.clientId
+        : p.clientName.toLowerCase() === selectedClient.name.toLowerCase()
+    ).sort((a, b) => b.date.localeCompare(a.date)) : [],
     [selectedClient, payments]
   );
 
-  const clientCalls = useMemo(
-    () => selectedClient ? callLogs.filter(cl => cl.clientName.toLowerCase().includes(selectedClient.name.toLowerCase())).sort((a, b) => b.date.localeCompare(a.date)) : [],
-    [selectedClient, callLogs]
-  );
+  // clientCalls now comes from useClientActivityHistory (client_id-first, full history) — no month cap.
 
   const assignedCollector = useMemo(
     () => selectedClient ? collectors.find(c => c.name === selectedClient.assignedCollector) : null,
@@ -117,6 +124,18 @@ const ClientLookup = () => {
       }
     : null;
 
+  // Off-queue interaction logging from the profile — writes back to collection_activities (+ optional
+  // commitment/escalation) stamped with the canonical client_id so the queue build and financials see it.
+  const callAccount = selectedClient
+    ? {
+        client_id: selectedClient.clientId ?? null,
+        contract_id: selectedClient.id, // Client.id === contract_id
+        client_name: selectedClient.name,
+        collector: selectedClient.assignedCollector || null,
+        assigned_collector: selectedClient.assignedCollector || null,
+      }
+    : null;
+
   return (
     <DashboardLayout>
       <div className="mb-6"><h1 className="text-2xl font-bold">Client Lookup</h1><p className="text-muted-foreground">Search by client name, case number, or email — your source of truth</p></div>
@@ -161,6 +180,9 @@ const ClientLookup = () => {
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining Balance</p>
                   <p className="text-lg font-bold text-destructive">${(selectedClient.totalOwed - selectedClient.totalPaid).toLocaleString()}</p>
                 </div>
+                <Button variant="outline" onClick={() => setCallOpen(true)} className="gap-2">
+                  <MessageSquare className="h-4 w-4" /> Log Interaction
+                </Button>
                 <Button onClick={() => setPayOpen(true)} className="gap-2">
                   <CreditCard className="h-4 w-4" /> Take Payment
                 </Button>
@@ -415,6 +437,7 @@ const ClientLookup = () => {
       )}
 
       <TakePaymentDialog open={payOpen} onOpenChange={setPayOpen} target={paymentTarget} />
+      <CallDocumentationDialog open={callOpen} onOpenChange={setCallOpen} account={callAccount} />
     </DashboardLayout>
   );
 };

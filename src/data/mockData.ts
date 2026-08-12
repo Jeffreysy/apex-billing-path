@@ -51,8 +51,9 @@ export interface Client {
   caseType: string;
   caseStage: CaseStage;
   daysAging: number;
-  tags: string[];
-  notes: ClientNote[];
+  clientId?: string; // canonical clients.id — the identity key MyCase/LawPay/AR-book join on (distinct from `id`, which is the contract_id)
+  tags?: string[];
+  notes?: ClientNote[];
   retainerDate: string;
   downPaymentPaid: boolean;
   filevineId?: string;
