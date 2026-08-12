@@ -2035,6 +2035,235 @@ export type Database = {
         }
         Relationships: []
       }
+      client_duplicate_identity_review: {
+        Row: {
+          classification: string
+          created_at: string
+          duplicate_client_id: string
+          evidence: Json
+          executed_at: string | null
+          execution_result: Json | null
+          hubspot_contact_id: string
+          id: string
+          live_hubspot_validated_at: string | null
+          recommended_survivor_id: string
+          resolved_hubspot_contact_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          score_gap: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          classification: string
+          created_at?: string
+          duplicate_client_id: string
+          evidence?: Json
+          executed_at?: string | null
+          execution_result?: Json | null
+          hubspot_contact_id: string
+          id?: string
+          live_hubspot_validated_at?: string | null
+          recommended_survivor_id: string
+          resolved_hubspot_contact_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score_gap: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          classification?: string
+          created_at?: string
+          duplicate_client_id?: string
+          evidence?: Json
+          executed_at?: string | null
+          execution_result?: Json | null
+          hubspot_contact_id?: string
+          id?: string
+          live_hubspot_validated_at?: string | null
+          recommended_survivor_id?: string
+          resolved_hubspot_contact_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          score_gap?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_client_detail"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_flagged_accounts"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "mycase_ar_validation"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_card_expiration_segment"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_financial_360"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_provisional_twin"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_controller_automation_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_firm_case_financials"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_hubspot_collections_segments"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_duplicate_client_id_fkey"
+            columns: ["duplicate_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_recommendations_preview"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "ar_client_detail"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "ar_flagged_accounts"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "mycase_ar_validation"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_card_expiration_segment"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_financial_360"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_provisional_twin"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_controller_automation_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_firm_case_financials"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_hubspot_collections_segments"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_duplicate_identity_review_recommended_survivor_id_fkey"
+            columns: ["recommended_survivor_id"]
+            isOneToOne: false
+            referencedRelation: "v_recommendations_preview"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
       client_duplicate_merge_audit: {
         Row: {
           case_number: string | null
@@ -14493,6 +14722,27 @@ export type Database = {
         }
         Relationships: []
       }
+      stg_txn_collections_recovery_xwalk: {
+        Row: {
+          collection_activity_id: string
+          match_basis: string | null
+          matched_at: string
+          txn_id: number
+        }
+        Insert: {
+          collection_activity_id: string
+          match_basis?: string | null
+          matched_at?: string
+          txn_id: number
+        }
+        Update: {
+          collection_activity_id?: string
+          match_basis?: string | null
+          matched_at?: string
+          txn_id?: number
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           collections_notice: string | null
@@ -15024,6 +15274,428 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      txn_typing_heartbeat: {
+        Row: {
+          anchor_snapshot_id: string | null
+          bank_max_mo: string | null
+          canonical_rows: number | null
+          canonical_sum: number | null
+          captured_at: string
+          collections_pending: boolean | null
+          collections_recovery_rows: number | null
+          deterministic_pct: number | null
+          deterministic_rows: number | null
+          id: number
+          ledger_max_date: string | null
+          mece_ok: boolean | null
+          notes: string | null
+          status: string | null
+          typed_rows: number | null
+          typed_sum: number | null
+          unattributed_pct: number | null
+          unattributed_rows: number | null
+        }
+        Insert: {
+          anchor_snapshot_id?: string | null
+          bank_max_mo?: string | null
+          canonical_rows?: number | null
+          canonical_sum?: number | null
+          captured_at?: string
+          collections_pending?: boolean | null
+          collections_recovery_rows?: number | null
+          deterministic_pct?: number | null
+          deterministic_rows?: number | null
+          id?: never
+          ledger_max_date?: string | null
+          mece_ok?: boolean | null
+          notes?: string | null
+          status?: string | null
+          typed_rows?: number | null
+          typed_sum?: number | null
+          unattributed_pct?: number | null
+          unattributed_rows?: number | null
+        }
+        Update: {
+          anchor_snapshot_id?: string | null
+          bank_max_mo?: string | null
+          canonical_rows?: number | null
+          canonical_sum?: number | null
+          captured_at?: string
+          collections_pending?: boolean | null
+          collections_recovery_rows?: number | null
+          deterministic_pct?: number | null
+          deterministic_rows?: number | null
+          id?: never
+          ledger_max_date?: string | null
+          mece_ok?: boolean | null
+          notes?: string | null
+          status?: string | null
+          typed_rows?: number | null
+          typed_sum?: number | null
+          unattributed_pct?: number | null
+          unattributed_rows?: number | null
+        }
+        Relationships: []
+      }
+      universal_transaction_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          evidence: Json
+          id: number
+          new_status: string | null
+          prior_status: string | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          evidence?: Json
+          id?: never
+          new_status?: string | null
+          prior_status?: string | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          evidence?: Json
+          id?: never
+          new_status?: string | null
+          prior_status?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "universal_transaction_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "universal_transaction_inbox"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      universal_transaction_inbox: {
+        Row: {
+          amount: number
+          card_fingerprint: string | null
+          card_last_four: string | null
+          confidence_score: number
+          currency: string
+          direction: string
+          evidence: Json
+          first_captured_at: string
+          id: string
+          last_captured_at: string
+          observed_client_id: string | null
+          observed_contract_id: string | null
+          observed_payment_id: string | null
+          occurred_on: string | null
+          payer_email: string | null
+          payer_name: string | null
+          payer_phone: string | null
+          payment_method: string | null
+          recognition_status: string
+          record_kind: string
+          reference_number: string | null
+          source_created_at: string | null
+          source_external_id: string | null
+          source_record_id: string
+          source_revision_hash: string
+          source_status: string | null
+          source_system: string
+          source_table: string
+          source_updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          card_fingerprint?: string | null
+          card_last_four?: string | null
+          confidence_score?: number
+          currency?: string
+          direction: string
+          evidence?: Json
+          first_captured_at?: string
+          id?: string
+          last_captured_at?: string
+          observed_client_id?: string | null
+          observed_contract_id?: string | null
+          observed_payment_id?: string | null
+          occurred_on?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_phone?: string | null
+          payment_method?: string | null
+          recognition_status: string
+          record_kind: string
+          reference_number?: string | null
+          source_created_at?: string | null
+          source_external_id?: string | null
+          source_record_id: string
+          source_revision_hash: string
+          source_status?: string | null
+          source_system: string
+          source_table: string
+          source_updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          card_fingerprint?: string | null
+          card_last_four?: string | null
+          confidence_score?: number
+          currency?: string
+          direction?: string
+          evidence?: Json
+          first_captured_at?: string
+          id?: string
+          last_captured_at?: string
+          observed_client_id?: string | null
+          observed_contract_id?: string | null
+          observed_payment_id?: string | null
+          occurred_on?: string | null
+          payer_email?: string | null
+          payer_name?: string | null
+          payer_phone?: string | null
+          payment_method?: string | null
+          recognition_status?: string
+          record_kind?: string
+          reference_number?: string | null
+          source_created_at?: string | null
+          source_external_id?: string | null
+          source_record_id?: string
+          source_revision_hash?: string
+          source_status?: string | null
+          source_system?: string
+          source_table?: string
+          source_updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_client_detail"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "ar_flagged_accounts"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "mycase_ar_validation"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_card_expiration_segment"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_financial_360"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_client_provisional_twin"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_controller_automation_clients"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_firm_case_financials"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_hubspot_collections_segments"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_client_id_fkey"
+            columns: ["observed_client_id"]
+            isOneToOne: false
+            referencedRelation: "v_recommendations_preview"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_active_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_closed_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "ar_migration_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "collections_dashboard"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_ar_gap_contracts"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_ar_payment_staleness"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_ar_preview"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_collector_contact_card"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_contract_collected_authoritative"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_contract_collected_fanout_safe"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_contract_installment_resolved"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_controller_automation_clients"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_hubspot_collections_segments"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_contract_id_fkey"
+            columns: ["observed_contract_id"]
+            isOneToOne: false
+            referencedRelation: "v_lawpay_new_activity"
+            referencedColumns: ["contract_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_payment_id_fkey"
+            columns: ["observed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_payment_id_fkey"
+            columns: ["observed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments_clean"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_payment_id_fkey"
+            columns: ["observed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments_clean_mv"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_payment_id_fkey"
+            columns: ["observed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "v_eq_multi_contract_attribution"
+            referencedColumns: ["payment_id"]
+          },
+          {
+            foreignKeyName: "universal_transaction_inbox_observed_payment_id_fkey"
+            columns: ["observed_payment_id"]
+            isOneToOne: false
+            referencedRelation: "v_eq_refund_reversal"
+            referencedColumns: ["payment_id"]
+          },
+        ]
       }
       unmatched_payments: {
         Row: {
@@ -17182,6 +17854,23 @@ export type Database = {
           payment_count: number | null
           total_collected: number | null
           unique_clients: number | null
+        }
+        Relationships: []
+      }
+      universal_transaction_coverage: {
+        Row: {
+          earliest_date: string | null
+          held_rows: number | null
+          last_capture_at: string | null
+          latest_date: string | null
+          probable_rows: number | null
+          recognized_pct: number | null
+          record_kind: string | null
+          source_system: string | null
+          source_table: string | null
+          transaction_rows: number | null
+          unmatched_rows: number | null
+          verified_rows: number | null
         }
         Relationships: []
       }
@@ -21974,6 +22663,27 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ledger_txn_typed: {
+        Row: {
+          amount: number | null
+          anchor_snapshot_id: string | null
+          client_attributed: boolean | null
+          client_id: string | null
+          collection_activity_id: string | null
+          invoice_number: string | null
+          is_collections_recovery: boolean | null
+          method: string | null
+          payment_date: string | null
+          resolved_contract_id: string | null
+          source: string | null
+          txn_id: number | null
+          txn_type: string | null
+          typing_basis: string | null
+          typing_confidence: number | null
+          underlying_purpose: string | null
+        }
+        Relationships: []
+      }
       v_live_ar_by_client: {
         Row: {
           aging_bucket: string | null
@@ -23270,6 +23980,23 @@ export type Database = {
         }
         Relationships: []
       }
+      v_tag_harvest_health: {
+        Row: {
+          age: string | null
+          alert: boolean | null
+          check_status: string | null
+          days_since_check: number | null
+          detail: string | null
+          exclusion_marks_captured: number | null
+          exclusion_marks_total: number | null
+          exclusion_marks_uncaptured: number | null
+          health: string | null
+          last_check: string | null
+          off_cycle_gap: number | null
+          team_files: number | null
+        }
+        Relationships: []
+      }
       v_true_ar_kpi: {
         Row: {
           confirmed_true_ar: number | null
@@ -23358,6 +24085,57 @@ export type Database = {
             referencedColumns: ["snapshot_id"]
           },
         ]
+      }
+      v_txn_collections_recovery_xwalk: {
+        Row: {
+          collection_activity_id: string | null
+          match_basis: string | null
+          n_activities: number | null
+          txn_id: number | null
+        }
+        Relationships: []
+      }
+      v_txn_type_monthly: {
+        Row: {
+          anchor_snapshot_id: string | null
+          bank_affinipay: number | null
+          bank_all_deposits: number | null
+          is_partial: boolean | null
+          lawpay_all_methods: number | null
+          lawpay_card_settled: number | null
+          mo: string | null
+          month_label: string | null
+          month_typed_revenue: number | null
+          month_typed_total: number | null
+          n: number | null
+          non_revenue_deposits: number | null
+          qbo_sales: number | null
+          rev_vs_bank_affinipay_pct: number | null
+          rev_vs_qbo_sales_pct: number | null
+          txn_type: string | null
+          typed_amount: number | null
+        }
+        Relationships: []
+      }
+      v_txn_typing_health: {
+        Row: {
+          anchor_snapshot_id: string | null
+          bank_max_mo: string | null
+          canonical_rows: number | null
+          canonical_sum: number | null
+          captured_at: string | null
+          collections_pending: boolean | null
+          deterministic_pct: number | null
+          health_status: string | null
+          ledger_age_days: number | null
+          ledger_max_date: string | null
+          mece_ok: boolean | null
+          notes: string | null
+          typed_rows: number | null
+          typed_sum: number | null
+          unattributed_pct: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
