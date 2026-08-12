@@ -8,7 +8,9 @@ import TransactionsTab from "@/components/finance/TransactionsTab";
 import ForecastingTab from "@/components/finance/ForecastingTab";
 import ReportBuilderTab from "@/components/finance/ReportBuilderTab";
 import CollectionsKPITab from "@/components/finance/CollectionsKPITab";
+import CollectionFlowTab from "@/components/finance/CollectionFlowTab";
 import AROversightTab from "@/components/finance/AROversightTab";
+import CardRecoveryTab from "@/components/finance/CardRecoveryTab";
 import TaskPanel from "@/components/TaskPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,13 +67,15 @@ const FinancialOversightDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="weekly">Weekly Revenue</TabsTrigger>
           <TabsTrigger value="portfolio">AR Portfolio</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="forecasting">Forecasting</TabsTrigger>
+          <TabsTrigger value="collection-flow">Collection Flow</TabsTrigger>
           <TabsTrigger value="collections-kpi">Collections KPI</TabsTrigger>
+          <TabsTrigger value="card-recovery">Card Recovery</TabsTrigger>
           <TabsTrigger value="ar-oversight">AR Oversight</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
@@ -91,8 +95,14 @@ const FinancialOversightDashboard = () => {
         <TabsContent value="forecasting">
           <ForecastingTab />
         </TabsContent>
+        <TabsContent value="collection-flow">
+          <CollectionFlowTab />
+        </TabsContent>
         <TabsContent value="collections-kpi">
           <CollectionsKPITab />
+        </TabsContent>
+        <TabsContent value="card-recovery">
+          <CardRecoveryTab />
         </TabsContent>
         <TabsContent value="ar-oversight">
           <AROversightTab />
