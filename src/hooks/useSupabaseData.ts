@@ -321,8 +321,9 @@ export function useMergedClients() {
           caseType: row.practice_area || "",
           caseStage: mapCaseStage(row.case_stage),
           daysAging,
-          tags: [],
-          notes: [],
+          // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
+          // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
+          clientId: row.client_id || undefined,
           retainerDate: row.start_date || "",
           downPaymentPaid: row.down_payment_paid || false,
           filevineId: undefined,
@@ -412,14 +413,68 @@ export function useCollectionActivities(monthStart?: string) {
 
 export function useCollectionActivityRows() {
   return useQuery({
-    queryKey: ["collection-activity-rows"],
+    queryKey: ["collection-activity-rows", "current-month"],
     queryFn: async () => {
-      return fetchAllRows<any>("collection_activities", {
-        orderBy: "activity_date",
-        ascending: false,
-      });
+      // Finance Overview only calculates current-week/current-month collector totals.
+      // Loading the full activity history (tens of thousands of rows) blocked the
+      // entire tab even though older rows were immediately discarded in the UI.
+      const monthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("collection_activities")
+        .select("id, activity_date, collected_amount")
+        .gte("activity_date", monthStart)
+        .order("activity_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** FULL per-client interaction history from collection_activities for the client profile.
+ *  Keys on the canonical client_id first, then unions exact-name matches (dedup by id) so activities
+ *  logged with only a name still surface. Deliberately NOT month-capped (the firm-wide
+ *  useCollectionActivities is capped to the latest month for dashboards; a client profile must show the
+ *  whole relationship). Refetched when CallDocumentationDialog invalidates ["client-activity-history"]. */
+export function useClientActivityHistory(clientId: string | null, clientName?: string | null) {
+  return useQuery({
+    queryKey: ["client-activity-history", clientId, clientName],
+    enabled: !!clientId || !!clientName,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const byId = new Map<string, any>();
+      if (clientId) {
+        const { data, error } = await supabase
+          .from("collection_activities").select("*")
+          .eq("client_id", clientId)
+          .order("activity_date", { ascending: false })
+          .limit(2000);
+        if (error) throw error;
+        (data ?? []).forEach((r: any) => byId.set(r.id, r));
+      }
+      if (clientName && clientName.trim()) {
+        const { data, error } = await supabase
+          .from("collection_activities").select("*")
+          .ilike("client_name", clientName.trim())
+          .order("activity_date", { ascending: false })
+          .limit(2000);
+        if (error) throw error;
+        (data ?? []).forEach((r: any) => byId.set(r.id, r));
+      }
+      return Array.from(byId.values())
+        .sort((a, b) => String(b.activity_date).localeCompare(String(a.activity_date)))
+        .map((a): CallLog => ({
+          id: a.id,
+          clientId: a.client_id || "",
+          clientName: a.client_name,
+          collectorId: "",
+          collectorName: a.collector,
+          date: a.activity_date,
+          duration: (Number(a.duration_minutes) || 0) * 60,
+          outcome: mapOutcome(a.outcome),
+          notes: a.notes || "",
+        }));
+    },
   });
 }
 

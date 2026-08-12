@@ -142,6 +142,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
       // Invalidate activities so workspace refreshes
       qc.invalidateQueries({ queryKey: ["collection-activities"] });
       qc.invalidateQueries({ queryKey: ["collection-activity-rows"] });
+      qc.invalidateQueries({ queryKey: ["client-activity-history"] });
       qc.invalidateQueries({ queryKey: ["collector-all-activities"] });
       qc.invalidateQueries({ queryKey: ["collector-activity-log"] });
       qc.invalidateQueries({ queryKey: ["collections-dashboard"] });

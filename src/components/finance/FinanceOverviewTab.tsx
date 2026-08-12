@@ -6,7 +6,7 @@ import FilevineValidationPanel from "./FilevineValidationPanel";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useAdminKPI, useFirmFinancialSummary, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
+  useAdminKPI, useFirmFinancialSummary, useMergedClients, usePaymentsClean, useCollectionActivityRows,
   useControllerARCashflow, useARLiveMovement, useARLiveTrend,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
@@ -45,15 +45,31 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: kpi } = useAdminKPI();
   const { data: firmSummary } = useFirmFinancialSummary();
   const { data: clients = [], isLoading: cl } = useMergedClients();
-  const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
   const { data: activityRows = [], isLoading: al } = useCollectionActivityRows();
   const { data: cashflowData = [] } = useControllerARCashflow();
   const { data: liveMovementRows = [] } = useARLiveMovement();
   const { data: liveTrendRows = [] } = useARLiveTrend();
 
-  const isLoading = cl || pl || prl || al;
+  const isLoading = cl || prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
+
+  // Reuse the already-loaded canonical payment rows for chart helpers. Previously
+  // usePaymentsData fetched the entire payments_clean view a second time.
+  const payments = paymentRows.map((p: any) => ({
+    id: p.id,
+    clientId: p.client_id || "",
+    clientName: p.client_name || "Unknown",
+    amount: Number(p.amount) || 0,
+    date: p.payment_date,
+    method: p.payment_method === "ach" || p.payment_method === "wire" ? "ach"
+      : p.payment_method === "check" ? "check"
+      : p.payment_method === "cash" ? "cash"
+      : "card",
+    collectorId: "",
+    collectorName: p.collector_name || "CRM",
+    status: "completed" as const,
+  }));
 
   // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified anchor via useFirmFinancialSummary),
   // so this tile ties to AdminDashboard / ControllerAR to the penny. Falls back to admin_kpi.total_remaining
