@@ -17,9 +17,12 @@ import {
   canAccessSettings,
 } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useCollectorRoster } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
 
-const sections = [
+// Static nav. The Collectors section is built at render time from the live roster
+// (`useCollectorRoster()`), so newly-added collectors appear automatically and none 404.
+const STATIC_SECTIONS = [
   {
     label: "Admin",
     items: [
@@ -41,22 +44,27 @@ const sections = [
       { path: "/settings", label: "Settings", icon: Settings },
     ],
   },
-  {
-    label: "Collectors",
-    items: [
-      { path: "/collector/Alejandro A", label: "Alejandro A", icon: Users },
-      { path: "/collector/Patricio D", label: "Patricio D", icon: Phone },
-      { path: "/collector/Maritza V", label: "Maritza V", icon: Phone },
-    ],
-  },
 ];
 
 const AppSidebar = () => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { profile, role } = useAuth();
+  const { collectors, lead } = useCollectorRoster();
 
   const toggle = (label: string) => setCollapsed((previous) => ({ ...previous, [label]: !previous[label] }));
+
+  const sections = [
+    ...STATIC_SECTIONS,
+    {
+      label: "Collectors",
+      items: collectors.map((name) => ({
+        path: `/collector/${name}`,
+        label: name,
+        icon: name === lead ? Users : Phone,
+      })),
+    },
+  ];
 
   const filteredSections = sections
     .map((section) => ({

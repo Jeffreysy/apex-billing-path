@@ -6,7 +6,7 @@ import FilevineValidationPanel from "./FilevineValidationPanel";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  useAdminKPI, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
+  useAdminKPI, useFirmFinancialSummary, useMergedClients, usePaymentsData, usePaymentsClean, useCollectionActivityRows,
   useControllerARCashflow, useARLiveMovement, useARLiveTrend,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
   computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
@@ -43,6 +43,7 @@ const isExplicitFilevinePayment = (payment: {
 
 const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: kpi } = useAdminKPI();
+  const { data: firmSummary } = useFirmFinancialSummary();
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
@@ -54,7 +55,11 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const isLoading = cl || pl || prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
-  const totalAR = Number(kpi?.total_remaining) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
+  // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified anchor via useFirmFinancialSummary),
+  // so this tile ties to AdminDashboard / ControllerAR to the penny. Falls back to admin_kpi.total_remaining
+  // (live-AR, nets post-snapshot collections) then a client-side sum only if the certified row is unavailable.
+  // The live figure is surfaced separately in the "Live AR Now" panel above — never as a second "Total AR".
+  const totalAR = Number(firmSummary?.ar_total) || Number(kpi?.total_remaining) || clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const overdueAR = Number((kpi as any)?.overdue_ar) || clients.filter(c => c.daysAging > 0).reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const arOnPlan = Number(kpi?.ar_on_plan) || 0;
   const arLate = Number(kpi?.ar_late) || 0;

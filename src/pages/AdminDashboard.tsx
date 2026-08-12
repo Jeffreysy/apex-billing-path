@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import ExecutiveInsights from "@/components/admin/ExecutiveInsights";
-import { useAdminKPI, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, useClassifiedMonthlyCollections, computeWeeklyCollections } from "@/hooks/useSupabaseData";
+import { useAdminKPI, useFirmFinancialSummary, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, useClassifiedMonthlyCollections, computeWeeklyCollections } from "@/hooks/useSupabaseData";
 import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -13,15 +13,20 @@ const COLORS = ["hsl(152 60% 40%)", "hsl(38 92% 50%)", "hsl(0 72% 51%)", "hsl(22
 
 const AdminDashboard = () => {
   const { data: kpi, isLoading: kpiLoading } = useAdminKPI();
+  const { data: firmSummary, isLoading: fsLoading } = useFirmFinancialSummary();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
   const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
   const { data: classifiedCollections = [], isLoading: mcl } = useClassifiedMonthlyCollections(4);
 
-  if (kpiLoading || pl || cal || col || escalationsLoading || mcl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
+  if (kpiLoading || fsLoading || pl || cal || col || escalationsLoading || mcl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
 
-  const totalAR = Number(kpi?.total_remaining) || 0;
+  // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
+  // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor). Falls back to admin_kpi.total_remaining only if the certified row is
+  // unavailable, so the tile never renders empty. Drives both the Total AR and Financial
+  // Oversight tiles. Do NOT exclude "Paid" rows — those 31 rows are real AR (LOCKED).
+  const totalAR = Number(firmSummary?.ar_total) || Number(kpi?.total_remaining) || 0;
   const totalCollected = Number(kpi?.total_collected) || 0;
   const arOnPlan = Number(kpi?.ar_on_plan) || 0;
   const arLate = Number(kpi?.ar_late) || 0;
@@ -69,7 +74,7 @@ const AdminDashboard = () => {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <StatCard label="Total Collected" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Collected (Active Book)" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} caption="Collected-to-date on active AR — not firm all-time" />
         <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
         <StatCard label="Active Imm. Cases" value={String(activeCases)} icon={<Briefcase className="h-5 w-5" />} />
         <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />

@@ -982,7 +982,7 @@ const ControllerAROversightDashboard = () => {
           </div>
 
           {/* Summary cards per trigger */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
             {(autoSummary as any[]).map((s: any, i: number) => {
               const labels: Record<string, string> = {
                 'NEVER_PAID': 'Never Paid',
@@ -990,6 +990,7 @@ const ControllerAROversightDashboard = () => {
                 'NO_PAYMENT_60_PLUS': 'No Payment 60+d',
                 'MISSED_INSTALLMENT': 'Missed Installment',
                 'PLAN_COMPLETE_BALANCE_DUE': 'Plan Complete, Owes',
+                'PAYMENT_HISTORY_MISSING': 'History Missing',
               };
               const colors: Record<string, string> = {
                 'NEVER_PAID': 'text-destructive',
@@ -997,6 +998,7 @@ const ControllerAROversightDashboard = () => {
                 'NO_PAYMENT_60_PLUS': 'text-orange-600',
                 'MISSED_INSTALLMENT': 'text-orange-500',
                 'PLAN_COMPLETE_BALANCE_DUE': 'text-blue-600',
+                'PAYMENT_HISTORY_MISSING': 'text-muted-foreground',
               };
               return (
                 <div key={i} className="rounded-lg border bg-card p-3 cursor-pointer hover:bg-accent/50 transition-colors"
@@ -1031,6 +1033,7 @@ const ControllerAROversightDashboard = () => {
                 <SelectItem value="NO_PAYMENT_60_PLUS">No Payment 60+d</SelectItem>
                 <SelectItem value="MISSED_INSTALLMENT">Missed Installment</SelectItem>
                 <SelectItem value="PLAN_COMPLETE_BALANCE_DUE">Plan Complete, Owes</SelectItem>
+                <SelectItem value="PAYMENT_HISTORY_MISSING">History Missing</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1077,6 +1080,7 @@ const ControllerAROversightDashboard = () => {
                         'NO_PAYMENT_60_PLUS': '60+d No Pay',
                         'MISSED_INSTALLMENT': 'Missed Install.',
                         'PLAN_COMPLETE_BALANCE_DUE': 'Plan Done, Owes',
+                        'PAYMENT_HISTORY_MISSING': 'History Missing',
                       };
                       const triggerVariants: Record<string, "destructive" | "secondary" | "outline" | "default"> = {
                         'NEVER_PAID': 'destructive',
@@ -1084,6 +1088,7 @@ const ControllerAROversightDashboard = () => {
                         'NO_PAYMENT_60_PLUS': 'secondary',
                         'MISSED_INSTALLMENT': 'secondary',
                         'PLAN_COMPLETE_BALANCE_DUE': 'outline',
+                        'PAYMENT_HISTORY_MISSING': 'outline',
                       };
                       return (
                         <TableRow key={i}>

@@ -1,10 +1,10 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
-import { useArWaterfall, useArForwardProjection, useArClientMovement, useArPlanFreshness } from "@/hooks/useSupabaseData";
+import { useArWaterfall, useArForwardProjection, useArClientMovement, useArPlanFreshness, useArLandscapeTrend } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, CalendarClock, TrendingDown, Layers, AlertTriangle, CheckCircle } from "lucide-react";
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, BarChart, Bar, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(2)}M`;
@@ -16,6 +16,7 @@ const ArMovementDashboard = () => {
   const { data: proj = [], isLoading: l2 } = useArForwardProjection();
   const { data: movers = [] } = useArClientMovement();
   const { data: fresh } = useArPlanFreshness();
+  const { data: trend = [] } = useArLandscapeTrend();
 
   if (l1 || l2) {
     return <DashboardLayout title="AR Movement"><div className="p-8 text-center text-muted-foreground">Loading AR movement...</div></DashboardLayout>;
@@ -31,6 +32,13 @@ const ArMovementDashboard = () => {
   const projData = proj.map((p: any) => ({ month: String(p.proj_month).slice(0, 7), collections: Number(p.scheduled_collections) / 1e6 }));
   const schedThis = proj.length ? Number((proj[0] as any).scheduled_collections) : 0;
   const totalExpected = proj.length ? Number((proj[proj.length - 1] as any).cumulative_collections) : 0;
+  const trendSeries = trend.map((t: any) => ({
+    month: String(t.month).slice(0, 7),
+    ar: Number(t.total_receivable) / 1e6,
+    aged180: Number(t.aged_180_pct),
+  }));
+  const trendFirst: any = trend[0];
+  const trendLast: any = trend[trend.length - 1];
 
   return (
     <DashboardLayout title="AR Movement & Projection">
@@ -52,6 +60,27 @@ const ArMovementDashboard = () => {
         <StatCard label="Last-period change" value={fmtK(lastDelta)} icon={<TrendingDown className="h-5 w-5" />} />
         <StatCard label="Plan-book runoff" value={fmtM(totalExpected)} icon={<Layers className="h-5 w-5" />} />
       </div>
+
+      {trendSeries.length > 0 && (
+        <div className="dashboard-section mb-6">
+          <h2 className="mb-1 text-lg font-semibold">AR Landscape — 12-Month Trend</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Total AR fell {fmtM(Number(trendFirst?.total_receivable))} → {fmtM(Number(trendLast?.total_receivable))}, but the share aged 180+ days rose {trendFirst?.aged_180_pct}% → {trendLast?.aged_180_pct}% — the book is shrinking and hardening. (Jan &amp; Sep snapshots are key-unreliable for invoice-level movement; totals are accurate.)
+          </p>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={trendSeries}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={50} stroke="hsl(var(--muted-foreground))" />
+              <YAxis yAxisId="left" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v: number) => `$${v}M`} />
+              <YAxis yAxisId="right" orientation="right" domain={[0, 40]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: number, n: string) => n === "ar" ? `$${Number(v).toFixed(2)}M` : `${Number(v).toFixed(1)}%`} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="ar" fill="hsl(220 70% 45%)" radius={[3, 3, 0, 0]} name="Total AR ($M)" />
+              <Line yAxisId="right" type="monotone" dataKey="aged180" stroke="hsl(16 75% 45%)" strokeWidth={2} dot={{ r: 2 }} name="180+ share (%)" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="dashboard-section">
