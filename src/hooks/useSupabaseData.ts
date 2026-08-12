@@ -413,12 +413,19 @@ export function useCollectionActivities(monthStart?: string) {
 
 export function useCollectionActivityRows() {
   return useQuery({
-    queryKey: ["collection-activity-rows"],
+    queryKey: ["collection-activity-rows", "current-month"],
     queryFn: async () => {
-      return fetchAllRows<any>("collection_activities", {
-        orderBy: "activity_date",
-        ascending: false,
-      });
+      // Finance Overview only calculates current-week/current-month collector totals.
+      // Loading the full activity history (tens of thousands of rows) blocked the
+      // entire tab even though older rows were immediately discarded in the UI.
+      const monthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("collection_activities")
+        .select("id, activity_date, collected_amount")
+        .gte("activity_date", monthStart)
+        .order("activity_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     staleTime: 5 * 60 * 1000,
   });
