@@ -44,14 +44,16 @@ const isExplicitFilevinePayment = (payment: {
 const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: kpi } = useAdminKPI();
   const { data: firmSummary } = useFirmFinancialSummary();
-  const { data: clients = [], isLoading: cl } = useMergedClients();
+  const { data: clients = [] } = useMergedClients();
   const { data: paymentRows = [], isLoading: prl } = usePaymentsClean();
   const { data: activityRows = [], isLoading: al } = useCollectionActivityRows();
   const { data: cashflowData = [] } = useControllerARCashflow();
   const { data: liveMovementRows = [] } = useARLiveMovement();
   const { data: liveTrendRows = [] } = useARLiveTrend();
 
-  const isLoading = cl || prl || al;
+  // ar_dashboard can exceed the REST statement timeout on later pages. Do not
+  // hold the certified summary cards hostage to that optional detail dataset.
+  const isLoading = prl || al;
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading financial overview...</div>;
 
   // Reuse the already-loaded canonical payment rows for chart helpers. Previously
@@ -152,7 +154,9 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     ? Math.round(delinquentClients.reduce((s, c) => s + c.daysAging, 0) / delinquentClients.length) : 0;
 
   const completedContracts = clients.filter(c => c.status === "completed").length;
-  const activeContracts = Number((kpi as any)?.active_contracts) || clients.filter(c => c.status === "active" || c.status === "delinquent").length;
+  const activeContracts = Number((kpi as any)?.total_contracts)
+    || Number((kpi as any)?.active_contracts)
+    || clients.filter(c => c.status === "active" || c.status === "delinquent").length;
   const completionRate = activeContracts + completedContracts > 0
     ? Math.round((completedContracts / (activeContracts + completedContracts)) * 100) : 0;
   const totalOwedAll = clients.reduce((s, c) => s + c.totalOwed, 0);
@@ -307,11 +311,11 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       {/* ── Operational KPIs ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
         <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <StatCard label="Avg DSO" value={`${avgDSO} days`} icon={<Clock className="h-5 w-5" />} />
+        <StatCard label="Avg DSO" value={clients.length > 0 ? `${avgDSO} days` : "—"} icon={<Clock className="h-5 w-5" />} />
         <StatCard label="Collection Rate" value={`${collectionEffectiveness}%`} icon={<Gauge className="h-5 w-5" />} />
         <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
-        <StatCard label="Fully Paid" value={String(completedContracts)} icon={<CheckCircle className="h-5 w-5" />} />
-        <StatCard label="Plan Completion" value={`${completionRate}%`} icon={<Percent className="h-5 w-5" />} />
+        <StatCard label="Fully Paid" value={clients.length > 0 ? String(completedContracts) : "—"} icon={<CheckCircle className="h-5 w-5" />} />
+        <StatCard label="Plan Completion" value={clients.length > 0 ? `${completionRate}%` : "—"} icon={<Percent className="h-5 w-5" />} />
       </div>
 
       <div className="dashboard-section space-y-4">
