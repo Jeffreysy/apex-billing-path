@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, supabase } from "@/integrations/supabase/client";
 import {
   Card,
   CardContent,
@@ -150,7 +150,7 @@ const DataImportPage = () => {
       } = await supabase.auth.getSession();
 
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL || "https://qbrufeewsisljtoegops.supabase.co"}/functions/v1/mycase-import`,
+        `${SUPABASE_URL}/functions/v1/mycase-import`,
         {
           method: "POST",
           headers: {
