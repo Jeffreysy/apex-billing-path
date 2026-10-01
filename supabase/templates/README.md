@@ -34,7 +34,9 @@ Do these in order. The app has to be live with the `/auth/confirm` route before 
    | Magic link | `Your LexCollect sign-in link` | `magic_link.html` | "Email Me a Magic Link" on the sign-in page |
 
 4. Deploy the `admin-user-management` edge function so new invitees are flagged to set a password:
-   `npx supabase functions deploy admin-user-management`
+   `npx supabase functions deploy admin-user-management --no-verify-jwt`
+   (The function checks the caller's login itself and is deployed with JWT verification off; a
+   deploy without the flag would turn it on.)
 
 ## Testing
 
