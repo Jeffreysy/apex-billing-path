@@ -3,17 +3,29 @@
   var header = document.querySelector('.site-header');
   var toggle = document.querySelector('.nav-toggle');
   if (header && toggle) {
+    var closeMenu = function () {
+      header.classList.remove('nav-open');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
     toggle.addEventListener('click', function () {
       var open = header.classList.toggle('nav-open');
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && header.classList.contains('nav-open')) {
-        header.classList.remove('nav-open');
-        toggle.setAttribute('aria-expanded', 'false');
+        closeMenu();
         toggle.focus();
       }
     });
+    // In-page links (#contact etc.) don't navigate away, so close the menu ourselves.
+    header.querySelectorAll('.nav a').forEach(function (link) {
+      link.addEventListener('click', closeMenu);
+    });
+    // Don't leave the menu open behind the desktop nav (matches the 860px breakpoint in styles.css).
+    var desktop = window.matchMedia('(min-width: 861px)');
+    var onChange = function (mq) { if (mq.matches) closeMenu(); };
+    if (desktop.addEventListener) desktop.addEventListener('change', onChange);
+    else if (desktop.addListener) desktop.addListener(onChange);
   }
 
   // Blog category chips
@@ -36,6 +48,8 @@
       var status = form.querySelector('.form-status');
       if (status) {
         status.classList.add('is-visible');
+        // A plain div can't take focus without tabindex, so the confirmation was never announced.
+        if (!status.hasAttribute('tabindex')) status.setAttribute('tabindex', '-1');
         status.focus();
       }
     });
