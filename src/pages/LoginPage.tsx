@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { DollarSign } from "lucide-react";
+import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -69,66 +69,69 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.18),transparent_38%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)/0.4))]">
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="select-none text-[clamp(4rem,15vw,12rem)] font-black uppercase tracking-[0.32em] text-primary/8">
-          LexCollect
-        </div>
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-sidebar">
+      <div className="ledger-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-6 py-10">
-        <Card className="w-full max-w-md border-white/50 bg-card/95 shadow-2xl backdrop-blur">
-          <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-              <DollarSign className="h-6 w-6" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl">LexCollect</CardTitle>
-              <CardDescription className="mt-1">
-                Secure sign in
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="name@company.com"
-                  autoComplete="email"
-                  required
-                />
+        <div className="relative w-full max-w-md pb-5 pl-5">
+          {/* The L from the mark, cradling the sign-in card */}
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 right-0 top-[14%] border-b-[14px] border-l-[14px] border-sidebar-accent"
+            aria-hidden="true"
+          />
+          <Card className="relative border-0 shadow-2xl">
+            <CardHeader className="space-y-4 text-center">
+              <BrandMark className="mx-auto h-12 w-auto" />
+              <div>
+                <CardTitle className="text-3xl">
+                  <BrandWordmark />
+                </CardTitle>
+                <CardDescription className="mt-3 font-mono text-xs uppercase tracking-[0.14em]">
+                  Secure sign in
+                </CardDescription>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "Signing in..." : "Sign In"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={sendingMagicLink}
-                onClick={handleMagicLink}
-              >
-                {sendingMagicLink ? "Sending..." : "Email Me a Magic Link"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handlePasswordSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="name@company.com"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? "Signing in..." : "Sign In"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={sendingMagicLink}
+                  onClick={handleMagicLink}
+                >
+                  {sendingMagicLink ? "Sending..." : "Email Me a Magic Link"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

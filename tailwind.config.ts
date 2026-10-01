@@ -13,6 +13,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"IBM Plex Sans"', "-apple-system", '"Segoe UI"', "Roboto", "Arial", "sans-serif"],
+        serif: ['"IBM Plex Serif"', "Georgia", '"Times New Roman"', "serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", '"SFMono-Regular"', "Consolas", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

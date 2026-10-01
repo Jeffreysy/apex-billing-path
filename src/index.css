@@ -3,27 +3,30 @@
 @tailwind utilities;
 
 @layer base {
+  /* LexCollect brand palette (see marketing-site/assets/css/styles.css):
+     Ink #0B2540, Navy #123A63, Teal #12A594, Teal deep #0E7C6F,
+     Mist #F1F4F7, Slate #5A6B7D, Teal bright #3DD9C7, Slate 300 #9FB1C4 */
   :root {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    --background: 210 27% 96%;
+    --foreground: 211 71% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 211 71% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 211 71% 15%;
 
-    --primary: 220 70% 22%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 69% 23%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 174 60% 40%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 173 80% 36%;
+    --secondary-foreground: 211 71% 15%;
 
-    --muted: 220 14% 92%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 210 25% 92%;
+    --muted-foreground: 211 16% 42%;
 
-    --accent: 174 50% 94%;
-    --accent-foreground: 174 60% 25%;
+    --accent: 170 46% 95%;
+    --accent-foreground: 173 80% 27%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -34,23 +37,23 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
-    --ring: 220 70% 22%;
+    --border: 210 24% 87%;
+    --input: 210 24% 87%;
+    --ring: 173 80% 27%;
 
-    --radius: 0.625rem;
+    --radius: 0.25rem;
 
-    --sidebar-background: 220 70% 14%;
-    --sidebar-foreground: 220 15% 85%;
-    --sidebar-primary: 174 60% 50%;
+    --sidebar-background: 211 71% 15%;
+    --sidebar-foreground: 211 24% 70%;
+    --sidebar-primary: 173 67% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 60% 20%;
-    --sidebar-accent-foreground: 220 15% 90%;
-    --sidebar-border: 220 50% 20%;
-    --sidebar-ring: 174 60% 50%;
+    --sidebar-accent: 210 69% 23%;
+    --sidebar-accent-foreground: 210 27% 96%;
+    --sidebar-border: 211 38% 25%;
+    --sidebar-ring: 173 67% 55%;
 
-    --chart-1: 220 70% 22%;
-    --chart-2: 174 60% 40%;
+    --chart-1: 210 69% 23%;
+    --chart-2: 173 80% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 152 60% 40%;
     --chart-5: 0 72% 51%;
@@ -63,17 +66,32 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-weight: 700;
+  h1, h2, h3 {
+    @apply font-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  h4, h5, h6 {
+    @apply font-sans;
+    font-weight: 600;
   }
 }
 
 @layer components {
+  /* Ledger grid from the website hero, fading out toward the edges */
+  .ledger-grid {
+    background-image:
+      linear-gradient(hsl(var(--sidebar-border)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--sidebar-border)) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 20%, transparent 75%);
+  }
+
   .stat-card {
     @apply bg-card rounded-lg border p-5 shadow-sm transition-shadow hover:shadow-md;
   }
@@ -99,7 +117,7 @@
   }
 
   .metric-value {
-    @apply text-2xl font-bold tracking-tight;
+    @apply text-2xl font-bold tracking-tight tabular-nums;
   }
 
   .metric-label {

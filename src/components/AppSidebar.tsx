@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
+  Phone, TrendingUp, LayoutDashboard, FileText, Search,
   Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
 import { useAuth } from "@/components/AuthProvider";
 import {
   canAccessAdmin,
@@ -98,12 +99,14 @@ const AppSidebar = () => {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-          <DollarSign className="h-4 w-4 text-sidebar-primary-foreground" />
-        </div>
+        <BrandMark variant="reversed" className="h-7 w-auto shrink-0" />
         <div>
-          <h1 className="text-sm font-bold text-sidebar-primary-foreground">LexCollect</h1>
-          <p className="text-[10px] text-sidebar-foreground/60">Billing &amp; Collections</p>
+          <h1 className="text-[15px] text-sidebar-primary-foreground">
+            <BrandWordmark />
+          </h1>
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-sidebar-foreground">
+            Billing &amp; Collections
+          </p>
         </div>
       </div>
 
@@ -147,7 +150,12 @@ const AppSidebar = () => {
             {role ? role.replace("_", " ") : "No role assigned"}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="mb-3 w-full justify-start text-xs" onClick={handleSignOut}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mb-3 w-full justify-start border-sidebar-border bg-transparent text-xs text-sidebar-accent-foreground hover:border-sidebar-primary hover:bg-transparent hover:text-sidebar-primary"
+          onClick={handleSignOut}
+        >
           Sign Out
         </Button>
         <p className="text-[10px] text-sidebar-foreground/50">v2.0 - Role-Based Platform</p>
