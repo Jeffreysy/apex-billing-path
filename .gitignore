@@ -25,3 +25,18 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+# Environment and local tool config (each deployment supplies its own; see .env.example)
+.env
+.env.*
+!.env.example
+.mcp.json
+
+# Client data exports and script output: never commit client data
+*.csv
+*.xls
+*.xlsx
+scripts/**/*.json
+scripts/**/*.log
+__pycache__/
+*.pyc

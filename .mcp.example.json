@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=<project-ref>&read_only=true"
+    },
+    "hubspot": {
+      "type": "http",
+      "url": "https://mcp-na2.hubspot.com/mcp",
+      "oauth": {
+        "clientId": "<hubspot-app-client-id>",
+        "clientSecret": "<hubspot-app-client-secret>"
+      }
+    }
+  }
+}
