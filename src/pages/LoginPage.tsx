@@ -81,7 +81,7 @@ const LoginPage = () => {
           />
           <Card className="relative border-0 shadow-2xl">
             <CardHeader className="space-y-4 text-center">
-              <BrandMark className="mx-auto h-12 w-auto" />
+              <BrandMark className="mx-auto h-14 w-14 shadow-lg" />
               <div>
                 <CardTitle className="text-3xl">
                   <BrandWordmark />

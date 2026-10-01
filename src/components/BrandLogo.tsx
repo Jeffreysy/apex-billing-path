@@ -1,23 +1,15 @@
+import { DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// LexCollect mark: the L (structure) cradling the C (collections).
-// Paths match marketing-site/assets/img/mark.svg and mark-reversed.svg.
-const MARK_COLORS = {
-  default: { l: "#123A63", c: "#12A594" },
-  reversed: { l: "#FFFFFF", c: "#3DD9C7" },
-};
-
-export const BrandMark = ({
-  variant = "default",
-  className,
-}: {
-  variant?: keyof typeof MARK_COLORS;
-  className?: string;
-}) => (
-  <svg viewBox="0 0 686 759" className={className} aria-hidden="true" focusable="false">
-    <path fill={MARK_COLORS[variant].l} d="M0 0H160V609H686V759H0Z" />
-    <path fill={MARK_COLORS[variant].c} d="M203 0H686V227H559V127H330V439H559V360H686V567H203Z" />
-  </svg>
+// LexCollect mark: white dollar sign on a Teal tile. Same artwork as public/favicon.svg.
+// Size it with h-*/w-* on className; the glyph scales to half the tile.
+export const BrandMark = ({ className }: { className?: string }) => (
+  <span
+    className={cn("flex shrink-0 items-center justify-center rounded-lg bg-[#12A594] text-white", className)}
+    aria-hidden="true"
+  >
+    <DollarSign className="h-1/2 w-1/2" />
+  </span>
 );
 
 // Wordmark: "Lex" in Plex Serif, "Collect" in Plex Sans, as on the website header.

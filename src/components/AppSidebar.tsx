@@ -99,7 +99,7 @@ const AppSidebar = () => {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-5">
-        <BrandMark variant="reversed" className="h-7 w-auto shrink-0" />
+        <BrandMark className="h-8 w-8" />
         <div>
           <h1 className="text-[15px] text-sidebar-primary-foreground">
             <BrandWordmark />
