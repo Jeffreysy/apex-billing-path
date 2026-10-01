@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { KeyRound, Mail, Shield, UserCog, Users, TriangleAlert, Building2, CreditCard } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { ALL_USER_ROLES, type UserRole } from "@/lib/auth";
+import { ALL_USER_ROLES, getAuthConfirmUrl, type UserRole } from "@/lib/auth";
 
 type ManagedUser = {
   id: string;
@@ -276,6 +276,7 @@ const SettingsPage = () => {
         email: inviteEmail,
         fullName: inviteFullName,
         role: inviteRole,
+        redirectTo: getAuthConfirmUrl(),
       },
     });
     setInviting(false);
@@ -364,7 +365,7 @@ const SettingsPage = () => {
       body: {
         action: "resend_invite",
         userId: managedUser.id,
-        redirectTo: window.location.origin,
+        redirectTo: getAuthConfirmUrl(),
       },
     });
     setResendingUserId(null);
@@ -475,7 +476,7 @@ const SettingsPage = () => {
             <TriangleAlert className="h-4 w-4" />
             <AlertTitle>Password update required</AlertTitle>
             <AlertDescription>
-              This account is using a temporary password. Update it below before returning to the rest of the platform.
+              Choose a new password below before returning to the rest of the platform.
             </AlertDescription>
           </Alert>
         )}

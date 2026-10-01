@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { ALL_USER_ROLES, getDefaultRouteForRole, type UserRole } from "./lib/auth";
+import { ALL_USER_ROLES, AUTH_CONFIRM_PATH, getDefaultRouteForRole, type UserRole } from "./lib/auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
@@ -20,6 +20,7 @@ import CollectorWorkspace from "./pages/CollectorWorkspace";
 import ArMovementDashboard from "./pages/ArMovementDashboard";
 import EscalationManagementPage from "./pages/EscalationManagementPage";
 import LoginPage from "./pages/LoginPage";
+import AuthConfirmPage from "./pages/AuthConfirmPage";
 import SettingsPage from "./pages/SettingsPage";
 import DataImportPage from "./pages/DataImportPage";
 import NotFound from "./pages/NotFound";
@@ -47,6 +48,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path={AUTH_CONFIRM_PATH} element={<AuthConfirmPage />} />
             <Route path="/" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><RoleLanding /></ProtectedRoute>} />
             <Route path="/collections" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><CollectionsDashboard /></ProtectedRoute>} />

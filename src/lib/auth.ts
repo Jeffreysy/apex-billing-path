@@ -11,6 +11,13 @@ export const ALL_USER_ROLES: UserRole[] = [
   "read_only",
 ];
 
+// Landing page for invite, password-recovery, and magic-link emails.
+export const AUTH_CONFIRM_PATH = "/auth/confirm";
+
+export function getAuthConfirmUrl(): string {
+  return `${window.location.origin}${AUTH_CONFIRM_PATH}`;
+}
+
 export function getDefaultRouteForRole(role: UserRole | null | undefined): string {
   switch (role) {
     case "admin":

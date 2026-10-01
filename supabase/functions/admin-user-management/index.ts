@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
       const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
         payload.email,
         {
-          data: { full_name: payload.fullName || payload.email },
+          // must_change_password routes the invitee to set a password if they skip the confirm page's step.
+          data: { full_name: payload.fullName || payload.email, must_change_password: true },
           ...(payload.redirectTo ? { redirectTo: payload.redirectTo } : {}),
         },
       );
