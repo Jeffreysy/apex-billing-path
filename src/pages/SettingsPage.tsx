@@ -90,6 +90,8 @@ const SettingsPage = () => {
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [resendingUserId, setResendingUserId] = useState<string | null>(null);
+  const [linkingUserId, setLinkingUserId] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<{ userId: string; link: string; linkType: string } | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const [inviteEmail, setInviteEmail] = useState("");
@@ -386,6 +388,38 @@ const SettingsPage = () => {
       : "Invite email sent to " + (managedUser.email || "user");
 
     toast.success(message);
+  };
+
+  const handleCreateInviteLink = async (managedUser: ManagedUser) => {
+    setLinkingUserId(managedUser.id);
+    const { data, error } = await supabase.functions.invoke("admin-user-management", {
+      body: {
+        action: "invite_link",
+        userId: managedUser.id,
+        redirectTo: getAuthConfirmUrl(),
+      },
+    });
+    setLinkingUserId(null);
+
+    if (error) {
+      const details = typeof (error as any)?.context?.json === "function" ? await (error as any).context.json().catch(() => null) : null;
+      toast.error(details?.error || error.message || "Unable to create invite link");
+      return;
+    }
+
+    const link = data && typeof data === "object" && typeof data.link === "string" ? data.link : "";
+    if (!link) {
+      toast.error(data?.error ? String(data.error) : "Unable to create invite link");
+      return;
+    }
+
+    setInviteLink({ userId: managedUser.id, link, linkType: String(data.linkType || "invite") });
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Invite link copied. Send it to " + (managedUser.email || "the user") + ".");
+    } catch {
+      toast.success("Invite link ready. Copy it from below.");
+    }
   };
 
   const handleSaveUser = async (managedUser: ManagedUser) => {
@@ -841,6 +875,15 @@ const SettingsPage = () => {
                             </Button>
                             <Button
                               type="button"
+                              variant="secondary"
+                              className="ml-2"
+                              onClick={() => handleCreateInviteLink(managedUser)}
+                              disabled={linkingUserId === managedUser.id}
+                            >
+                              {linkingUserId === managedUser.id ? "Creating..." : "Copy Invite Link"}
+                            </Button>
+                            <Button
+                              type="button"
                               variant="destructive"
                               className="ml-2"
                               onClick={() => handleDeleteUser(managedUser)}
@@ -849,6 +892,23 @@ const SettingsPage = () => {
                               {deletingUserId === managedUser.id ? "Deleting..." : "Delete User"}
                             </Button>
                           </div>
+
+                          {inviteLink?.userId === managedUser.id && (
+                            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+                              <p className="font-medium">{inviteLink.linkType === "invite" ? "Invite link ready" : "Sign-in link ready"}</p>
+                              <p className="mt-1">
+                                Send this to {managedUser.email || "them"} by text, chat, or email. It opens LexCollect and asks them
+                                to choose a password. It works once and expires, and any newer invite or link replaces it.
+                              </p>
+                              <Input
+                                readOnly
+                                aria-label="Invite link"
+                                value={inviteLink.link}
+                                className="mt-3 font-mono text-xs"
+                                onFocus={(event) => event.target.select()}
+                              />
+                            </div>
+                          )}
                         </div>
                       ))
                     )}

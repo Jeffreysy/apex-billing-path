@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -16,7 +16,7 @@ function generateTemporaryPassword(): string {
 }
 
 async function writeAuditLog(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: SupabaseClient,
   actorId: string,
   action: string,
   recordId: string,
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     const action = payload.action;
 
-    if (!["invite", "create", "reset_password", "resend_invite", "delete"].includes(action)) {
+    if (!["invite", "create", "reset_password", "resend_invite", "invite_link", "delete"].includes(action)) {
       return new Response(JSON.stringify({ error: `Unsupported action: ${action}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -232,6 +232,60 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── INVITE LINK (a sign-in link the admin sends themselves; no email is sent) ──
+    if (action === "invite_link") {
+      if (!payload.redirectTo) {
+        throw new Error("Missing redirectTo");
+      }
+
+      const { data: existingUser, error: existingUserError } = await adminClient.auth.admin.getUserById(payload.userId);
+      if (existingUserError || !existingUser.user) {
+        throw existingUserError || new Error("Unable to find user");
+      }
+
+      const targetEmail = existingUser.user.email;
+      if (!targetEmail) {
+        throw new Error("User has no email address on file");
+      }
+
+      // Someone who never accepted their invite gets a fresh invite link; an active user gets a
+      // set-password link. Either way the link opens /auth/confirm, which asks for a password.
+      const linkType = existingUser.user.email_confirmed_at ? "recovery" : "invite";
+      const { data: linkData, error: linkError } = linkType === "invite"
+        ? await adminClient.auth.admin.generateLink({ type: "invite", email: targetEmail, options: { redirectTo: payload.redirectTo } })
+        : await adminClient.auth.admin.generateLink({ type: "recovery", email: targetEmail, options: { redirectTo: payload.redirectTo } });
+
+      const hashedToken = linkData?.properties?.hashed_token;
+      if (linkError || !hashedToken) {
+        throw linkError || new Error("Unable to create sign-in link");
+      }
+
+      if (linkType === "invite" && !existingUser.user.user_metadata?.must_change_password) {
+        await adminClient.auth.admin.updateUserById(payload.userId, {
+          user_metadata: { ...(existingUser.user.user_metadata || {}), must_change_password: true },
+        });
+      }
+
+      const link = new URL(payload.redirectTo);
+      link.searchParams.set("token_hash", hashedToken);
+      link.searchParams.set("type", linkType);
+
+      // The link itself is a credential, so it is not written to the audit log.
+      await writeAuditLog(adminClient, user.id, "admin_invite_link", payload.userId, null, {
+        email: targetEmail,
+        link_type: linkType,
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        link: link.toString(),
+        linkType,
+        user: { id: payload.userId, email: targetEmail },
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── RESET PASSWORD ──
     if (action === "reset_password") {
       const temporaryPassword = generateTemporaryPassword();
@@ -243,6 +297,9 @@ Deno.serve(async (req) => {
 
       const { data: updatedUser, error: resetError } = await adminClient.auth.admin.updateUserById(payload.userId, {
         password: temporaryPassword,
+        // An invited user who never opened the invite is unconfirmed and could not sign in
+        // with the temporary password, so confirm them as part of the reset.
+        ...(existingUser.user.email_confirmed_at ? {} : { email_confirm: true }),
         user_metadata: {
           ...(existingUser.user.user_metadata || {}),
           must_change_password: true,

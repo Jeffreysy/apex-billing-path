@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+export const NOT_ACTIVATED_MESSAGE =
+  "This email doesn't have an active LexCollect account yet. If you were invited, open the link from your invite, or ask your administrator to send a new one.";
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,12 +58,16 @@ const LoginPage = () => {
       email,
       options: {
         emailRedirectTo: window.location.origin,
+        // LexCollect accounts are created by an administrator, never from the sign-in page.
+        shouldCreateUser: false,
       },
     });
     setSendingMagicLink(false);
 
     if (error) {
-      toast.error(error.message || "Unable to send magic link");
+      // Supabase reports unknown emails, and invited people who have not accepted yet, as signups.
+      const notActivated = error.code === "signup_disabled" || error.code === "otp_disabled";
+      toast.error(notActivated ? NOT_ACTIVATED_MESSAGE : error.message || "Unable to send magic link");
       return;
     }
 
