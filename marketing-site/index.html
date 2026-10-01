@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LexCollect — Billing &amp; collections for law firms</title>
+  <meta name="description" content="LexCollect finds the revenue law firms lose between case management, contracts, payments and collections.">
+  <meta name="theme-color" content="#0B2540">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<!--
+  DRAFT LANDING PAGE. Layout and components are final; the words are not.
+  Every claim, figure, quote and contact detail is a placeholder to confirm or
+  replace before publishing. Search this file for "CONTENT:" to find each one.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html" aria-label="LexCollect home">
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="6" fill="#12A594"/><g transform="translate(6.4 6.4) scale(0.8)" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></g></svg>
+      <span class="wordmark"><span class="lex">Lex</span><span class="collect">Collect</span></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span></span></button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="#systems">How it breaks</a></li>
+        <li><a href="#diagnostic">The diagnostic</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <a class="btn btn--primary btn--sm" href="#contact">Book a diagnostic</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div class="container hero__grid">
+      <div>
+        <p class="eyebrow">Billing &amp; collections for law firms</p>
+        <!-- CONTENT: headline and lead -->
+        <h1>Find the money your systems <em>lose between them.</em></h1>
+        <p class="lead">Case management, contracts, payments and collections each think the account is someone else's problem. LexCollect reads all four, shows you exactly where revenue falls through, and tells you which of it you can still recover.</p>
+        <div class="actions">
+          <a class="btn btn--primary" href="#contact">Book a diagnostic <span class="arrow" aria-hidden="true">&rarr;</span></a>
+          <a class="btn btn--ghost" href="#diagnostic">See a sample report</a>
+        </div>
+        <!-- CONTENT: confirm this promise matches how onboarding works -->
+        <p class="hero__note">Read-only to start. Nothing changes until you approve it.</p>
+      </div>
+
+      <div class="cradle">
+        <figure class="report" aria-labelledby="report-caption">
+          <div class="report__head"><span>Diagnostic &middot; <b>Sample firm</b></span><span>Run 06:00</span></div>
+          <div class="report__was"><span>Your AR report says</span><s>$412,000</s></div>
+          <table>
+            <thead>
+              <tr><th scope="col">Finding</th><th scope="col" class="col-records">Records</th><th scope="col">Amount</th><th scope="col">Fix</th></tr>
+            </thead>
+            <tbody>
+              <tr class="is-fixable"><td>Payment plans with a declined card, never retried<br><code>plan.card_declined</code></td><td class="col-records">37</td><td>$48,200</td><td><span class="tag tag--yes">Yes</span></td></tr>
+              <tr class="is-fixable"><td>Signed contracts never turned into charges<br><code>contract.unbilled</code></td><td class="col-records">12</td><td>$31,900</td><td><span class="tag tag--yes">Yes</span></td></tr>
+              <tr><td>Balances on matters already closed<br><code>matter.closed_open_ar</code></td><td class="col-records">9</td><td>$14,050</td><td><span class="tag tag--no">No</span></td></tr>
+              <tr class="is-fixable"><td>Deposits not matched to a client<br><code>payment.unmatched</code></td><td class="col-records">22</td><td>$9,780</td><td><span class="tag tag--yes">Yes</span></td></tr>
+            </tbody>
+          </table>
+          <div class="report__foot">
+            <span class="k">Recoverable now</span>
+            <span class="v">$89,880</span>
+            <span class="s">71 records &middot; 3 of 4 findings fixable</span>
+          </div>
+        </figure>
+        <p class="report__caption" id="report-caption">Sample output. Figures are illustrative.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Stats ===== CONTENT: replace with real, sourced figures -->
+  <section class="stats" aria-label="Results">
+    <div class="container stats__grid">
+      <div class="stat"><span class="stat__num">00<small>%</small></span><span class="stat__label">of outstanding AR traced to a specific cause <span class="placeholder-tag">Placeholder</span></span></div>
+      <div class="stat"><span class="stat__num">$0.0<small>M</small></span><span class="stat__label">recovered for client firms <span class="placeholder-tag">Placeholder</span></span></div>
+      <div class="stat"><span class="stat__num">00<small>days</small></span><span class="stat__label">from first login to first report <span class="placeholder-tag">Placeholder</span></span></div>
+      <div class="stat"><span class="stat__num">4</span><span class="stat__label">systems reconciled every night</span></div>
+    </div>
+  </section>
+
+  <!-- ===== Four systems ===== CONTENT: confirm the systems and integrations you support -->
+  <section class="section" id="systems">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">How it breaks</p>
+        <h2>Four systems. Three handoffs. Revenue leaks at every one.</h2>
+        <p class="lead">No single system is wrong. The money goes missing in the space between them, where no report looks.</p>
+      </div>
+      <ol class="chain">
+        <li>
+          <span class="idx">01 &middot; Case management</span>
+          <h3>The matter</h3>
+          <p>MyCase or Filevine knows who the client is and where the case stands.</p>
+          <div class="break"><b>Where it breaks</b>A matter closes or changes status and billing never hears about it.</div>
+        </li>
+        <li>
+          <span class="idx">02 &middot; Contracts</span>
+          <h3>The agreement</h3>
+          <p>The fee agreement sets the price, the plan and the payment dates.</p>
+          <div class="break"><b>Where it breaks</b>Signed plans that never become a schedule of charges.</div>
+        </li>
+        <li>
+          <span class="idx">03 &middot; Payments</span>
+          <h3>The money</h3>
+          <p>LawPay takes the card, the transfer or the deposit.</p>
+          <div class="break"><b>Where it breaks</b>Declined cards and unmatched deposits that nobody owns.</div>
+        </li>
+        <li>
+          <span class="idx">04 &middot; Collections</span>
+          <h3>The follow-up</h3>
+          <p>Your team calls, takes commitments and escalates.</p>
+          <div class="break"><b>Where it breaks</b>Collectors chase a list that was out of date before they started.</div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== Report vs diagnostic ===== (uses the same sample figures as the hero) -->
+  <section class="section section--deep section--rule" id="diagnostic">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">The diagnostic</p>
+        <h2>A report gives you a number. A diagnostic gives you the reasons.</h2>
+      </div>
+      <div class="versus">
+        <div class="panel panel--muted">
+          <span class="panel__label">What your AR report shows</span>
+          <p class="big">$412,000</p>
+          <p>Total outstanding. One number, no reasons.</p>
+          <hr>
+          <p class="muted small">It can't tell a client who stopped paying from a card that expired, or a closed case from an open one.</p>
+        </div>
+        <div class="panel panel--accent">
+          <span class="panel__label">What the diagnostic shows</span>
+          <div class="bar" role="img" aria-label="Of $412,000 outstanding, $89,880 is fixable now, $14,050 is not fixable, and $308,070 is current.">
+            <span class="seg-yes" style="flex: 48200"></span>
+            <span class="seg-yes" style="flex: 31900"></span>
+            <span class="seg-yes alt" style="flex: 9780"></span>
+            <span class="seg-no" style="flex: 14050"></span>
+            <span class="seg-no alt" style="flex: 308070"></span>
+          </div>
+          <ul class="legend">
+            <li><span class="sw" style="background: var(--teal)"></span><code>plan.card_declined</code><span class="amt">$48,200</span><span class="fix yes">Fix</span></li>
+            <li><span class="sw" style="background: var(--teal)"></span><code>contract.unbilled</code><span class="amt">$31,900</span><span class="fix yes">Fix</span></li>
+            <li><span class="sw" style="background: var(--teal-bright)"></span><code>payment.unmatched</code><span class="amt">$9,780</span><span class="fix yes">Fix</span></li>
+            <li><span class="sw" style="background: var(--navy)"></span><code>matter.closed_open_ar</code><span class="amt">$14,050</span><span class="fix">Review</span></li>
+            <li><span class="sw" style="background: #1C4A78"></span><code>current_on_plan</code><span class="amt">$308,070</span><span class="fix">OK</span></li>
+            <li class="total"><span></span><span>Total outstanding</span><span class="amt">$412,000</span><span></span></li>
+          </ul>
+          <p class="punch"><em>$89,880</em> of it can be fixed this week.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== The loop ===== -->
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">How it works</p>
+        <h2>Diagnose once. Then keep it fixed.</h2>
+      </div>
+      <!-- CONTENT: confirm the onboarding steps -->
+      <ol class="steps">
+        <li class="step"><span class="step__num">01</span><h3>Connect</h3><p>Read-only access to case management, contracts and payments. No data entry for your team.</p></li>
+        <li class="step step--highlight"><span class="step__num">02</span><h3>Diagnose</h3><p>Every open balance is traced to a cause and marked fixable or not, with the records behind it.</p></li>
+        <li class="step"><span class="step__num">03</span><h3>Fix</h3><p>Your collectors work a queue ordered by what they can actually recover, not by age alone.</p></li>
+        <li class="step"><span class="step__num">04</span><h3>Monitor</h3><p>Nightly checks catch new gaps before they turn into write-offs.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== Self-audit ===== -->
+  <section class="section section--deep section--rule">
+    <div class="container split split--center">
+      <div>
+        <p class="eyebrow">We audit ourselves too</p>
+        <h2>Every sync is checked, every night.</h2>
+        <p class="lead">If a handoff between systems stops lining up, you see it the next morning with the records attached, not at quarter end.</p>
+      </div>
+      <!-- CONTENT: sample monitor output; adjust names to your real sync jobs -->
+      <div class="monitor" role="group" aria-label="Sample pipeline monitor">
+        <div class="monitor__head"><span>Pipeline monitor &middot; <b>Sample firm</b></span><span>06:00</span></div>
+        <ul>
+          <li><span class="name">case_mgmt &rarr; contracts</span><span class="state">OK</span><span class="meta">1,204 matters checked &middot; 0 gaps</span></li>
+          <li><span class="name">contracts &rarr; charges</span><span class="state">OK</span><span class="meta">388 active plans &middot; 0 gaps</span></li>
+          <li class="is-flagged"><span class="name">payments &rarr; clients</span><span class="state">Flagged</span><span class="meta">3 deposits unmatched for more than 48 hours</span></li>
+          <li><span class="name">collections &rarr; commitments</span><span class="state">OK</span><span class="meta">57 promises to pay tracked &middot; 0 overdue</span></li>
+        </ul>
+        <div class="monitor__foot">Sample output. Figures are illustrative.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Testimonials ===== CONTENT: replace with real, approved quotes -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">From firms using it</p>
+        <h2>What changes when the numbers line up.</h2>
+      </div>
+      <div class="grid grid--2">
+        <figure class="quote">
+          <span class="placeholder-tag">Placeholder quote</span>
+          <blockquote><p>A short quote from a managing partner about what the first diagnostic showed them.</p></blockquote>
+          <figcaption><b>Name Surname</b>Managing Partner, Firm name</figcaption>
+        </figure>
+        <figure class="quote">
+          <span class="placeholder-tag">Placeholder quote</span>
+          <blockquote><p>A short quote from a billing or collections lead about how their daily work changed.</p></blockquote>
+          <figcaption><b>Name Surname</b>Billing Manager, Firm name</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== CONTENT: confirm answers -->
+  <section class="section section--rule" id="faq">
+    <div class="container container--narrow">
+      <div class="section-head">
+        <p class="eyebrow">FAQ</p>
+        <h2>Questions firms ask first.</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary><h3>Do we have to change systems?</h3></summary>
+          <div><p>No. LexCollect reads from the tools you already use and works alongside them.</p></div>
+        </details>
+        <details>
+          <summary><h3>Does card data pass through LexCollect?</h3></summary>
+          <div><p>No. Payments are taken in LawPay; LexCollect only sees the result.</p></div>
+        </details>
+        <details>
+          <summary><h3>How long does the first diagnostic take?</h3></summary>
+          <div><p>Placeholder: state the typical time from access to first report.</p></div>
+        </details>
+        <details>
+          <summary><h3>Who sees our data?</h3></summary>
+          <div><p>Placeholder: describe access controls, hosting and confidentiality terms.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA ===== -->
+  <section class="cta-band">
+    <div class="container">
+      <p class="eyebrow">Book a diagnostic</p>
+      <h2>See what your systems are hiding.</h2>
+      <p class="lead">One read-only connection, one report. You keep the findings either way.</p>
+      <div class="actions">
+        <a class="btn btn--primary" href="#contact">Book a diagnostic <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        <a class="btn btn--ghost" href="#diagnostic">See a sample report</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Contact ===== (preview form; the live site uses the WordPress contact form) -->
+  <section class="section" id="contact">
+    <div class="container split split--wide-left">
+      <div>
+        <p class="eyebrow">Contact</p>
+        <h2>Tell us about your firm.</h2>
+        <form class="form" data-demo>
+          <div class="form-row">
+            <div class="field"><label for="c-name">Name</label><input id="c-name" name="name" type="text" autocomplete="name" required></div>
+            <div class="field"><label for="c-email">Work email</label><input id="c-email" name="email" type="email" autocomplete="email" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="c-firm">Firm</label><input id="c-firm" name="firm" type="text" autocomplete="organization" required></div>
+            <div class="field">
+              <label for="c-size">Firm size <span class="opt">(optional)</span></label>
+              <select id="c-size" name="size">
+                <option value="">Select</option>
+                <option>1–10 people</option>
+                <option>11–50 people</option>
+                <option>51+ people</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label for="c-msg">What would you like to find out? <span class="opt">(optional)</span></label><textarea id="c-msg" name="message"></textarea></div>
+          <div><button class="btn btn--primary" type="submit">Send <span class="arrow" aria-hidden="true">&rarr;</span></button></div>
+          <p class="form-note">We reply within one business day. <span class="placeholder-tag">Confirm</span></p>
+          <div class="form-status" role="status">Thanks, this is a preview so nothing was sent.</div>
+        </form>
+      </div>
+      <aside class="contact-card" aria-label="What happens next">
+        <h3>What happens next</h3>
+        <ol class="next-steps">
+          <li><b>A 20-minute call</b><span>We learn which systems you use and what you want answered.</span></li>
+          <li><b>Read-only access</b><span>You connect the systems; we never edit records.</span></li>
+          <li><b>Your first report</b><span>Every open balance, its cause, and what's fixable.</span></li>
+        </ol>
+        <!-- CONTENT: real contact details -->
+        <div class="contact-line"><span class="kicker">Email</span><span>hello@example.com <span class="placeholder-tag">Placeholder</span></span></div>
+        <div class="contact-line"><span class="kicker">Phone</span><span>(000) 000-0000 <span class="placeholder-tag">Placeholder</span></span></div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="index.html" aria-label="LexCollect home">
+          <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="6" fill="#12A594"/><g transform="translate(6.4 6.4) scale(0.8)" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></g></svg>
+          <span class="wordmark"><span class="lex">Lex</span><span class="collect">Collect</span></span>
+        </a>
+        <p>Billing and collections intelligence for law firms.</p>
+      </div>
+      <div class="footer-col">
+        <h2>Product</h2>
+        <ul>
+          <li><a href="#systems">How it breaks</a></li>
+          <li><a href="#diagnostic">The diagnostic</a></li>
+          <li><a href="#how-it-works">How it works</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Company</h2>
+        <ul>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h2>Get in touch</h2>
+        <ul>
+          <li><a href="#contact">Book a diagnostic</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> LexCollect</span>
+      <span>Sample figures on this page are illustrative.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
+</html>
