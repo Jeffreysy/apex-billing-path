@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 import { ESCALATION_HANDOFF_QUEUES, formatEscalationStatus, formatEscalationValue, getDefaultHandoffQueue } from "@/lib/escalations";
+import { ESCALATION_TARGETS } from "@/config/firmProfile";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, DollarSign, AlertTriangle, Calendar,
@@ -641,11 +642,7 @@ const CollectorWorkspace = () => {
               }}>
                 <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Attorney">Attorney</SelectItem>
-                  <SelectItem value="Case Manager/Paralegal">Case Manager/Paralegal</SelectItem>
-                  <SelectItem value="Compliance">Compliance</SelectItem>
-                  <SelectItem value="CC/Nidiana">CC/Nidiana</SelectItem>
-                  <SelectItem value="Stephen/Jeffrey">Stephen/Jeffrey</SelectItem>
+                  {ESCALATION_TARGETS.map(t => <SelectItem key={t.label} value={t.label}>{t.label}</SelectItem>)}
                   {COLLECTORS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   <SelectItem value="Management">Management</SelectItem>
                   <SelectItem value="Legal">Legal</SelectItem>

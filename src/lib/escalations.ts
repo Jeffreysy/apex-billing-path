@@ -1,3 +1,5 @@
+import { ESCALATION_NAME_ALIASES, ESCALATION_TARGETS } from "@/config/firmProfile";
+
 export const ESCALATION_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 export const ESCALATION_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
 // Non-collector escalation targets. The COLLECTOR portion of the assignee list is supplied by the
@@ -82,7 +84,7 @@ export function matchesEscalationInbox(escalation: EscalationInboxCandidate, inb
 
   if (!queue && !target) return true;
   if (["management", "billing_ops"].includes(queue)) return true;
-  return ["management", "stephen", "jeffrey"].some(token => target.includes(token));
+  return escalationKeywordsFor("management").some(token => target.includes(token));
 }
 
 export function getEscalationFollowUpUrgency(followUpDate: string | null | undefined): number {
@@ -99,13 +101,31 @@ export function getEscalationFollowUpUrgency(followUpDate: string | null | undef
   return 0;
 }
 
+// Generic words that identify each queue in a free-text assignee, checked in this order.
+const QUEUE_KEYWORDS: readonly [EscalationHandoffQueue, readonly string[]][] = [
+  ["legal", ["legal", "attorney"]],
+  ["case_management", ["case manager", "paralegal"]],
+  ["compliance", ["compliance"]],
+  ["customer_care", ["cc/", "customer care"]],
+  ["management", ["management"]],
+  ["sales", ["sales"]],
+];
+
+/** Lowercase words that route an assignee to `queue`: generic keywords plus the firm's staff aliases. */
+export function escalationKeywordsFor(queue: EscalationHandoffQueue): string[] {
+  const keywords = QUEUE_KEYWORDS.find(([q]) => q === queue)?.[1] ?? [];
+  const aliases = Object.keys(ESCALATION_NAME_ALIASES).filter(name => ESCALATION_NAME_ALIASES[name] === queue);
+  return [...keywords, ...aliases];
+}
+
 export function getDefaultHandoffQueue(assignedTo: string | null | undefined): EscalationHandoffQueue {
   const target = (assignedTo || "").toLowerCase();
-  if (["legal", "attorney"].some(token => target.includes(token))) return "legal";
-  if (["case manager", "paralegal"].some(token => target.includes(token))) return "case_management";
-  if (target.includes("compliance")) return "compliance";
-  if (["cc/", "customer care", "nidiana"].some(token => target.includes(token))) return "customer_care";
-  if (["management", "stephen", "jeffrey"].some(token => target.includes(token))) return "management";
-  if (target.includes("sales")) return "sales";
+  // Configured targets route exactly; keyword matching alone would send "Case Manager/Paralegal"
+  // to legal, since "paralegal" contains "legal".
+  const configured = ESCALATION_TARGETS.find(t => t.label.toLowerCase() === target);
+  if (configured) return configured.queue;
+  for (const [queue] of QUEUE_KEYWORDS) {
+    if (escalationKeywordsFor(queue).some(token => target.includes(token))) return queue;
+  }
   return "other";
 }

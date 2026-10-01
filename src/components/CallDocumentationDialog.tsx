@@ -16,6 +16,7 @@ import {
   formatEscalationValue,
   getDefaultHandoffQueue,
 } from "@/lib/escalations";
+import { ESCALATION_TARGETS } from "@/config/firmProfile";
 import { toast } from "sonner";
 import {
   Phone, DollarSign, AlertTriangle, Calendar, CheckCircle, ArrowRight,
@@ -488,11 +489,7 @@ const CallDocumentationDialog = ({ open, onOpenChange, account }: Props) => {
                   }}>
                     <SelectTrigger className="text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Attorney" className="text-xs">Attorney</SelectItem>
-                      <SelectItem value="Case Manager/Paralegal" className="text-xs">Case Manager/Paralegal</SelectItem>
-                      <SelectItem value="Compliance" className="text-xs">Compliance</SelectItem>
-                      <SelectItem value="CC/Nidiana" className="text-xs">CC/Nidiana</SelectItem>
-                      <SelectItem value="Stephen/Jeffrey" className="text-xs">Stephen/Jeffrey</SelectItem>
+                      {ESCALATION_TARGETS.map(t => <SelectItem key={t.label} value={t.label} className="text-xs">{t.label}</SelectItem>)}
                       <SelectItem value="Sales" className="text-xs">Sales</SelectItem>
                       <SelectItem value="Management" className="text-xs">Management</SelectItem>
                       <SelectItem value="Legal" className="text-xs">Legal</SelectItem>

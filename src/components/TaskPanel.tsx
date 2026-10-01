@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { escalationKeywordsFor } from "@/lib/escalations";
 import { ArrowUpRight, CalendarClock, ExternalLink } from "lucide-react";
 
 type Department = "collections" | "legal" | "ar" | "admin";
@@ -97,7 +98,7 @@ function departmentForEscalation(row: any): Department {
   const queue = String(row.handoff_queue || row.assigned_to || row.handoff_target || "").toLowerCase();
   if (queue.includes("legal") || queue.includes("attorney") || queue.includes("case")) return "legal";
   if (queue.includes("billing") || queue.includes("ar") || queue.includes("finance")) return "ar";
-  if (queue.includes("management") || queue.includes("admin") || queue.includes("stephen") || queue.includes("jeffrey")) return "admin";
+  if (queue.includes("admin") || escalationKeywordsFor("management").some(token => queue.includes(token))) return "admin";
   return "collections";
 }
 
