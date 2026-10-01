@@ -10,7 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  * Modes:
  *   GET  /mycase-auth              -> redirects to MyCase login
  *   GET  /mycase-auth?code=XYZ     -> exchanges code for tokens
- *   GET  /mycase-auth?debug=true   -> shows diagnostic info
+ *   GET  /mycase-auth?debug=true   -> shows env-var diagnostic
  *   POST /mycase-auth              -> refreshes access token
  */
 
@@ -18,8 +18,33 @@ const AUTH_BASE = "https://auth.mycase.com";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const clientId = Deno.env.get("MYCASE_PUBLIC_KEY")!;
-const clientSecret = Deno.env.get("MYCASE_SECRET_KEY")!;
+
+// Rob's backend config uses MC_-prefixed names; older Supabase setup used
+// MYCASE_-prefixed names. Check every likely name so a naming mismatch doesn't
+// silently send blank credentials (which MyCase rejects with invalid_client).
+const CLIENT_ID_NAMES = [
+  "MYCASE_PUBLIC_KEY",
+  "MC_PUBLIC_KEY",
+  "MYCASE_CLIENT_ID",
+  "MC_CLIENT_ID",
+];
+const CLIENT_SECRET_NAMES = [
+  "MYCASE_SECRET_KEY",
+  "MC_SECRET_KEY",
+  "MYCASE_CLIENT_SECRET",
+  "MC_CLIENT_SECRET",
+];
+
+function firstEnv(names: string[]): string {
+  for (const n of names) {
+    const v = Deno.env.get(n);
+    if (v) return v;
+  }
+  return "";
+}
+
+const clientId = firstEnv(CLIENT_ID_NAMES);
+const clientSecret = firstEnv(CLIENT_SECRET_NAMES);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +52,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const REDIRECT_URI = `${supabaseUrl}/functions/v1/mycase-auth`;
+// Must EXACTLY match the redirect_uri MyCase registered for this app and that
+// was used at sign-in. MyCase registered the firm's own backend callback, not
+// Supabase. For the authorization_code exchange this value is a matching check
+// only — it does not need to be a URL this function actually serves.
+const REDIRECT_URI =
+  firstEnv(["MYCASE_REDIRECT_URI", "MC_REDIRECT_URI"]) ||
+  "https://mycase.elizabethrosariolaw.net/api/oauth/callback";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -94,35 +125,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // -- GET with ?debug=true: show diagnostic info
+    // -- GET with ?debug=true: show env-var diagnostic
     if (url.searchParams.get("debug") === "true") {
-      const authorizeUrl = buildAuthorizeUrl();
+      const envRows = [...CLIENT_ID_NAMES, ...CLIENT_SECRET_NAMES, "MYCASE_REDIRECT_URI", "MC_REDIRECT_URI"]
+        .map((n) => {
+          const v = Deno.env.get(n);
+          const shown = v ? `SET (len ${v.length}, ****${v.slice(-4)})` : "not set";
+          return `<tr><td style="padding:6px;border:1px solid #ccc"><code>${n}</code></td><td style="padding:6px;border:1px solid #ccc">${shown}</td></tr>`;
+        })
+        .join("");
       return new Response(
-        `<html><body style="font-family:sans-serif;padding:40px;max-width:700px">
-          <h2>MyCase OAuth — Diagnostic</h2>
+        `<html><body style="font-family:sans-serif;padding:40px;max-width:760px">
+          <h2>MyCase OAuth — Env Var Diagnostic</h2>
+          <p>Which credential env vars are actually populated in this Supabase project:</p>
           <table style="border-collapse:collapse;width:100%">
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Authorize Endpoint</td>
-                <td style="padding:8px;border:1px solid #ccc"><code>${AUTH_BASE}/login_sessions/new</code></td></tr>
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Token Endpoint</td>
-                <td style="padding:8px;border:1px solid #ccc"><code>${AUTH_BASE}/tokens</code></td></tr>
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Client ID</td>
-                <td style="padding:8px;border:1px solid #ccc"><code>${clientId || 'NOT SET'}</code></td></tr>
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Client Secret</td>
-                <td style="padding:8px;border:1px solid #ccc"><code>${clientSecret ? '****' + clientSecret.slice(-4) : 'NOT SET'}</code></td></tr>
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Redirect URI</td>
-                <td style="padding:8px;border:1px solid #ccc"><code>${REDIRECT_URI}</code></td></tr>
-            <tr><td style="padding:8px;border:1px solid #ccc;font-weight:bold">Full Authorize URL</td>
-                <td style="padding:8px;border:1px solid #ccc;word-break:break-all"><code>${authorizeUrl}</code></td></tr>
+            <tr><th style="padding:6px;border:1px solid #ccc;text-align:left">Env Var Name</th><th style="padding:6px;border:1px solid #ccc;text-align:left">Status</th></tr>
+            ${envRows}
           </table>
-          <br/>
-          <p><strong>Prerequisites (per MyCase docs):</strong></p>
-          <ol>
-            <li>Client credentials issued by MyCase support</li>
-            <li>Redirect URI registered by MyCase support (they set it, not you)</li>
-            <li>Authorizing user must have <em>"Manage your firm's preferences, billing, and payment options"</em> permission set to <strong>Yes</strong></li>
-          </ol>
-          <br/>
-          <a href="${authorizeUrl}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:6px">Attempt Authorization →</a>
+          <p style="margin-top:16px"><strong>Resolved client_id:</strong> <code>${clientId ? '****' + clientId.slice(-4) : 'NONE — all candidate names empty'}</code></p>
+          <p><strong>Resolved client_secret:</strong> <code>${clientSecret ? '****' + clientSecret.slice(-4) : 'NONE — all candidate names empty'}</code></p>
+          <p><strong>Resolved redirect_uri:</strong> <code>${REDIRECT_URI}</code></p>
         </body></html>`,
         { headers: { ...corsHeaders, "Content-Type": "text/html" } }
       );

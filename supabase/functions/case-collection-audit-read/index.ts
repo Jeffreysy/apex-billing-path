@@ -1,0 +1,1 @@
+Deno.serve(()=>new Response(JSON.stringify({status:"Audit extraction complete; endpoint disabled"}),{status:410,headers:{"Content-Type":"application/json"}}));

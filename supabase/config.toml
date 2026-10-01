@@ -1,1 +1,92 @@
 project_id = "qbrufeewsisljtoegops"
+
+# Edge function JWT verification, matching what is deployed today. `supabase functions deploy`
+# reads these, so CLI deploys keep each function's current setting. Functions marked false are
+# called by external services (webhooks, schedulers) or check the caller themselves.
+
+[functions.admin-user-management]
+verify_jwt = false
+
+[functions.bulk-load-staging]
+verify_jwt = true
+
+[functions.case-collection-audit-read]
+verify_jwt = true
+
+[functions.clever-processor]
+verify_jwt = true
+
+[functions.crm2-payment-received]
+verify_jwt = false
+
+[functions.filevine-payments-backfill]
+verify_jwt = false
+
+[functions.filevine-projects-backfill]
+verify_jwt = false
+
+[functions.filevine-reconciliation-report]
+verify_jwt = false
+
+[functions.hubspot-bulk-pull]
+verify_jwt = true
+
+[functions.hubspot-inbound]
+verify_jwt = true
+
+[functions.Lawpay-backfill]
+verify_jwt = false
+
+[functions.lawpay-backfill-orchestrator]
+verify_jwt = true
+
+[functions.lawpay-range-pull]
+verify_jwt = false
+
+[functions.lawpay-transactions-pull]
+verify_jwt = false
+
+[functions.lawpay-trust-pull]
+verify_jwt = false
+
+[functions.lawpay-webhook]
+verify_jwt = false
+
+[functions.load-ar-snapshot]
+verify_jwt = true
+
+[functions.mycase-auth]
+verify_jwt = false
+
+[functions.mycase-import]
+verify_jwt = false
+
+[functions.mycase-payment-plan-sync]
+verify_jwt = true
+
+[functions.mycase-sync]
+verify_jwt = true
+
+[functions.mycase-sync-v1]
+verify_jwt = true
+
+[functions.mycase-zapier]
+verify_jwt = false
+
+[functions.payment-received]
+verify_jwt = false
+
+[functions.payment-shadow]
+verify_jwt = false
+
+[functions.rematch-payments]
+verify_jwt = false
+
+[functions.smart-responder]
+verify_jwt = false
+
+[functions.smooth-worker]
+verify_jwt = true
+
+[functions.sync-zoom]
+verify_jwt = true
