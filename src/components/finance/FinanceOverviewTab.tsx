@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DateRange } from "react-day-picker";
+import type { Payment } from "@/data/mockData";
 import { endOfDay, isWithinInterval, startOfMonth, startOfWeek } from "date-fns";
 
 const PIE_COLORS = [
@@ -58,7 +59,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
   // Reuse the already-loaded canonical payment rows for chart helpers. Previously
   // usePaymentsData fetched the entire payments_clean view a second time.
-  const payments = paymentRows.map((p: any) => ({
+  const payments = paymentRows.map((p: any): Payment => ({
     id: p.id,
     clientId: p.client_id || "",
     clientName: p.client_name || "Unknown",
@@ -70,7 +71,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       : "card",
     collectorId: "",
     collectorName: p.collector_name || "CRM",
-    status: "completed" as const,
+    status: "completed",
   }));
 
   // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified anchor via useFirmFinancialSummary),

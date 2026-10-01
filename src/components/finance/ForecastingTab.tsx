@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import StatCard from "@/components/StatCard";
 import { useMergedClients, usePaymentsData, computeForecastData, computeMonthlyForecast, computeCaseTypeBilling } from "@/hooks/useSupabaseData";
 import { Target, TrendingUp, ArrowDownRight, BarChart3 } from "lucide-react";
@@ -40,13 +39,12 @@ const ForecastingTab = () => {
     .slice(0, 4)
     .reverse();
 
-  const actualVsForecast = useMemo(() => {
-    return weeklyForecast.slice(0, 4).map((w, i) => ({
-      period: w.period,
-      forecast: w.projected,
-      actual: recentWeeks[i] ? Math.round(recentWeeks[i][1]) : 0,
-    }));
-  }, [weeklyForecast, recentWeeks]);
+  // Computed directly: a hook here would run only after the loading early-return above.
+  const actualVsForecast = weeklyForecast.slice(0, 4).map((w, i) => ({
+    period: w.period,
+    forecast: w.projected,
+    actual: recentWeeks[i] ? Math.round(recentWeeks[i][1]) : 0,
+  }));
 
   return (
     <div className="space-y-6">

@@ -164,9 +164,9 @@ const CallQueuePage = () => {
   const lastContactedMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const activity of activities) {
-      const clientId = activity.client_id || activity.clientId;
+      const clientId = activity.client_id;
       if (!clientId) continue;
-      const stamp = [activity.activity_date || activity.date, activity.start_time || ""].filter(Boolean).join(" ");
+      const stamp = [activity.activity_date, activity.start_time || ""].filter(Boolean).join(" ");
       const existing = map.get(clientId);
       if (!existing || stamp > existing) map.set(clientId, stamp);
     }

@@ -367,13 +367,14 @@ export function useCollectionActivities(monthStart?: string) {
     queryKey: ["collection-activities", start],
     queryFn: async () => {
       // Try requested month first
-      let { data, error } = await supabase
+      const initial = await supabase
         .from("collection_activities")
         .select("*")
         .gte("activity_date", start)
         .order("activity_date", { ascending: false })
         .limit(5000);
-      if (error) throw error;
+      if (initial.error) throw initial.error;
+      let data = initial.data;
 
       // If current month is empty, fall back to most recent month with data
       if ((!data || data.length === 0) && start === currentMonthStart) {
@@ -418,10 +419,11 @@ export function useCollectionActivityRows() {
       // Finance Overview only calculates current-week/current-month collector totals.
       // Loading the full activity history (tens of thousands of rows) blocked the
       // entire tab even though older rows were immediately discarded in the UI.
+      // client_id/start_time feed the Call Queue's last-contacted fallback.
       const monthStart = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("collection_activities")
-        .select("id, activity_date, collected_amount")
+        .select("id, activity_date, collected_amount, client_id, start_time")
         .gte("activity_date", monthStart)
         .order("activity_date", { ascending: false });
       if (error) throw error;
@@ -593,11 +595,12 @@ export function useCollectors(monthStart?: string) {
   return useQuery({
     queryKey: ["collectors-aggregated", start],
     queryFn: async () => {
-      let { data: rows, error } = await supabase
+      const initial = await supabase
         .from("collector_performance")
         .select("*")
         .gte("month", start);
-      if (error) throw error;
+      if (initial.error) throw initial.error;
+      let rows = initial.data;
 
       // Fall back to latest month if current month is empty
       if ((!rows || rows.length === 0) && start === currentMonthStart) {
@@ -640,7 +643,7 @@ export function useCollectors(monthStart?: string) {
           totalCommission: Math.round(stats.totalCommission),
           callsMade: stats.callsMade,
           paymentsTaken: stats.paymentsTaken,
-          isLead: name === "Alejandro A",
+          isLead: name === LEAD_COLLECTOR,
         });
         i++;
       }
