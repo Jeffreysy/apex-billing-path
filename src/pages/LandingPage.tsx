@@ -1,87 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import "@/styles/marketing.css";
+import { Arrow, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import DiagnosticForm from "@/components/marketing/DiagnosticForm";
+import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 
-// TODO: replace with the firm's real inbox before launch. Used by the footer
-// and as the destination of the "Book a diagnostic" form.
-const CONTACT_EMAIL = "hello@yourdomain.com";
-
-const NAV_LINKS = [
-  { href: "#problem", label: "The problem" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#immigration", label: "Immigration firms" },
-  { href: "#faq", label: "FAQ" },
-];
-
-const BrandMark = () => (
-  <svg viewBox="0 0 686 759" aria-hidden="true">
-    <path fill="#FFFFFF" d="M0 0H160V609H686V759H0Z" />
-    <path fill="#3DD9C7" d="M203 0H686V227H559V127H330V439H559V360H686V567H203Z" />
-  </svg>
-);
-
-const Brand = () => (
-  <a className="brand" href="#top" aria-label="LexCollect home">
-    <BrandMark />
-    <span className="wordmark">
-      <span className="lex">Lex</span>
-      <span className="collect">Collect</span>
-    </span>
-  </a>
-);
-
-const Arrow = () => (
-  <span className="arrow" aria-hidden="true">
-    &rarr;
-  </span>
-);
-
-const SiteHeader = () => {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  return (
-    <header className={`site-header${open ? " nav-open" : ""}`}>
-      <div className="container">
-        <Brand />
-        <button
-          type="button"
-          className="nav-toggle"
-          aria-expanded={open}
-          aria-controls="site-nav"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span></span>
-          <span className="visually-hidden">Menu</span>
-        </button>
-        <nav className="nav" id="site-nav" aria-label="Main">
-          <ul>
-            {NAV_LINKS.map((l) => (
-              <li key={l.href}>
-                <a href={l.href} onClick={() => setOpen(false)}>
-                  {l.label}
-                </a>
-              </li>
-            ))}
-            <li>
-              <Link to="/login">Log in</Link>
-            </li>
-          </ul>
-          <a className="btn btn--primary btn--sm" href="#contact" onClick={() => setOpen(false)}>
-            Book a diagnostic
-          </a>
-        </nav>
-      </div>
-    </header>
-  );
+export const HOME_META = {
+  title: "Law Firm Accounts Receivable Software | LexCollect",
+  description:
+    "LexCollect finds where your law firm's money is stuck across case management, payments, accounting and the bank, prices each break, and routes the fix.",
 };
 
 const Hero = () => (
@@ -369,6 +294,11 @@ const HowItWorks = () => (
           </li>
         ))}
       </ol>
+      <div className="actions">
+        <Link className="btn btn--ghost" to={MARKETING_ROUTES.services}>
+          Explore the platform <Arrow />
+        </Link>
+      </div>
     </div>
   </section>
 );
@@ -386,7 +316,7 @@ const Immigration = () => (
           </p>
           <p className="muted">
             Not an immigration firm? The same four-system problem exists in every practice that bills. We're adding
-            practice areas one at a time. <a href="#contact">Tell us about yours.</a>
+            practice areas one at a time. <Link to={MARKETING_ROUTES.contact}>Tell us about yours.</Link>
           </p>
         </div>
         <div className="grid grid--2">
@@ -518,316 +448,80 @@ const Faq = () => (
           <h2>Frequently asked questions</h2>
           <p className="lead">Short answers to what firm owners ask first.</p>
         </div>
-        <div className="faq">
-          {FAQS.map((f, i) => (
-            <details key={f.q} open={i === 0}>
-              <summary>
-                <h3>{f.q}</h3>
-              </summary>
-              <div>
-                <p>{f.a}</p>
-              </div>
-            </details>
-          ))}
-        </div>
+        <FaqList items={FAQS} />
       </div>
     </div>
   </section>
 );
 
-interface InquiryForm {
-  name: string;
-  firm: string;
-  email: string;
-  phone: string;
-  practice: string;
-  size: string;
-  systems: string;
-  message: string;
-}
-
-const EMPTY_FORM: InquiryForm = {
-  name: "",
-  firm: "",
-  email: "",
-  phone: "",
-  practice: "Immigration",
-  size: "",
-  systems: "",
-  message: "",
-};
-
-const BookDiagnostic = () => {
-  const [form, setForm] = useState<InquiryForm>(EMPTY_FORM);
-  const [sent, setSent] = useState(false);
-
-  const update = (key: keyof InquiryForm) => (e: { target: { value: string } }) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const subject = `Diagnostic request: ${form.firm || form.name}`;
-    const body = [
-      `Name: ${form.name}`,
-      `Firm: ${form.firm}`,
-      `Work email: ${form.email}`,
-      `Phone: ${form.phone || "-"}`,
-      `Practice area: ${form.practice}`,
-      `Firm size: ${form.size || "-"}`,
-      `Systems: ${form.systems || "-"}`,
-      "",
-      form.message,
-    ].join("\n");
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setSent(true);
-  };
-
-  return (
-    <section className="section section--deep section--rule" id="contact">
-      <div className="container">
-        <div className="split split--wide-left">
-          <div>
-            <p className="eyebrow">Book a diagnostic</p>
-            <h2>Book an AR diagnostic for your firm.</h2>
-            <p className="lead">
-              Tell us about your firm and the systems you use. We'll show you where money is stuck, what each break is
-              worth, and what your team can fix now.
-            </p>
-
-            <form className="form" onSubmit={onSubmit} style={{ marginTop: "var(--sp-50)" }}>
-              <div className="form-row">
-                <div className="field">
-                  <label htmlFor="lc-name">Full name</label>
-                  <input id="lc-name" type="text" required autoComplete="name" value={form.name} onChange={update("name")} />
-                </div>
-                <div className="field">
-                  <label htmlFor="lc-firm">Firm name</label>
-                  <input id="lc-firm" type="text" required autoComplete="organization" value={form.firm} onChange={update("firm")} />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label htmlFor="lc-email">Work email</label>
-                  <input id="lc-email" type="email" required autoComplete="email" value={form.email} onChange={update("email")} />
-                </div>
-                <div className="field">
-                  <label htmlFor="lc-phone">
-                    Phone <span className="opt">(optional)</span>
-                  </label>
-                  <input id="lc-phone" type="tel" autoComplete="tel" value={form.phone} onChange={update("phone")} />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="field">
-                  <label htmlFor="lc-practice">Main practice area</label>
-                  <select id="lc-practice" value={form.practice} onChange={update("practice")}>
-                    <option>Immigration</option>
-                    <option>Personal injury</option>
-                    <option>Family law</option>
-                    <option>Criminal defense</option>
-                    <option>Estate planning</option>
-                    <option>Business / corporate</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="lc-size">Firm size</label>
-                  <select id="lc-size" value={form.size} onChange={update("size")}>
-                    <option value="">Select one</option>
-                    <option>1–5 people</option>
-                    <option>6–20 people</option>
-                    <option>21–50 people</option>
-                    <option>51+ people</option>
-                  </select>
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="lc-systems">
-                  Systems you use <span className="opt">(case management, payments, accounting)</span>
-                </label>
-                <input
-                  id="lc-systems"
-                  type="text"
-                  placeholder="e.g. MyCase, LawPay, QuickBooks"
-                  value={form.systems}
-                  onChange={update("systems")}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="lc-message">What's going on?</label>
-                <textarea
-                  id="lc-message"
-                  required
-                  placeholder="Where does the money seem to go missing?"
-                  value={form.message}
-                  onChange={update("message")}
-                />
-              </div>
-              <div>
-                <button type="submit" className="btn btn--primary">
-                  Request my diagnostic <Arrow />
-                </button>
-                <p className="form-note" style={{ marginTop: "0.75rem" }}>
-                  We'll only use your details to respond to this request.
-                </p>
-              </div>
-              {sent && (
-                <p className="form-status" role="status">
-                  Thanks. Your email client should have opened with your request. If it didn't, write to us at{" "}
-                  <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> and we'll reply within one business day.
-                </p>
-              )}
-            </form>
+const BookDiagnostic = () => (
+  <section className="section section--deep section--rule" id="contact">
+    <div className="container">
+      <div className="split split--wide-left">
+        <div>
+          <p className="eyebrow">Book a diagnostic</p>
+          <h2>Book an AR diagnostic for your firm.</h2>
+          <p className="lead">
+            Tell us about your firm and the systems you use. We'll show you where money is stuck, what each break is
+            worth, and what your team can fix now.
+          </p>
+          <div style={{ marginTop: "var(--sp-50)" }}>
+            <DiagnosticForm sourcePage="home" idPrefix="home" />
           </div>
-
-          <aside className="contact-card">
-            <h3>What happens next</h3>
-            <ol className="next-steps">
-              <li>
-                <b>We reply within one business day</b>
-                <span>to set up a time that works for your team.</span>
-              </li>
-              <li>
-                <b>We walk through your systems</b>
-                <span>
-                  Which case-management, payment and accounting tools you run, and where the money seems to go missing.
-                </span>
-              </li>
-              <li>
-                <b>You see what's fixable</b>
-                <span>A first view of where money is stuck, by cause, and what your team could clear first.</span>
-              </li>
-            </ol>
-            <div className="contact-line">
-              <span className="kicker">Email</span>
-              <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-            </div>
-            <div className="contact-line">
-              <span className="kicker">Already a client?</span>
-              <Link to="/login">Log in to your workspace</Link>
-            </div>
-          </aside>
         </div>
-      </div>
-    </section>
-  );
-};
 
-const CtaBand = () => (
-  <section className="cta-band">
-    <div className="container">
-      <p className="eyebrow">Book a diagnostic</p>
-      <h2>Find out what's fixable at your firm this week.</h2>
-      <p className="lead">
-        We'll show you where money is stuck across your systems, what each break is worth, and which ones your team can
-        fix now.
-      </p>
-      <div className="actions">
-        <a className="btn btn--primary" href="#contact">
-          Book a diagnostic <Arrow />
-        </a>
-        <a className="btn btn--ghost" href="#how-it-works">
-          See how it works
-        </a>
+        <aside className="contact-card">
+          <h3>What happens next</h3>
+          <ol className="next-steps">
+            <li>
+              <b>We reply within one business day</b>
+              <span>to set up a time that works for your team.</span>
+            </li>
+            <li>
+              <b>We walk through your systems</b>
+              <span>
+                Which case-management, payment and accounting tools you run, and where the money seems to go missing.
+              </span>
+            </li>
+            <li>
+              <b>You see what's fixable</b>
+              <span>A first view of where money is stuck, by cause, and what your team could clear first.</span>
+            </li>
+          </ol>
+          <div className="contact-line">
+            <span className="kicker">Email</span>
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </div>
+          <div className="contact-line">
+            <span className="kicker">Already a client?</span>
+            <Link to={MARKETING_ROUTES.login}>Log in to your workspace</Link>
+          </div>
+        </aside>
       </div>
     </div>
   </section>
-);
-
-const SiteFooter = () => (
-  <footer className="site-footer">
-    <div className="container">
-      <div className="footer-grid">
-        <div className="footer-brand">
-          <Brand />
-          <p>Accounts-receivable software that finds where a law firm's money is stuck, prices each break, and routes the fix.</p>
-        </div>
-        <div className="footer-col">
-          <h2>Platform</h2>
-          <ul>
-            <li>
-              <a href="#how-it-works">Reconciliation</a>
-            </li>
-            <li>
-              <a href="#diagnostic">Diagnosis</a>
-            </li>
-            <li>
-              <a href="#how-it-works">Routing</a>
-            </li>
-            <li>
-              <a href="#self-audit">Self-monitoring</a>
-            </li>
-            <li>
-              <a href="#immigration">Immigration firms</a>
-            </li>
-          </ul>
-        </div>
-        <div className="footer-col">
-          <h2>Company</h2>
-          <ul>
-            <li>
-              <a href="#problem">Why LexCollect</a>
-            </li>
-            <li>
-              <a href="#faq">FAQ</a>
-            </li>
-            <li>
-              <Link to="/login">Client log in</Link>
-            </li>
-          </ul>
-        </div>
-        <div className="footer-col">
-          <h2>Get started</h2>
-          <ul>
-            <li>
-              <a href="#contact">Book a diagnostic</a>
-            </li>
-            <li>
-              <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <span>&copy; {new Date().getFullYear()} LexCollect. All rights reserved.</span>
-        <nav aria-label="Legal">
-          <a href="#contact">Privacy policy</a>
-          <a href="#contact">Terms</a>
-        </nav>
-      </div>
-    </div>
-  </footer>
 );
 
 const LandingPage = () => {
-  useEffect(() => {
-    const previous = document.title;
-    document.title = "Law Firm Accounts Receivable Software | LexCollect";
-    return () => {
-      document.title = previous;
-    };
-  }, []);
+  usePageMeta(HOME_META.title, HOME_META.description);
 
   return (
-    <div className="lc">
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      <SiteHeader />
-      <main id="main">
-        <Hero />
-        <Stats />
-        <Problem />
-        <Diagnostic />
-        <HowItWorks />
-        <Immigration />
-        <SelfAudit />
-        <Faq />
-        <BookDiagnostic />
-        <CtaBand />
-      </main>
-      <SiteFooter />
-    </div>
+    <SiteShell>
+      <Hero />
+      <Stats />
+      <Problem />
+      <Diagnostic />
+      <HowItWorks />
+      <Immigration />
+      <SelfAudit />
+      <Faq />
+      <BookDiagnostic />
+      <CtaBand
+        title="Find out what's fixable at your firm this week."
+        lead="We'll show you where money is stuck across your systems, what each break is worth, and which ones your team can fix now."
+        secondary={{ to: MARKETING_ROUTES.services, label: "Explore the platform" }}
+      />
+    </SiteShell>
   );
 };
 
