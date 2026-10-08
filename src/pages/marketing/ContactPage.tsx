@@ -4,23 +4,23 @@ import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const CONTACT_META = {
-  title: "Book an AR Diagnostic for Your Law Firm | LexCollect",
+  title: "Book an AR Diagnostic for Your Firm | LexCollect",
   description:
     "Tell us about your firm and the systems you use. We'll show you where money is stuck, what each break is worth, and what your team can fix now.",
 };
 
 const FAQS = [
   {
-    q: "Do we need to be an immigration firm?",
-    a: "No. We started with immigration practices, but the four-system problem exists in any firm that bills. Tell us your practice area and we'll tell you honestly how well LexCollect fits.",
+    q: "Do we need to be a particular kind of firm?",
+    a: "No. If your firm bills clients, carries receivables and has someone chasing late accounts, it fits. Tell us what your firm does and which systems you run, and we'll tell you honestly how well LexCollect fits.",
   },
   {
     q: "What should we have ready for the call?",
-    a: "The names of your case-management, payment, accounting and banking systems, plus a rough sense of how many active payment plans or open matters you carry. No exports are needed for a first conversation.",
+    a: "The names of your client-management, payment, accounting and banking systems, plus a rough sense of how many active payment plans or open accounts you carry. No exports are needed for a first conversation.",
   },
   {
     q: "Who from our firm should join?",
-    a: "Whoever knows where the money goes: usually the firm owner or managing partner, plus the firm administrator or bookkeeper.",
+    a: "Whoever knows where the money goes: usually the owner or managing partner, plus the administrator, controller or bookkeeper.",
   },
 ];
 
@@ -51,7 +51,7 @@ const ContactPage = () => {
                 <li>
                   <b>We walk through your systems</b>
                   <span>
-                    Which case-management, payment and accounting tools you run, and where the money seems to go
+                    Which client-management, payment and accounting tools you run, and where the money seems to go
                     missing.
                   </span>
                 </li>

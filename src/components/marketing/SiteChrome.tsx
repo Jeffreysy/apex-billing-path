@@ -113,7 +113,7 @@ export const SiteFooter = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>AR oversight and collections software for law firms. One live view of every dollar owed, a name on every delinquent account, and a record of every call, promise and hand-off until it's paid.</p>
+          <p>AR oversight and collections software for firms. One live view of every dollar owed, a name on every delinquent account, and a record of every call, promise and hand-off until it's paid.</p>
         </div>
         <div className="footer-col">
           <h2>Platform</h2>

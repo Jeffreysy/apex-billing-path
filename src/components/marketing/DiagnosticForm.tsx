@@ -7,7 +7,7 @@ interface FormState {
   firm: string;
   email: string;
   phone: string;
-  practice: string;
+  firmType: string;
   size: string;
   systems: string;
   message: string;
@@ -20,7 +20,7 @@ const EMPTY: FormState = {
   firm: "",
   email: "",
   phone: "",
-  practice: "",
+  firmType: "",
   size: "",
   systems: "",
   message: "",
@@ -63,7 +63,7 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
         firmName: form.firm,
         email: form.email,
         phone: form.phone,
-        practiceArea: form.practice,
+        firmType: form.firmType,
         firmSize: form.size,
         systems: form.systems,
         message: form.message,
@@ -120,33 +120,31 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
 
       <div className="form-row">
         <div className="field">
-          <label htmlFor={id("practice")}>Main practice area</label>
-          <select id={id("practice")} required value={form.practice} onChange={update("practice")}>
-            <option value="">Choose one</option>
-            <option>Immigration</option>
-            <option>Family law</option>
-            <option>Personal injury</option>
-            <option>Criminal defense</option>
-            <option>Estate planning</option>
-            <option>Business / corporate</option>
-            <option>Other</option>
-          </select>
+          <label htmlFor={id("firmType")}>What your firm does</label>
+          <input
+            id={id("firmType")}
+            type="text"
+            required
+            placeholder="e.g. professional services with payment plans"
+            value={form.firmType}
+            onChange={update("firmType")}
+          />
         </div>
         <div className="field">
           <label htmlFor={id("size")}>Firm size</label>
           <select id={id("size")} required value={form.size} onChange={update("size")}>
             <option value="">Choose one</option>
-            <option>1–5 attorneys</option>
-            <option>6–15 attorneys</option>
-            <option>16–50 attorneys</option>
-            <option>50+ attorneys</option>
+            <option>1–10 people</option>
+            <option>11–25 people</option>
+            <option>26–75 people</option>
+            <option>75+ people</option>
           </select>
         </div>
       </div>
 
       <div className="field">
         <label htmlFor={id("systems")}>
-          Systems you use <span className="opt">(case management, payments, accounting)</span>
+          Systems you use <span className="opt">(client management, payments, accounting)</span>
         </label>
         <input
           id={id("systems")}

@@ -3,9 +3,9 @@ import { CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/marketin
 import { INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const RESULTS_META = {
-  title: "Results: Reconciliation, Migration & Collections at a Law Firm | LexCollect",
+  title: "Results: Reconciliation, Migration & Collections at a Working Firm | LexCollect",
   description:
-    "What LexCollect did inside a working law firm: a $21.4M book reconciled, 561 orphan contracts re-linked, a Filevine migration with zero mismatches, and escalations with seven hand-off queues.",
+    "What LexCollect did inside a working firm: a $21.4M book reconciled, 561 orphan contracts re-linked, a migration with zero mismatches, email segments from real balances, and escalations with seven hand-off queues.",
 };
 
 const ResultsPage = () => {
@@ -17,7 +17,7 @@ const ResultsPage = () => {
         crumb="Results"
         eyebrow="Results"
         title="What LexCollect did inside a working firm."
-        lead={`LexCollect was built in the finance department of a high-volume practice with a $21M receivables book spread across ${INTEGRATIONS.join(", ")} and the bank. Everything below happened there. Every number came out of the system, not a slide deck.`}
+        lead={`LexCollect was built in the finance department of a high-volume firm with a $21M receivables book spread across ${INTEGRATIONS.join(", ")} and the bank. Everything below happened there. Every number came out of the system, not a slide deck.`}
       />
 
       <section className="section section--deep">
@@ -29,19 +29,33 @@ const ResultsPage = () => {
               <p className="win__text">Matched to the firm's ground truth within 5%, with the remaining gap explained and assigned.</p>
             </div>
             <div className="win">
-              <span className="win__label">Balances re-linked</span>
-              <span className="win__num">$3.5M</span>
-              <p className="win__text">561 contracts with no client attached were tied back to real people, with every change audited.</p>
+              <span className="win__label">Migration</span>
+              <span className="win__num">
+                0<small>mismatches</small>
+              </span>
+              <p className="win__text">1,395 records reconciled across the move from one client system to another. 733 missing ones surfaced.</p>
             </div>
             <div className="win">
-              <span className="win__label">Payments matched</span>
-              <span className="win__num">2,013</span>
-              <p className="win__text">$1.19M of processor payments tied to a client, contract and invoice. 759 more queued for a human.</p>
+              <span className="win__label">Email segmentation</span>
+              <span className="win__num">228</span>
+              <p className="win__text">Willing payers with a failed card ($928K) segmented for an "update your card" email instead of a collections call.</p>
             </div>
             <div className="win win--pending">
-              <span className="win__label">Delinquent dollars collected</span>
+              <span className="win__label">Paying clients gained</span>
+              <span className="win__num">+[ ]</span>
+              <p className="win__text">Net new current and on-plan clients per month after go-live.</p>
+              <span className="placeholder-tag">Add figure</span>
+            </div>
+            <div className="win win--pending">
+              <span className="win__label">Hard-delinquent $ collected</span>
               <span className="win__num">+[ ]%</span>
-              <p className="win__text">Month-over-month hard-debt recovery after go-live.</p>
+              <p className="win__text">Month-over-month recovery of 90+ day balances after go-live.</p>
+              <span className="placeholder-tag">Add figure</span>
+            </div>
+            <div className="win win--pending">
+              <span className="win__label">Revenue traced to LexCollect</span>
+              <span className="win__num">$[ ]</span>
+              <p className="win__text">Dollars collected from a LexCollect queue, email segment or commitment, by origin.</p>
               <span className="placeholder-tag">Add figure</span>
             </div>
           </div>
@@ -93,7 +107,7 @@ const ResultsPage = () => {
               </p>
               <p>
                 <strong>Orphan contracts.</strong> 561 contracts had balances but no client attached. 27 were re-linked
-                through case references embedded in the contract, 3 by normalized name, 2 were flagged as ambiguous for
+                through reference numbers embedded in the contract, 3 by normalized name, 2 were flagged as ambiguous for
                 a person, and 529 got a proper client record created from the contract itself. Every merge and link
                 was written to an audit table.
               </p>
@@ -117,7 +131,7 @@ const ResultsPage = () => {
               <p className="eyebrow">Payment matching</p>
               <h2>Thousands of processor payments, tied to the right client</h2>
               <p className="story__lede">
-                LawPay knew who paid. The case system knew who owed. Nothing connected the two, especially when a
+                The processor knew who paid. The client system knew who owed. Nothing connected the two, especially when a
                 spouse, parent or employer was the one paying.
               </p>
               <ul className="facts">
@@ -159,19 +173,19 @@ const ResultsPage = () => {
                 03
               </p>
               <p className="eyebrow">Migration</p>
-              <h2>Moving from MyCase to Filevine without losing a dollar</h2>
+              <h2>Migrating from one client system to another without losing a dollar</h2>
               <p className="story__lede">
-                A case-management migration is where receivables usually get lost. LexCollect reconciled both systems
-                against the firm's case lists before, during and after the move.
+                A system migration is where receivables usually get lost. LexCollect reconciled both systems against
+                the firm's own client lists before, during and after the move from MyCase to Filevine.
               </p>
               <ul className="facts">
                 <li>
                   <b>1,395</b>
-                  <span>Filevine projects reconciled against 548 firm case-list records</span>
+                  <span>records in the new system reconciled against 548 records on the firm's own lists</span>
                 </li>
                 <li>
                   <b>448 / 196 / 18</b>
-                  <span>exact, case-number-only and name-only matches, each tier reviewed separately</span>
+                  <span>exact, reference-number-only and name-only matches, each tier reviewed separately</span>
                 </li>
                 <li>
                   <b>0</b>
@@ -179,7 +193,7 @@ const ResultsPage = () => {
                 </li>
                 <li>
                   <b>733</b>
-                  <span>Filevine projects that weren't on any firm case list, surfaced for intake to confirm</span>
+                  <span>records in the new system that weren't on any firm list, surfaced for intake to confirm</span>
                 </li>
               </ul>
             </div>
@@ -194,8 +208,9 @@ const ResultsPage = () => {
                 the identical booking pipeline as live ones, so old and new money follow one set of rules.
               </p>
               <p>
-                <strong>MyCase kept in the picture.</strong> MyCase contacts, cases, ledgers and payment plans are synced
-                into the client 360, so staff still see the full history during and after the transition.
+                <strong>The old system kept in the picture.</strong> Contacts, engagements, ledgers and payment plans
+                from the previous system are synced into the client 360, so staff still see the full history during
+                and after the transition.
               </p>
             </div>
           </article>
@@ -246,7 +261,7 @@ const ResultsPage = () => {
               </p>
               <p>
                 <strong>Willing payers treated differently.</strong> The failed-card segment gets an "update your card"
-                nudge instead of a collections call, which protects the relationship and recovers money faster.
+                email instead of a collections call, which protects the relationship and recovers money faster.
               </p>
             </div>
           </article>
@@ -277,15 +292,15 @@ const ResultsPage = () => {
                 </li>
                 <li>
                   <b>5 cohorts</b>
-                  <span>HubSpot "Case Won" deals validated against payment evidence before a client counts as active</span>
+                  <span>HubSpot "won" deals validated against payment evidence before a client counts as active</span>
                 </li>
               </ul>
             </div>
             <div className="prose-sm">
               <p>
                 <strong>Trust and operating, kept apart.</strong> Payments taken in LexCollect are routed to the firm's
-                operating or Trust / IOLTA account based on what they're for, so a retainer never lands in the wrong
-                place.
+                operating account or client trust account (including IOLTA) based on what they're for, so a retainer
+                never lands in the wrong place.
               </p>
               <p>
                 <strong>The CRM and the books agree.</strong> A deal marked won in HubSpot only becomes an active client
@@ -307,17 +322,17 @@ const ResultsPage = () => {
               <p className="eyebrow">Escalations</p>
               <h2>Internal hand-offs with a queue, a priority and an owner</h2>
               <p className="story__lede">
-                Before, an escalation was an email. Now it's a record that billing, legal and management all see, with a
-                status that has to be closed.
+                Before, an escalation was an email. Now it's a record that billing, service teams and management all
+                see, with a status that has to be closed.
               </p>
               <ul className="facts">
                 <li>
                   <b>7</b>
-                  <span>hand-off queues: legal, case management, compliance, customer care, management, sales, billing ops</span>
+                  <span>hand-off queues: service teams, compliance, customer care, management, sales, billing ops, plus a custom one</span>
                 </li>
                 <li>
                   <b>9</b>
-                  <span>source contexts, from inbound call to attorney request to refund follow-up</span>
+                  <span>source contexts, from inbound call to service-team request to refund follow-up</span>
                 </li>
                 <li>
                   <b>4</b>
@@ -327,16 +342,65 @@ const ResultsPage = () => {
             </div>
             <div className="prose-sm">
               <p>
-                <strong>Inboxes per department.</strong> Legal sees what needs a lawyer. Management sees what needs a
-                decision. Collectors see what's theirs. The same escalation, three views.
+                <strong>Inboxes per department.</strong> Service teams see what needs someone who knows the client.
+                Management sees what needs a decision. Collectors see what's theirs. The same escalation, three views.
               </p>
               <p>
                 <strong>Hardship handled, not hidden.</strong> Hardship requests are their own workflow, so a client in
                 trouble gets a considered answer instead of another call.
               </p>
               <p>
-                <strong>Deadlines respected.</strong> A filing-deadline watch shows statute and filing dates on the client
-                record and firm-wide, so collections never collides with a legal deadline.
+                <strong>Deadlines respected.</strong> A deadline watch shows the firm's commitments on the client record
+                and firm-wide, so collections never collides with a promise the firm has made.
+              </p>
+            </div>
+          </article>
+
+          <article className="story" id="growth">
+            <div>
+              <p className="story__num" aria-hidden="true">
+                07
+              </p>
+              <p className="eyebrow">Growth you can trace</p>
+              <h2>More paying clients, and revenue with a source on it</h2>
+              <p className="story__lede">
+                Every collected dollar in LexCollect carries its origin, collector and outcome, so the revenue the
+                system produced is a report, not an estimate.
+              </p>
+              <ul className="facts">
+                <li className="is-pending">
+                  <b>Add figure</b>
+                  <span>net new paying clients per month after go-live</span>
+                </li>
+                <li className="is-pending">
+                  <b>Add figure</b>
+                  <span>monthly cash flow before and after go-live</span>
+                </li>
+                <li className="is-pending">
+                  <b>Add figure</b>
+                  <span>revenue collected from a LexCollect queue, email segment or commitment</span>
+                </li>
+                <li>
+                  <b>7</b>
+                  <span>origin buckets on every collected dollar: AR list, follow-up, transfer, service-team request, pending task, and more</span>
+                </li>
+              </ul>
+            </div>
+            <div className="prose-sm">
+              <p>
+                <strong>Segments, not blasts.</strong> Email segments come from reconciled balances: failed card, missed
+                installment, paid in full, no invoice yet. The right client gets the right message, and the response
+                shows up as a payment with that segment as its origin.
+              </p>
+              <p>
+                <strong>Paying clients, counted honestly.</strong> A client counts as paying when there's a payment
+                behind them, not when a deal is marked won. The monthly view shows current and on-plan clients gained
+                and lost, so growth is net, not gross.
+              </p>
+              <p>
+                <strong>Revenue attribution.</strong> Dollars from the call queue, from a commitment kept, from an email
+                segment and from a transfer are summed separately, by collector and by month. That's the number you put
+                next to the LexCollect invoice.
               </p>
             </div>
           </article>
@@ -350,12 +414,13 @@ const ResultsPage = () => {
               <p className="eyebrow">Suited to your firm</p>
               <h2>Everything above is configuration at your firm, not a rebuild.</h2>
               <p className="lead">
-                Collectors come from a live roster. Escalation targets are your departments. Practice areas, aging
+                Collectors come from a live roster. Escalation targets are your departments. Product lines, aging
                 buckets, outcome labels and queues are set per firm. The integrations are the ones you already pay for.
               </p>
               <p className="muted">
-                The first deployment was an immigration practice because that's the hardest version of the problem.
-                The system doesn't care what you practice. <Link to={MARKETING_ROUTES.contact}>Tell us about your firm.</Link>
+                The first deployment was a firm with thousands of installment plans and payers who weren't the client,
+                which is the hardest version of the problem. The system doesn't care what you sell.{" "}
+                <Link to={MARKETING_ROUTES.contact}>Tell us about your firm.</Link>
               </p>
             </div>
             <div className="grid grid--2">
@@ -367,7 +432,7 @@ const ResultsPage = () => {
               <div className="card">
                 <span className="kicker">Week 2</span>
                 <h3>Configure the firm</h3>
-                <p>Roles, roster, queues, practice areas and escalation targets set to match how you already work.</p>
+                <p>Roles, roster, queues, product lines and escalation targets set to match how you already work.</p>
               </div>
               <div className="card">
                 <span className="kicker">Week 3</span>

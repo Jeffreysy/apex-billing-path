@@ -4,16 +4,16 @@ import { PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChr
 import { BLOG_POST_SLUG, CONTACT_EMAIL, blogPostPath, subscribeToNewsletter } from "@/lib/marketing";
 
 export const BLOG_META = {
-  title: "Law Firm AR & Collections Blog | LexCollect",
+  title: "AR, Reconciliation & Collections Blog | LexCollect",
   description:
-    "Practical articles on law firm accounts receivable, payment reconciliation, immigration firm billing and collections, from the team at LexCollect.",
+    "Practical articles on accounts receivable, payment reconciliation, payment plans and collections for firms, from the team at LexCollect.",
 };
 
-type Category = "reconciliation" | "immigration" | "collections" | "operations";
+type Category = "reconciliation" | "payment-plans" | "collections" | "operations";
 
 const CATEGORY_LABELS: Record<Category, string> = {
   reconciliation: "Reconciliation",
-  immigration: "Immigration practice",
+  "payment-plans": "Payment plans",
   collections: "Collections",
   operations: "Operations",
 };
@@ -30,12 +30,12 @@ interface Post {
 }
 
 export const FEATURED_POST: Post = {
-  cat: "immigration",
+  cat: "reconciliation",
   fig: "4 handoffs",
   cover: "teal",
-  title: "Where Immigration Firms Lose Money Between the Case System and the Bank",
+  title: "Where Firms Lose Money Between Their Systems and the Bank",
   summary:
-    "Flat fees, payment plans and relatives who pay on a client's behalf. Five places immigration firms lose track of money they've already been paid, and how to find it.",
+    "Payment plans, third-party payers and batched deposits. Five places firms lose track of money they've already been paid, and how to find it.",
   readTime: "8 min read",
   slug: BLOG_POST_SLUG,
 };
@@ -46,7 +46,7 @@ export const UPCOMING_POSTS: Post[] = [
     fig: "untied",
     title: "Unattributed Payments: Why Payment-Plan Money Goes Missing",
     summary:
-      "The money arrived. It just never got attached to a client. How unattributed payments happen at law firms and how to clear them for good.",
+      "The money arrived. It just never got attached to a client. How unattributed payments happen at firms and how to clear them for good.",
     readTime: "6 min read",
   },
   {
@@ -71,14 +71,14 @@ export const UPCOMING_POSTS: Post[] = [
     fig: "paid",
     cover: "teal",
     title: "Stop Calling Clients Who Already Paid",
-    summary: "Collections calls to families who paid through a relative damage trust fast. Reconcile first, then call.",
+    summary: "Collections calls to clients who paid through someone else damage trust fast. Reconcile first, then call.",
     readTime: "5 min read",
   },
   {
-    cat: "immigration",
+    cat: "payment-plans",
     fig: "12×",
-    title: "Flat Fees and Payment Plans: An AR Checklist for Immigration Firms",
-    summary: "A month-end checklist for firms running hundreds of installment plans across families and matters.",
+    title: "Flat Fees and Payment Plans: A Month-End AR Checklist",
+    summary: "A month-end checklist for firms running hundreds of installment plans across clients and engagements.",
     readTime: "9 min read",
   },
   {
@@ -183,15 +183,15 @@ const BlogPage = () => {
   const [filter, setFilter] = useState<Category | "all">("all");
 
   const show = (p: Post) => filter === "all" || p.cat === filter;
-  const filters: Array<Category | "all"> = ["all", "reconciliation", "immigration", "collections", "operations"];
+  const filters: Array<Category | "all"> = ["all", "reconciliation", "payment-plans", "collections", "operations"];
 
   return (
     <SiteShell>
       <PageHero
         crumb="Blog"
         eyebrow="The LexCollect blog"
-        title="Law firm AR, reconciliation and collections, explained plainly."
-        lead="Practical writing for firm owners, controllers and administrators on where law firm money gets stuck, how to reconcile it, and how to collect it."
+        title="Receivables, reconciliation and collections, explained plainly."
+        lead="Practical writing for firm owners, controllers and administrators on where money gets stuck, how to reconcile it, and how to collect it."
       />
 
       <section className="section section--tight">

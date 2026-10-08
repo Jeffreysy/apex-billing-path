@@ -14,20 +14,10 @@ export const MARKETING_ROUTES = {
   login: "/login",
 } as const;
 
-/** The practice areas named on the site. Order is the order they appear. */
-export const PRACTICE_AREAS = [
-  "Immigration",
-  "Personal injury",
-  "Family law",
-  "Criminal defense",
-  "Estate planning",
-  "Business / corporate",
-] as const;
-
 /** Systems LexCollect reads from or writes to today. */
 export const INTEGRATIONS = ["MyCase", "Filevine", "LawPay", "HubSpot", "QuickBooks"] as const;
 
-export const BLOG_POST_SLUG = "immigration-firms-lose-money-between-systems";
+export const BLOG_POST_SLUG = "where-firms-lose-money-between-systems";
 export const blogPostPath = (slug: string) => `${MARKETING_ROUTES.blog}/${slug}`;
 
 export interface DiagnosticInquiry {
@@ -35,7 +25,7 @@ export interface DiagnosticInquiry {
   firmName: string;
   email: string;
   phone?: string;
-  practiceArea?: string;
+  firmType?: string;
   firmSize?: string;
   systems?: string;
   message?: string;
@@ -61,7 +51,7 @@ export async function submitDiagnosticInquiry(input: DiagnosticInquiry): Promise
     firm_name: trimOrNull(input.firmName),
     email: input.email.trim(),
     phone: trimOrNull(input.phone),
-    practice_area: trimOrNull(input.practiceArea),
+    practice_area: trimOrNull(input.firmType),
     firm_size: trimOrNull(input.firmSize),
     systems: trimOrNull(input.systems),
     message: trimOrNull(input.message),

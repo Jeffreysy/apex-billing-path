@@ -1,25 +1,105 @@
 import { Link } from "react-router-dom";
 import { Arrow, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
-import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES, PRACTICE_AREAS } from "@/lib/marketing";
+import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const HOME_META = {
-  title: "AR Oversight & Collections Software for Law Firms | LexCollect",
+  title: "AR Oversight & Collections Software for Firms | LexCollect",
   description:
-    "LexCollect gives law firms one live view of every dollar owed, reconciles case, payment, accounting and bank data, and runs collections with a name on every account.",
+    "LexCollect gives firms one live view of every dollar owed, reconciles client, payment, accounting and bank data, and runs collections with a name on every account.",
 };
+
+/* Illustrative six-month trend. Your firm's data fills this view in the product. */
+const MOMENTUM = {
+  months: ["Apr", "May", "Jun", "Jul", "Aug", "Sep"],
+  payingClients: [412, 438, 467, 503, 541, 586],
+  hardDebtCollected: [61, 74, 92, 118, 139, 163], // $K per month
+  cashFlow: [388, 402, 431, 468, 507, 549], // $K per month
+};
+
+const Spark = ({ values, id }: { values: number[]; id: string }) => {
+  const w = 220;
+  const h = 56;
+  const pad = 6;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const x = (i: number) => pad + (i * (w - pad * 2)) / (values.length - 1);
+  const y = (v: number) => h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2);
+  const pts = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  const area = `${x(0)},${h - 1} ${pts} ${x(values.length - 1)},${h - 1}`;
+  const last = values.length - 1;
+  return (
+    <svg className="spark" viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby={`${id}-t`} preserveAspectRatio="none">
+      <title id={`${id}-t`}>Six-month trend, rising</title>
+      <defs>
+        <linearGradient id={`${id}-g`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#3DD9C7" stopOpacity="0.28" />
+          <stop offset="1" stopColor="#3DD9C7" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill={`url(#${id}-g)`} />
+      <polyline points={pts} fill="none" stroke="#3DD9C7" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={x(last)} cy={y(values[last])} r="4" fill="#3DD9C7" stroke="#F1F4F7" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+};
+
+const pct = (arr: number[]) => Math.round(((arr[arr.length - 1] - arr[0]) / arr[0]) * 100);
+
+const MomentumCard = () => (
+  <figure className="momentum" aria-label="Illustrative collections momentum over six months">
+    <div className="momentum__head">
+      <span>
+        <b>AR Oversight</b> · Collections momentum
+      </span>
+      <span>{MOMENTUM.months[0]}–{MOMENTUM.months[5]}</span>
+    </div>
+    <div className="momentum__grid">
+      <div className="panel-stat">
+        <span className="panel-stat__label">Paying clients</span>
+        <span className="panel-stat__num">
+          {MOMENTUM.payingClients[5].toLocaleString()}
+          <small>+{pct(MOMENTUM.payingClients)}%</small>
+        </span>
+        <Spark values={MOMENTUM.payingClients} id="sp-clients" />
+        <span className="panel-stat__foot">current and on plan, up every month</span>
+      </div>
+      <div className="panel-stat">
+        <span className="panel-stat__label">Hard-delinquent $ collected</span>
+        <span className="panel-stat__num">
+          ${MOMENTUM.hardDebtCollected[5]}K<small>+{pct(MOMENTUM.hardDebtCollected)}%</small>
+        </span>
+        <Spark values={MOMENTUM.hardDebtCollected} id="sp-debt" />
+        <span className="panel-stat__foot">90+ day balances recovered per month</span>
+      </div>
+      <div className="panel-stat">
+        <span className="panel-stat__label">Monthly cash flow</span>
+        <span className="panel-stat__num">
+          ${MOMENTUM.cashFlow[5]}K<small>+{pct(MOMENTUM.cashFlow)}%</small>
+        </span>
+        <Spark values={MOMENTUM.cashFlow} id="sp-cash" />
+        <span className="panel-stat__foot">collected across all sources</span>
+      </div>
+    </div>
+    <div className="momentum__foot">
+      <span className="k">Traced to LexCollect</span>
+      <strong className="v">every dollar</strong>
+      <span className="s">each payment carries its origin, collector and outcome</span>
+    </div>
+  </figure>
+);
 
 const Hero = () => (
   <section className="hero" id="top">
     <div className="container hero__grid">
       <div className="hero__copy">
-        <p className="eyebrow">AR oversight for law firms</p>
+        <p className="eyebrow">AR oversight for firms</p>
         <h1>
           Know where every dollar is. <em>Collect the ones that are late.</em>
         </h1>
         <p className="lead">
-          LexCollect is accounts-receivable oversight and collections software for law firms. It reconciles your
-          case-management, payment, accounting and bank data into one live view of what you're owed, puts a name on
+          LexCollect is accounts-receivable oversight and collections software for firms. It reconciles your
+          client-management, payment, accounting and bank data into one live view of what you're owed, puts a name on
           every delinquent account, and tracks every call, promise and escalation until the money lands.
         </p>
         <div className="actions">
@@ -30,74 +110,14 @@ const Hero = () => (
             See the results
           </Link>
         </div>
-        <p className="hero__note">Built inside a working law firm on a $21M receivables book. Fits any practice that bills.</p>
+        <p className="hero__note">Built inside a working firm on a $21M receivables book. Fits any firm that bills.</p>
       </div>
 
       <div className="hero__visual">
         <div className="cradle">
-          <figure className="report" aria-label="Example LexCollect AR oversight snapshot">
-            <div className="report__head">
-              <span>
-                <b>AR Oversight</b> · Firm snapshot
-              </span>
-              <span>Live view</span>
-            </div>
-            <div className="report__was">
-              <span>Receivables, reconciled to the books</span>
-              <s>$21.4M "somewhere in four systems"</s>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>What the firm sees</th>
-                  <th className="col-records">Accounts</th>
-                  <th>Amount</th>
-                  <th>Owner</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Delinquent and late AR, by aging bucket</td>
-                  <td className="col-records">—</td>
-                  <td>$15,668,704</td>
-                  <td>
-                    <span className="tag tag--yes">Collectors</span>
-                  </td>
-                </tr>
-                <tr className="is-fixable">
-                  <td>Payments matched to a client, contract and invoice</td>
-                  <td className="col-records">2,013</td>
-                  <td>$1,190,204</td>
-                  <td>
-                    <span className="tag tag--yes">Done</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Payments that need a human to confirm the payer</td>
-                  <td className="col-records">759</td>
-                  <td>$370,447</td>
-                  <td>
-                    <span className="tag tag--yes">Billing</span>
-                  </td>
-                </tr>
-                <tr className="is-fixable">
-                  <td>Willing payers whose card failed, not delinquent</td>
-                  <td className="col-records">228</td>
-                  <td>$928,000</td>
-                  <td>
-                    <span className="tag tag--yes">Intake</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div className="report__foot">
-              <span className="k">Gap to the firm's ground truth</span>
-              <strong className="v">&lt; 5%</strong>
-              <span className="s">every remaining dollar explained and assigned</span>
-            </div>
-          </figure>
+          <MomentumCard />
         </div>
-        <p className="report__caption">Figures from a live LexCollect deployment at a high-volume practice. Yours will look like your firm.</p>
+        <p className="report__caption">Illustrative six-month trend. In the product this view is your firm's live data.</p>
       </div>
     </div>
   </section>
@@ -115,14 +135,14 @@ const Stats = () => (
         <span className="stat__label">in contract balances re-linked to the right clients</span>
       </div>
       <div className="stat">
-        <span className="stat__num">2,013</span>
-        <span className="stat__label">payments matched to a client, contract and invoice</span>
+        <span className="stat__num">228</span>
+        <span className="stat__label">willing payers segmented for an "update your card" email instead of a collections call</span>
       </div>
       <div className="stat">
         <span className="stat__num">
           7<small>queues</small>
         </span>
-        <span className="stat__label">for escalations, so billing, legal and management hand off with a record</span>
+        <span className="stat__label">for escalations, so billing, service teams and management hand off with a record</span>
       </div>
     </div>
   </section>
@@ -138,7 +158,7 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     title: "See every dollar: financial visibility",
-    text: "One live receivables view across your case system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
+    text: "One live receivables view across your client-management system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
     mods: ["AR Oversight", "Controller AR Oversight", "AR Movement & Projection", "Monthly AR snapshots"],
     lead: true,
   },
@@ -159,23 +179,23 @@ const PILLARS: Pillar[] = [
   },
   {
     title: "Improve internal communication",
-    text: "Billing, legal, intake and management look at the same client, the same contract status and the same escalation. Hand-offs carry a queue, a priority and an owner instead of an email chain.",
-    mods: ["Escalation Management", "Legal & Management inboxes", "Hand-off queues", "Filing-deadline watch"],
+    text: "Billing, service teams, intake and management look at the same client, the same contract status and the same escalation. Hand-offs carry a queue, a priority and an owner instead of an email chain.",
+    mods: ["Escalation Management", "Department inboxes", "Hand-off queues", "Deadline watch"],
   },
   {
     title: "Know which products make the money, and when",
-    text: "Billing by case type, contract lifecycle and progression, and the legal pipeline by stage. See which services generate cash and where in the life of a matter it arrives.",
-    mods: ["Billing by Case Type", "Contract Lifecycle", "Case Pipeline", "Practice Area Distribution"],
+    text: "Billing by product, contract lifecycle and progression, and the service pipeline by stage. See which products generate cash and where in the life of an engagement it arrives.",
+    mods: ["Billing by Product", "Contract Lifecycle", "Service Pipeline", "Product Mix"],
   },
   {
     title: "Build trust with clients",
-    text: "A client 360 with contact details, matters, ledger and payment plan, blended with the latest processor payments. The person who picks up the phone knows what was paid, by whom, and for what.",
+    text: "A client 360 with contact details, engagements, ledger and payment plan, blended with the latest processor payments. The person who picks up the phone knows what was paid, by whom, and for what.",
     mods: ["Client Lookup", "Payment ledger", "Plan freshness", "Take a payment"],
   },
   {
     title: "CRM capability, built in",
-    text: "Intake and consult tracking, HubSpot deals validated against real payments before a lead counts as a client, and case data joined to money so the CRM and the books finally agree.",
-    mods: ["HubSpot sync", "Consult funnel", "MyCase 360", "Filevine sync"],
+    text: "Intake and consult tracking, HubSpot deals validated against real payments before a lead counts as a client, email segments built from real balances, and client data joined to money so the CRM and the books finally agree.",
+    mods: ["HubSpot sync", "Consult funnel", "Email segments", "Client 360"],
   },
 ];
 
@@ -221,11 +241,11 @@ const Oversight = () => (
           <p className="eyebrow">AR Oversight</p>
           <h2>A receivables number the partners can trust, every month.</h2>
           <p className="lead">
-            Most firms have four versions of "what we're owed": the case system, the processor, the books and a
+            Most firms have four versions of "what we're owed": the client system, the processor, the books and a
             spreadsheet. LexCollect reconciles them into one, then explains every dollar of difference.
           </p>
           <p>
-            <strong>Reconciled, not exported.</strong> Payments are traced from the case system to the bank deposit,
+            <strong>Reconciled, not exported.</strong> Payments are traced from the client system to the bank deposit,
             including payments made by someone other than the client.
             <br />
             <strong>Certified snapshots.</strong> AR is captured monthly, so trends are real history, not a re-run of
@@ -311,7 +331,7 @@ const HardDebt = () => (
         <li className="step step--highlight">
           <span className="step__num">04</span>
           <h3>Escalate or close</h3>
-          <p>Hardship, legal questions and disputes go to the right queue with a priority. Paid accounts drop off. Nothing sits in limbo.</p>
+          <p>Hardship, service questions and disputes go to the right queue with a priority. Paid accounts drop off. Nothing sits in limbo.</p>
         </li>
       </ol>
       <div className="split" style={{ marginTop: "var(--sp-60)" }}>
@@ -340,7 +360,7 @@ const Results = () => (
         <p className="eyebrow">Results</p>
         <h2>What it did inside a working firm.</h2>
         <p className="lead">
-          LexCollect was built in the finance department of a high-volume practice running MyCase, Filevine, LawPay,
+          LexCollect was built in the finance department of a high-volume firm running MyCase, Filevine, LawPay,
           HubSpot and QuickBooks. These are the numbers from that deployment.
         </p>
       </div>
@@ -360,14 +380,14 @@ const Results = () => (
           <span className="win__num">
             0<small>mismatches</small>
           </span>
-          <p className="win__text">1,395 Filevine projects reconciled against the firm's case lists during the MyCase-to-Filevine move.</p>
+          <p className="win__text">1,395 records reconciled against the firm's own lists during the MyCase-to-Filevine migration.</p>
         </div>
         <div className="win">
           <span className="win__label">Escalations</span>
           <span className="win__num">
             7<small>queues</small>
           </span>
-          <p className="win__text">Legal, case management, compliance, customer care, management, sales and billing ops, each with an inbox.</p>
+          <p className="win__text">Service teams, compliance, customer care, management, sales, billing ops and more, each with an inbox.</p>
         </div>
       </div>
       <div className="actions">
@@ -385,13 +405,13 @@ const Adapts = () => (
       <div className="split split--wide-right">
         <div>
           <p className="eyebrow">Suited to your firm</p>
-          <h2>Built for how law firms actually work, then shaped to yours.</h2>
+          <h2>Built for how firms actually work, then shaped to yours.</h2>
           <p className="lead">
-            Roles, rosters, queues, practice areas and integrations are configuration, not code. Your collectors appear
+            Roles, rosters, queues, product lines and integrations are configuration, not code. Your collectors appear
             automatically. Your escalation targets are your departments.
           </p>
           <p className="muted">
-            Practice areas we work with today: {PRACTICE_AREAS.join(", ").toLowerCase()}. Not on the list?{" "}
+            If your firm bills clients, runs payment plans and has someone chasing late accounts, it fits.{" "}
             <Link to={MARKETING_ROUTES.contact}>Tell us about yours.</Link>
           </p>
         </div>
@@ -412,9 +432,9 @@ const Adapts = () => (
             <p>Call queue, workspace, commitments, hardship requests and the client's full ledger on one screen.</p>
           </div>
           <div className="card">
-            <span className="kicker">Attorneys &amp; paralegals</span>
-            <h3>Legal sees what billing sees</h3>
-            <p>Case pipeline by stage, filing-deadline watch and an inbox for the escalations that need a lawyer.</p>
+            <span className="kicker">Service teams</span>
+            <h3>Delivery sees what billing sees</h3>
+            <p>Pipeline by stage, deadline watch and an inbox for the escalations that need someone who knows the client.</p>
           </div>
         </div>
       </div>
@@ -440,11 +460,11 @@ const Integrations = () => (
 const FAQS = [
   {
     q: "What is LexCollect?",
-    a: "LexCollect is accounts-receivable oversight and collections software for law firms. It reconciles your case-management system, payment processor, accounting and bank into one view of what you're owed, then runs collections with a queue, commitments, escalations and performance tracking on top of that reconciled data.",
+    a: "LexCollect is accounts-receivable oversight and collections software for firms. It reconciles your client-management system, payment processor, accounting and bank into one view of what you're owed, then runs collections with a queue, commitments, escalations and performance tracking on top of that reconciled data.",
   },
   {
-    q: "Is it only for immigration firms?",
-    a: "No. The first deployment was at a high-volume immigration practice, which is the hardest case for receivables: flat fees, payment plans and payers who aren't the client. The same system fits any practice that bills, and roles, queues and practice areas are configured per firm.",
+    q: "What kind of firm is it for?",
+    a: "Any firm that bills clients and carries receivables: flat fees, retainers, installment plans or invoices. The first deployment was a high-volume firm with thousands of payment plans and payers who weren't the client, which is the hardest version of the problem. Roles, queues and product lines are configured per firm.",
   },
   {
     q: "How is it different from a collections tool?",
@@ -455,8 +475,8 @@ const FAQS = [
     a: `Today: ${INTEGRATIONS.join(", ")}, plus bank deposits and spreadsheet imports. If you run something else, tell us on the first call and we'll confirm the fit.`,
   },
   {
-    q: "Does it replace our case-management or accounting software?",
-    a: "No. LexCollect sits across the systems you already use and reconciles them. Your team keeps working in the same case-management and accounting tools.",
+    q: "Does it replace our client-management or accounting software?",
+    a: "No. LexCollect sits across the systems you already use and reconciles them. Your team keeps working in the same client-management and accounting tools.",
   },
   {
     q: "What does a diagnostic involve?",
@@ -504,7 +524,7 @@ const BookDiagnostic = () => (
             </li>
             <li>
               <b>We walk through your systems</b>
-              <span>Which case-management, payment and accounting tools you run, and where the money seems to go missing.</span>
+              <span>Which client-management, payment and accounting tools you run, and where the money seems to go missing.</span>
             </li>
             <li>
               <b>You see what's recoverable</b>

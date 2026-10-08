@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import { Arrow, CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
-import { MARKETING_ROUTES, PRACTICE_AREAS } from "@/lib/marketing";
+import { MARKETING_ROUTES } from "@/lib/marketing";
 
 export const ABOUT_META = {
-  title: "About LexCollect | AR Oversight Built Inside a Law Firm",
+  title: "About LexCollect | AR Oversight Built Inside a Firm",
   description:
-    "LexCollect was built in a law firm's finance department to reconcile receivables, run collections with accountability, and give partners a number they can trust.",
+    "LexCollect was built in a firm's finance department to reconcile receivables, run collections with accountability, and give partners a number they can trust.",
 };
 
 const PRINCIPLES = [
@@ -35,8 +35,8 @@ const AboutPage = () => {
       <PageHero
         crumb="About"
         eyebrow="About LexCollect"
-        title="Built inside a law firm's finance department, for every firm that bills."
-        lead="LexCollect didn't start as a product. It started as the tool a growing practice needed to answer one question every month: what are we actually owed, and who is going to collect it?"
+        title="Built inside a firm's finance department, for every firm that bills."
+        lead="LexCollect didn't start as a product. It started as the tool a growing firm needed to answer one question every month: what are we actually owed, and who is going to collect it?"
       />
 
       <section className="section">
@@ -82,7 +82,7 @@ const AboutPage = () => {
             <div className="card">
               <span className="kicker">01</span>
               <h3>Maximize revenue</h3>
-              <p>Collect more of what was already billed, and see which products to sell more of.</p>
+              <p>Collect more of what was already billed, add paying clients, and see which products to sell more of.</p>
             </div>
             <div className="card">
               <span className="kicker">02</span>
@@ -112,12 +112,12 @@ const AboutPage = () => {
             <div className="card">
               <span className="kicker">07</span>
               <h3>Products &amp; lifecycle</h3>
-              <p>Cash by case type and where in a matter's life it arrives.</p>
+              <p>Cash by product and where in an engagement's life it arrives.</p>
             </div>
             <div className="card">
               <span className="kicker">08</span>
               <h3>CRM capability</h3>
-              <p>Leads validated by money, and a client 360 the books agree with.</p>
+              <p>Leads validated by money, email segments built from real balances, and a client 360 the books agree with.</p>
             </div>
           </div>
         </div>
@@ -148,13 +148,12 @@ const AboutPage = () => {
               <p className="eyebrow">Who we serve</p>
               <h2>Firms past the point of keeping receivables in someone's head</h2>
               <p className="lead">
-                Mid-size and growing law firms with payment plans, multiple systems and a collections function, but
+                Mid-size and growing firms with payment plans, multiple systems and a collections function, but
                 without a finance department to chase every dollar full time.
               </p>
               <p className="muted">
-                Practice areas we work with today: {PRACTICE_AREAS.join(", ").toLowerCase()}. The first deployment was
-                an immigration practice because that's the hardest version of the problem. The system fits any firm
-                that bills.
+                The first deployment was a firm with thousands of installment plans and payers who weren't the client,
+                which is the hardest version of the problem. The system fits any firm that bills.
               </p>
               <div className="actions">
                 <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
