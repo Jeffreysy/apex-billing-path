@@ -4,8 +4,9 @@ import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 import "@/styles/marketing.css";
 
 const NAV_LINKS = [
+  { to: MARKETING_ROUTES.platform, label: "Platform" },
+  { to: MARKETING_ROUTES.results, label: "Results" },
   { to: MARKETING_ROUTES.about, label: "About" },
-  { to: MARKETING_ROUTES.services, label: "Services" },
   { to: MARKETING_ROUTES.blog, label: "Blog" },
   { to: MARKETING_ROUTES.contact, label: "Contact" },
 ];
@@ -112,25 +113,28 @@ export const SiteFooter = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>Accounts-receivable software that finds where a law firm's money is stuck, prices each break, and routes the fix.</p>
+          <p>AR oversight and collections software for law firms. One live view of every dollar owed, a name on every delinquent account, and a record of every call, promise and hand-off until it's paid.</p>
         </div>
         <div className="footer-col">
           <h2>Platform</h2>
           <ul>
             <li>
-              <Link to={`${MARKETING_ROUTES.services}#reconciliation`}>Reconciliation</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#oversight`}>AR Oversight</Link>
             </li>
             <li>
-              <Link to={`${MARKETING_ROUTES.services}#diagnosis`}>Diagnosis</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#reconciliation`}>Reconciliation</Link>
             </li>
             <li>
-              <Link to={`${MARKETING_ROUTES.services}#routing`}>Routing</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#collections`}>Collections</Link>
             </li>
             <li>
-              <Link to={`${MARKETING_ROUTES.services}#monitoring`}>Self-monitoring</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#escalations`}>Escalations</Link>
             </li>
             <li>
-              <Link to={`${MARKETING_ROUTES.services}#collections`}>Collections</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#crm`}>Client CRM</Link>
+            </li>
+            <li>
+              <Link to={MARKETING_ROUTES.results}>Results</Link>
             </li>
           </ul>
         </div>

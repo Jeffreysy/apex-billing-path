@@ -191,7 +191,7 @@ const BlogPage = () => {
         crumb="Blog"
         eyebrow="The LexCollect blog"
         title="Law firm AR, reconciliation and collections, explained plainly."
-        lead="Practical writing for firm owners and administrators on where law firm money gets stuck and how to get it moving. Immigration practices first."
+        lead="Practical writing for firm owners, controllers and administrators on where law firm money gets stuck, how to reconcile it, and how to collect it."
       />
 
       <section className="section section--tight">

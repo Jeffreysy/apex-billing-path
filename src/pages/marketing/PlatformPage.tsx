@@ -1,0 +1,395 @@
+import { CtaBand, FaqList, PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { INTEGRATIONS } from "@/lib/marketing";
+
+export const PLATFORM_META = {
+  title: "Law Firm AR Oversight, Reconciliation & Collections Platform | LexCollect",
+  description:
+    "AR oversight, payment reconciliation, a prioritized collections queue, collector accountability, escalations, product and lifecycle analytics, client CRM and forecasting for law firms, in one system.",
+};
+
+interface Module {
+  id: string;
+  num: string;
+  eyebrow: string;
+  title: string;
+  lede: string;
+  screens: string[];
+  caps: { title: string; text: string }[];
+}
+
+const MODULES: Module[] = [
+  {
+    id: "oversight",
+    num: "01",
+    eyebrow: "AR Oversight",
+    title: "One live view of everything your firm is owed",
+    lede: "Aging, open AR over time, expected deposits and a certified monthly snapshot, reconciled across every system you run.",
+    screens: ["Financial Oversight", "AR Oversight", "Controller AR Oversight", "AR Movement & Projection", "Live AR"],
+    caps: [
+      {
+        title: "Aging you can defend",
+        text: "Current, late and delinquent balances by bucket, by client and by case type, built from reconciled payments rather than exported statuses.",
+      },
+      {
+        title: "Certified monthly snapshots",
+        text: "AR is captured on a schedule so the twelve-month trend is real history. Fallback to the last certified figure when live detail is slow.",
+      },
+      {
+        title: "Movement and projection",
+        text: "Which clients moved the book this period, what's expected from active plans, and where the trend is heading.",
+      },
+    ],
+  },
+  {
+    id: "reconciliation",
+    num: "02",
+    eyebrow: "Reconciliation & data integrity",
+    title: "Every payment tied to a client, contract and invoice",
+    lede: "Processor, case system, CRM and books reconciled continuously. Anything that can't be tied is counted and queued for a person.",
+    screens: ["LawPay reconciliation", "Filevine case reconciliation", "HubSpot validation", "Unmatched payment review", "Data Import"],
+    caps: [
+      {
+        title: "Ranked match suggestions",
+        text: "Unmatched payments get the five most likely clients by name similarity, amount and timing. A person confirms. Nothing is matched on a guess.",
+      },
+      {
+        title: "Duplicates and orphans healed",
+        text: "Duplicate client records merged into one survivor with every related table repointed. Contracts with no client re-linked or given one.",
+      },
+      {
+        title: "Booked once, audited always",
+        text: "Idempotency guards stop a payment being booked twice on webhook retries. Every merge, link and reclassification is written to an audit table and reversible.",
+      },
+    ],
+  },
+  {
+    id: "collections",
+    num: "03",
+    eyebrow: "Collections",
+    title: "A prioritized queue, a full ledger and a record of every call",
+    lede: "Collections built on reconciled balances, so your team calls the right people about the right amount.",
+    screens: ["Collections monthly view", "Call Queue", "Collector Workspace", "Payment Commitments", "Card Recovery", "Daily Activity Log"],
+    caps: [
+      {
+        title: "Queue intelligence",
+        text: "Accounts ranked by balance, aging and last contact. Consult-only records, import noise and abandoned contracts stay out by default.",
+      },
+      {
+        title: "Commitments and hardship",
+        text: "Promises to pay carry a date and amount and get followed up. Hardship requests are a workflow, not a sticky note.",
+      },
+      {
+        title: "Failed cards, not delinquency",
+        text: "Willing payers whose auto-draft failed are separated into a billing nudge segment and measured by recovery rate per cohort.",
+      },
+    ],
+  },
+  {
+    id: "accountability",
+    num: "04",
+    eyebrow: "Accountability",
+    title: "Every collector, every call, every dollar, every day",
+    lede: "Scorecards for collectors and intake, built from the full activity log and certified per person.",
+    screens: ["Collector Performance", "Collections KPI", "Outcome Distribution", "Origin breakdown", "Coverage tracking"],
+    caps: [
+      {
+        title: "Monthly scorecards",
+        text: "Calls, dollars collected, average per call, duration, commission, collection rate, calls per day and connected per day, per team member.",
+      },
+      {
+        title: "Outcomes and origins",
+        text: "Where collected dollars came from (AR list, follow-up, transfer, attorney request) and how calls ended, with dirty labels normalized.",
+      },
+      {
+        title: "Today, not last month",
+        text: "A date-stamped row per team member for the current day, and new-client contact counts by day of week.",
+      },
+    ],
+  },
+  {
+    id: "escalations",
+    num: "05",
+    eyebrow: "Escalations & internal communication",
+    title: "Hand-offs with a queue, a priority and an owner",
+    lede: "Billing, legal, intake and management look at the same record. An escalation has a status that has to be closed.",
+    screens: ["Escalation Management", "Legal inbox", "Management inbox", "Hardship requests", "Filing-deadline watch"],
+    caps: [
+      {
+        title: "Seven hand-off queues",
+        text: "Legal, case management, compliance, customer care, management, sales and billing ops, each with its own inbox and the live roster as assignees.",
+      },
+      {
+        title: "Context travels with it",
+        text: "Source (inbound call, attorney request, refund follow-up, compliance review), priority, notes and the client's ledger, all on the escalation.",
+      },
+      {
+        title: "Legal deadlines in view",
+        text: "Statute and filing deadlines appear on the client record and in a firm-wide panel, so collections never collides with a legal date.",
+      },
+    ],
+  },
+  {
+    id: "products",
+    num: "06",
+    eyebrow: "Products & lifecycle",
+    title: "Which services make the money, and when it arrives",
+    lede: "Billing by case type, contract lifecycle and the legal pipeline by stage, so partners can see what to sell more of.",
+    screens: ["Billing by Case Type", "Contract Lifecycle", "Contract Progression", "Case Pipeline by Stage", "Practice Area Distribution", "Monthly Intakes"],
+    caps: [
+      {
+        title: "Cash by case type",
+        text: "What each product line bills and collects, and how long it takes to do it.",
+      },
+      {
+        title: "Contract lifecycle",
+        text: "From signed to current to paid, with abandoned and delinquent contracts classified honestly instead of hidden in 'Paid'.",
+      },
+      {
+        title: "Legal pipeline",
+        text: "Active cases by stage, practice-area mix and twelve months of intakes, next to the money those matters produce.",
+      },
+    ],
+  },
+  {
+    id: "crm",
+    num: "07",
+    eyebrow: "Client CRM",
+    title: "A client 360 that the CRM and the books both agree with",
+    lede: "Contact, matters, ledger, plan and escalations on one screen, with the latest processor payments blended in.",
+    screens: ["Client Lookup", "MyCase 360", "HubSpot sync", "Consult funnel", "Take a payment"],
+    caps: [
+      {
+        title: "Everything about the client",
+        text: "Contact details, cases, payment ledger and plan from the case system, plus fresh processor payments with a freshness stamp.",
+      },
+      {
+        title: "Leads validated by money",
+        text: "HubSpot deals marked won become active clients only when payment evidence exists. The rest are held for review, not counted.",
+      },
+      {
+        title: "Take a payment, correctly",
+        text: "Card or ACH, routed to operating or Trust / IOLTA based on what it's for, logged as an activity on the account.",
+      },
+    ],
+  },
+  {
+    id: "reporting",
+    num: "08",
+    eyebrow: "Reporting & forecasting",
+    title: "Forecasts from plans, not hopes",
+    lede: "Expected deposits and collections built from active payment plans and history, with a report builder for the month-end packet.",
+    screens: ["Reporting & Forecasting", "Revenue Forecast (8 weeks)", "Expected Deposits", "Historical Collections", "Report Builder"],
+    caps: [
+      {
+        title: "Eight-week revenue forecast",
+        text: "What should land each week from scheduled installments, against what actually did.",
+      },
+      {
+        title: "Historical collections",
+        text: "Monthly collections classified by type, with quarter views for the partners' meeting.",
+      },
+      {
+        title: "Print-ready packets",
+        text: "Build the month-end report once, print it clean, and send the same numbers to everyone.",
+      },
+    ],
+  },
+];
+
+const FAQS = [
+  {
+    q: "Does LexCollect replace our case-management or accounting software?",
+    a: "No. LexCollect sits across the systems you already use and reconciles them. Your team keeps working in the same case-management and accounting tools.",
+  },
+  {
+    q: "What happens when a payment can't be matched automatically?",
+    a: "It's counted, queued and shown with ranked suggestions. A person confirms the match, and the confirmation is recorded. Nothing is matched on a guess and nothing is dropped.",
+  },
+  {
+    q: "Who on our team uses it?",
+    a: "Partners and owners for the certified number and executive insights. Controllers and administrators for oversight, forecasting and reporting. Collectors and billing for the queue, workspace and commitments. Attorneys and paralegals for the legal pipeline, deadline watch and their escalation inbox. Access is by role.",
+  },
+  {
+    q: "How is it configured for our firm?",
+    a: "Collectors come from a live roster. Escalation targets are your departments. Practice areas, outcome labels, origin buckets and aging thresholds are set per firm. Integrations are the ones you already run.",
+  },
+  {
+    q: "Is LexCollect a collections agency?",
+    a: "No. LexCollect is software. Your firm keeps the client relationship and decides who is contacted, when and how.",
+  },
+];
+
+const PlatformPage = () => {
+  usePageMeta(PLATFORM_META.title, PLATFORM_META.description);
+
+  return (
+    <SiteShell>
+      <PageHero
+        crumb="Platform"
+        eyebrow="Platform"
+        title="AR oversight, reconciliation and collections for law firms, in one system."
+        lead="Eight working parts. Each one is a screen your team will open, built on the same reconciled data, so the partner, the controller and the collector are looking at the same dollar."
+      >
+        <nav className="jump" aria-label="On this page">
+          {MODULES.map((m) => (
+            <a key={m.id} href={`#${m.id}`}>
+              {m.num} {m.eyebrow}
+            </a>
+          ))}
+        </nav>
+      </PageHero>
+
+      <section className="section">
+        <div className="container">
+          {MODULES.map((m) => (
+            <article className="module" id={m.id} key={m.id}>
+              <div>
+                <p className="module__num" aria-hidden="true">
+                  {m.num}
+                </p>
+                <p className="eyebrow">{m.eyebrow}</p>
+                <h2>{m.title}</h2>
+                <p className="module__lede">{m.lede}</p>
+                <div className="module__screens" aria-label="Screens in this module">
+                  {m.screens.map((s) => (
+                    <span key={s}>{s}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="caps">
+                {m.caps.map((c) => (
+                  <div key={c.title}>
+                    <h3>{c.title}</h3>
+                    <p>{c.text}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="section section--deep section--rule">
+        <div className="container">
+          <div className="section-head">
+            <p className="eyebrow">Compare</p>
+            <h2>How LexCollect compares</h2>
+            <p className="lead">
+              Most firms track receivables with a collections tool, a spreadsheet, or both. Here's where the difference
+              shows up.
+            </p>
+          </div>
+          <div className="compare-wrap">
+            <table className="compare">
+              <thead>
+                <tr>
+                  <th scope="col">Capability</th>
+                  <th scope="col" className="is-us">
+                    LexCollect
+                  </th>
+                  <th scope="col">Collections tool</th>
+                  <th scope="col">Spreadsheet + report</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Starts from</th>
+                  <td className="is-us">A reconciled book</td>
+                  <td>Who owes money</td>
+                  <td>Whatever was exported</td>
+                </tr>
+                <tr>
+                  <th scope="row">Reconciles case system, processor, CRM, books and bank</th>
+                  <td className="is-us yes">Continuously</td>
+                  <td className="no">No</td>
+                  <td>Manually, monthly</td>
+                </tr>
+                <tr>
+                  <th scope="row">Separates failed cards from delinquency</th>
+                  <td className="is-us yes">Yes</td>
+                  <td className="no">No</td>
+                  <td className="no">No</td>
+                </tr>
+                <tr>
+                  <th scope="row">Per-collector scorecards from the full call log</th>
+                  <td className="is-us yes">Yes, certified</td>
+                  <td>Call counts</td>
+                  <td className="no">No</td>
+                </tr>
+                <tr>
+                  <th scope="row">Escalations with queues, priorities and inboxes</th>
+                  <td className="is-us yes">Seven queues</td>
+                  <td>Notes</td>
+                  <td className="no">No</td>
+                </tr>
+                <tr>
+                  <th scope="row">Cash by product and contract lifecycle</th>
+                  <td className="is-us yes">Yes</td>
+                  <td className="no">No</td>
+                  <td>If someone builds it</td>
+                </tr>
+                <tr>
+                  <th scope="row">Trust / IOLTA vs operating routing</th>
+                  <td className="is-us yes">Yes</td>
+                  <td className="no">No</td>
+                  <td className="no">No</td>
+                </tr>
+                <tr>
+                  <th scope="row">Integrations</th>
+                  <td className="is-us">{INTEGRATIONS.join(", ")}, bank</td>
+                  <td>Processor</td>
+                  <td>Exports</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--rule">
+        <div className="container">
+          <div className="section-head">
+            <p className="eyebrow">Getting started</p>
+            <h2>From first call to first certified snapshot</h2>
+          </div>
+          <ol className="steps">
+            <li className="step">
+              <span className="step__num">01</span>
+              <h3>Connect your systems</h3>
+              <p>We connect your case management, payment processor, CRM, accounting and bank data, and pull history.</p>
+            </li>
+            <li className="step">
+              <span className="step__num">02</span>
+              <h3>Reconcile and configure</h3>
+              <p>You get the first reconciled book with the gaps named, and we set roles, roster, queues and practice areas to match your firm.</p>
+            </li>
+            <li className="step step--highlight">
+              <span className="step__num">03</span>
+              <h3>Work the queue</h3>
+              <p>Collectors start from a prioritized list. LexCollect keeps reconciling and logging, so the first month ends with a certified number.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="section section--deep section--rule">
+        <div className="container">
+          <div className="split">
+            <div>
+              <p className="eyebrow">Questions</p>
+              <h2>Platform FAQ</h2>
+            </div>
+            <FaqList items={FAQS} />
+          </div>
+        </div>
+      </section>
+
+      <CtaBand
+        title="Start with a reconciled book and a prioritized queue."
+        lead="We'll walk through your systems and show you what LexCollect would find first."
+      />
+    </SiteShell>
+  );
+};
+
+export default PlatformPage;

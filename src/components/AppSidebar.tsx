@@ -1,8 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
-} from "lucide-react";
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload, Inbox } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
@@ -27,6 +26,7 @@ const STATIC_SECTIONS = [
     label: "Admin",
     items: [
       { path: "/admin", label: "Admin Dashboard", icon: LayoutDashboard },
+      { path: "/admin/inquiries", label: "Website Inquiries", icon: Inbox },
     ],
   },
   {
@@ -70,7 +70,7 @@ const AppSidebar = () => {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        if (item.path === "/admin") return canAccessAdmin(role);
+        if (item.path === "/admin" || item.path === "/admin/inquiries") return canAccessAdmin(role);
         if (item.path === "/collections" || item.path === "/collections/queue" || item.path === "/collections/escalations") {
           return canAccessCollections(role);
         }

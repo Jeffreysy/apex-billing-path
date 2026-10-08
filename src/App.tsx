@@ -21,6 +21,13 @@ import ArMovementDashboard from "./pages/ArMovementDashboard";
 import EscalationManagementPage from "./pages/EscalationManagementPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
+import PlatformPage from "./pages/marketing/PlatformPage";
+import ResultsPage from "./pages/marketing/ResultsPage";
+import AboutPage from "./pages/marketing/AboutPage";
+import BlogPage from "./pages/marketing/BlogPage";
+import BlogPostPage from "./pages/marketing/BlogPostPage";
+import ContactPage from "./pages/marketing/ContactPage";
+import InquiriesPage from "./pages/InquiriesPage";
 import SettingsPage from "./pages/SettingsPage";
 import DataImportPage from "./pages/DataImportPage";
 import NotFound from "./pages/NotFound";
@@ -47,9 +54,19 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public marketing site */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/platform" element={<PlatformPage />} />
+            <Route path="/services" element={<Navigate to="/platform" replace />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            {/* Workspace */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/inquiries" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><InquiriesPage /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><RoleLanding /></ProtectedRoute>} />
             <Route path="/collections" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><CollectionsDashboard /></ProtectedRoute>} />
             <Route path="/legal" element={<ProtectedRoute allowedRoles={LEGAL_ROLES}><LegalDashboard /></ProtectedRoute>} />

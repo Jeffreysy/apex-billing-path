@@ -1,29 +1,29 @@
 import { Link } from "react-router-dom";
 import { Arrow, CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
-import { MARKETING_ROUTES } from "@/lib/marketing";
+import { MARKETING_ROUTES, PRACTICE_AREAS } from "@/lib/marketing";
 
 export const ABOUT_META = {
-  title: "About LexCollect | AR Diagnostics for Law Firms",
+  title: "About LexCollect | AR Oversight Built Inside a Law Firm",
   description:
-    "LexCollect builds accounts-receivable diagnostics for law firms: software that reconciles four systems, prices every break by cause, and assigns the fix.",
+    "LexCollect was built in a law firm's finance department to reconcile receivables, run collections with accountability, and give partners a number they can trust.",
 };
 
 const PRINCIPLES = [
   {
-    title: "Every finding has a price",
-    text: "A cause, a record count and a dollar figure. If we can't put a price on a problem, we say so instead of guessing.",
+    title: "Reconcile before you collect",
+    text: "A call list built on unreconciled data wastes the collector's time and the client's trust. We tie every dollar to a client, contract and invoice first.",
   },
   {
-    title: "Fixable and not-yet-fixable are different lists",
-    text: "Mixing them is how a team spends a month on problems nobody can solve yet. We keep them apart.",
+    title: "Every finding has a price and an owner",
+    text: "A cause, a record count, a dollar figure and a name. If we can't put a price on a problem, we say so instead of guessing.",
   },
   {
-    title: "Every fix has an owner",
-    text: "Work that belongs to everyone gets done by no one. LexCollect routes each item to one named person.",
+    title: "Measure people from the full record",
+    text: "Scorecards come from every logged call, not a sample. The first firm's old dashboard showed 8% of real activity. Ours certifies the whole thing.",
   },
   {
     title: "Trust comes from checking",
-    text: "The system audits its own pipelines. A green status has to mean the job really ran.",
+    text: "Cleanups verify themselves against ground truth. Payments can't book twice. Every merge is audited and reversible. A green status means the job really ran.",
   },
 ];
 
@@ -35,8 +35,8 @@ const AboutPage = () => {
       <PageHero
         crumb="About"
         eyebrow="About LexCollect"
-        title="We start one step earlier than collections."
-        lead="Most AR tools begin with a list of people who owe money and help you call them. LexCollect begins with a harder question: what is actually wrong with how this firm's money moves?"
+        title="Built inside a law firm's finance department, for every firm that bills."
+        lead="LexCollect didn't start as a product. It started as the tool a growing practice needed to answer one question every month: what are we actually owed, and who is going to collect it?"
       />
 
       <section className="section">
@@ -44,27 +44,26 @@ const AboutPage = () => {
           <div className="split split--wide-left">
             <div>
               <p className="eyebrow">Our story</p>
-              <h2>Why we built a diagnostic, not a call list</h2>
+              <h2>The receivables problem, from the inside</h2>
               <p>
-                A law firm's money crosses a case-management system, a payment processor, an accounting system and a
-                bank. Every handoff is a place a dollar can go missing, get attached to the wrong client, or stop being
-                tracked.
+                The firm ran MyCase, then Filevine, took payments through LawPay, tracked leads in HubSpot and closed the
+                books in QuickBooks. Each system was right about its own piece. None of them agreed about the whole, and
+                the "true AR" lived in a spreadsheet someone rebuilt from raw exports every month.
               </p>
               <p>
-                Most firms never see those gaps, because seeing them means reconciling four systems that were never
-                designed to agree. So the gaps become one line in a monthly report, "unattributed," and a spreadsheet
-                someone means to get to.
+                So we built the thing in the middle. It reconciled a $21M book to the firm's own ground truth, found
+                hundreds of contracts marked paid that weren't, re-linked $3.5M of balances to the right clients, and
+                gave the collections team a queue with the ledger in front of them and a record of every call.
               </p>
               <p>
-                LexCollect reconciles those systems continuously. Then it does the part that makes it a diagnostic rather
-                than a report. It breaks each problem into named causes, prices them, and hands the fixable ones to the
-                person who can fix them.
+                Then the escalations moved out of email and into queues with owners. Then the partners got a certified
+                number every month. Then other firms asked for it. That's LexCollect.
               </p>
             </div>
             <blockquote className="pullquote">
-              A report would say "$8.3M unattributed." The diagnostic says "$2.5M of it is fixable this week. Here are
-              the records, and here is the cause of each."
-              <cite>The difference is the product</cite>
+              The partners didn't need a prettier report. They needed one number they could trust, and a list of who
+              was going to collect it.
+              <cite>Why LexCollect exists</cite>
             </blockquote>
           </div>
         </div>
@@ -73,47 +72,52 @@ const AboutPage = () => {
       <section className="section section--deep section--rule">
         <div className="container">
           <div className="section-head">
-            <p className="eyebrow">System map</p>
-            <h2>What's actually built</h2>
+            <p className="eyebrow">What we care about</p>
+            <h2>Eight outcomes, not eight features</h2>
             <p className="lead">
-              Measured by what exists today, not by a roadmap. Collections is the smallest working part of LexCollect.
-              Reconciliation and diagnosis are the bulk of it.
+              Every part of the platform exists to move one of these. If it doesn't, we don't build it.
             </p>
-          </div>
-          <div
-            className="sysmap"
-            role="img"
-            aria-label="About 92% of LexCollect is reconciliation, diagnosis, routing and self-monitoring; about 8% is the collections call list"
-          >
-            <div className="sysmap__bar">
-              <div className="core">Reconciliation · Diagnosis · Routing · Self-monitoring</div>
-              <div className="coll">8%</div>
-            </div>
-            <div className="sysmap__key">
-              <span>~92% finding and fixing breaks</span>
-              <span>~8% collections call list</span>
-            </div>
           </div>
           <div className="grid grid--4">
             <div className="card">
               <span className="kicker">01</span>
-              <h3>Reconciliation</h3>
-              <p>Ties every dollar to a real client, invoice and deposit, or flags it as untied.</p>
+              <h3>Maximize revenue</h3>
+              <p>Collect more of what was already billed, and see which products to sell more of.</p>
             </div>
             <div className="card">
               <span className="kicker">02</span>
-              <h3>Diagnosis</h3>
-              <p>Splits each break by cause, prices it, and sorts it into fixable now or not yet.</p>
+              <h3>Financial visibility</h3>
+              <p>One reconciled, certified view of receivables across every system.</p>
             </div>
             <div className="card">
               <span className="kicker">03</span>
-              <h3>Routing &amp; monitoring</h3>
-              <p>Assigns fixable work to a person, and audits 44 internal pipelines for silent failure.</p>
+              <h3>Recover hard debt</h3>
+              <p>A prioritized queue, promises that get followed, and failed cards handled gently.</p>
             </div>
             <div className="card">
               <span className="kicker">04</span>
-              <h3>Collections</h3>
-              <p>A call list built on reconciled data, so your team only calls people who actually owe.</p>
+              <h3>Accountability</h3>
+              <p>Every collector measured from the full record, every day.</p>
+            </div>
+            <div className="card">
+              <span className="kicker">05</span>
+              <h3>Internal communication</h3>
+              <p>Escalations with queues, priorities and owners instead of email chains.</p>
+            </div>
+            <div className="card">
+              <span className="kicker">06</span>
+              <h3>Client trust</h3>
+              <p>Whoever picks up the phone knows what was paid, by whom and for what.</p>
+            </div>
+            <div className="card">
+              <span className="kicker">07</span>
+              <h3>Products &amp; lifecycle</h3>
+              <p>Cash by case type and where in a matter's life it arrives.</p>
+            </div>
+            <div className="card">
+              <span className="kicker">08</span>
+              <h3>CRM capability</h3>
+              <p>Leads validated by money, and a client 360 the books agree with.</p>
             </div>
           </div>
         </div>
@@ -142,18 +146,19 @@ const AboutPage = () => {
           <div className="split split--center">
             <div>
               <p className="eyebrow">Who we serve</p>
-              <h2>Built for firms in the middle</h2>
+              <h2>Firms past the point of keeping receivables in someone's head</h2>
               <p className="lead">
-                Mid-size and growing law firms that are past the point where receivables can be held in someone's head,
-                but don't have a finance department to chase them full time.
+                Mid-size and growing law firms with payment plans, multiple systems and a collections function, but
+                without a finance department to chase every dollar full time.
               </p>
               <p className="muted">
-                We're starting with immigration practices, where flat fees, payment plans and third-party payers make
-                the problem hardest to see. Other practice areas are next.
+                Practice areas we work with today: {PRACTICE_AREAS.join(", ").toLowerCase()}. The first deployment was
+                an immigration practice because that's the hardest version of the problem. The system fits any firm
+                that bills.
               </p>
               <div className="actions">
-                <Link className="btn btn--ghost" to={MARKETING_ROUTES.services}>
-                  See what LexCollect does <Arrow />
+                <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
+                  See the results <Arrow />
                 </Link>
               </div>
             </div>
@@ -162,8 +167,9 @@ const AboutPage = () => {
               <div>
                 <span className="placeholder-tag">Placeholder: replace</span>
                 <p className="muted" style={{ marginTop: "1rem" }}>
-                  [A short note from the founder: who you are, the moment you saw how much money firms lose between
-                  systems, and why you built LexCollect to find it. Two or three sentences in your own voice.]
+                  [A short note from the founder: who you are, the moment you saw how much money the firm was owed but
+                  couldn't see, and why you built LexCollect to find and collect it. Two or three sentences in your own
+                  voice.]
                 </p>
                 <p>
                   <strong>[Founder name]</strong>
@@ -178,7 +184,7 @@ const AboutPage = () => {
 
       <CtaBand
         title="See what your own numbers say."
-        lead="One conversation, your systems, and a first look at where your firm's money is stuck."
+        lead="One conversation, your systems, and a first look at what's late, what's unmatched and what's recoverable now."
       />
     </SiteShell>
   );

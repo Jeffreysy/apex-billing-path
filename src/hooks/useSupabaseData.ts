@@ -1464,3 +1464,46 @@ export function useARLiveTrend() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// --- Website inquiries (public site lead + newsletter forms) ---
+// Table created by supabase/migrations/20261008230000_website_inquiries.sql.
+// Not yet in the generated Database types, hence the untyped client.
+export interface WebsiteInquiry {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  kind: "diagnostic" | "newsletter";
+  status: "new" | "contacted" | "closed";
+  full_name: string | null;
+  firm_name: string | null;
+  email: string;
+  phone: string | null;
+  practice_area: string | null;
+  firm_size: string | null;
+  systems: string | null;
+  message: string | null;
+  source_page: string | null;
+}
+
+export function useWebsiteInquiries() {
+  return useQuery({
+    queryKey: ["website-inquiries"],
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from("website_inquiries")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as WebsiteInquiry[];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export async function updateWebsiteInquiryStatus(id: string, status: WebsiteInquiry["status"]): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from("website_inquiries").update({ status }).eq("id", id);
+  if (error) throw error;
+}

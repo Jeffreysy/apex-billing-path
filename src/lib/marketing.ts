@@ -6,12 +6,26 @@ export const CONTACT_EMAIL = "hello@yourdomain.com";
 
 export const MARKETING_ROUTES = {
   home: "/",
+  platform: "/platform",
+  results: "/results",
   about: "/about",
-  services: "/services",
   blog: "/blog",
   contact: "/contact",
   login: "/login",
 } as const;
+
+/** The practice areas named on the site. Order is the order they appear. */
+export const PRACTICE_AREAS = [
+  "Immigration",
+  "Personal injury",
+  "Family law",
+  "Criminal defense",
+  "Estate planning",
+  "Business / corporate",
+] as const;
+
+/** Systems LexCollect reads from or writes to today. */
+export const INTEGRATIONS = ["MyCase", "Filevine", "LawPay", "HubSpot", "QuickBooks"] as const;
 
 export const BLOG_POST_SLUG = "immigration-firms-lose-money-between-systems";
 export const blogPostPath = (slug: string) => `${MARKETING_ROUTES.blog}/${slug}`;
