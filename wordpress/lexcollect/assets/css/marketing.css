@@ -1219,3 +1219,7 @@ body.lc { padding-left: 0 !important; padding-right: 0 !important; }
 .admin-bar .lc .site-header { top: 32px; }
 @media (max-width: 782px) { .admin-bar .lc .site-header { top: 46px; } }
 .lc .wp-block-post-content > * { max-width: none; }
+/* WordPress's flow layout puts a 24px block gap between siblings; the page sections
+   are full-bleed bands that set their own spacing, so the gap would show as a stripe. */
+body.lc.page-template-page-marketing .wp-block-post-content > *,
+body.lc .wp-site-blocks > * { margin-block-start: 0; margin-block-end: 0; }
