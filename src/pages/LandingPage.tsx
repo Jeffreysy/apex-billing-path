@@ -1,124 +1,65 @@
 import { Link } from "react-router-dom";
-import { Arrow, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { Arrow, BrandMark, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const HOME_META = {
-  title: "Accounts Receivable Service for Firms | LexCollect",
+  title: "AR Accounting Services for Firms | LexCollect",
   description:
-    "An elite accounting department at your fingertips: LexCollect reconciles your client, payment, accounting and bank data, automates client outreach by email and SMS, and reconnects your firm with the clients who owe it.",
+    "LexCollect is an accounts-receivable accounting service for firms: internal efficiency, client connection, and financial and revenue recognition, built on the systems you already run.",
 };
 
-/* Illustrative six-month trend. Your firm's data fills this view in the product. */
-const MOMENTUM = {
-  months: ["Apr", "May", "Jun", "Jul", "Aug", "Sep"],
-  payingClients: [412, 438, 467, 503, 541, 586],
-  hardDebtCollected: [61, 74, 92, 118, 139, 163], // $K per month
-  cashFlow: [388, 402, 431, 468, 507, 549], // $K per month
-};
-
-const Spark = ({ values, id }: { values: number[]; id: string }) => {
-  const w = 220;
-  const h = 56;
-  const pad = 6;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const x = (i: number) => pad + (i * (w - pad * 2)) / (values.length - 1);
-  const y = (v: number) => h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2);
-  const pts = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
-  const area = `${x(0)},${h - 1} ${pts} ${x(values.length - 1)},${h - 1}`;
-  const last = values.length - 1;
-  return (
-    <svg className="spark" viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby={`${id}-t`} preserveAspectRatio="none">
-      <title id={`${id}-t`}>Six-month trend, rising</title>
-      <defs>
-        <linearGradient id={`${id}-g`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#3DD9C7" stopOpacity="0.28" />
-          <stop offset="1" stopColor="#3DD9C7" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={area} fill={`url(#${id}-g)`} />
-      <polyline points={pts} fill="none" stroke="#3DD9C7" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <circle cx={x(last)} cy={y(values[last])} r="4" fill="#3DD9C7" stroke="#F1F4F7" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-};
-
-const pct = (arr: number[]) => Math.round(((arr[arr.length - 1] - arr[0]) / arr[0]) * 100);
-
-const MomentumCard = () => (
-  <figure className="momentum" aria-label="Illustrative collections momentum over six months">
-    <div className="momentum__head">
-      <span>
-        <b>AR Oversight</b> · Collections momentum
-      </span>
-      <span>{MOMENTUM.months[0]}–{MOMENTUM.months[5]}</span>
-    </div>
-    <div className="momentum__grid">
-      <div className="panel-stat">
-        <span className="panel-stat__label">Paying clients</span>
-        <span className="panel-stat__num">
-          {MOMENTUM.payingClients[5].toLocaleString()}
-          <small>+{pct(MOMENTUM.payingClients)}%</small>
-        </span>
-        <Spark values={MOMENTUM.payingClients} id="sp-clients" />
-        <span className="panel-stat__foot">current and on plan, up every month</span>
-      </div>
-      <div className="panel-stat">
-        <span className="panel-stat__label">Hard-delinquent $ collected</span>
-        <span className="panel-stat__num">
-          ${MOMENTUM.hardDebtCollected[5]}K<small>+{pct(MOMENTUM.hardDebtCollected)}%</small>
-        </span>
-        <Spark values={MOMENTUM.hardDebtCollected} id="sp-debt" />
-        <span className="panel-stat__foot">90+ day balances recovered per month</span>
-      </div>
-      <div className="panel-stat">
-        <span className="panel-stat__label">Monthly cash flow</span>
-        <span className="panel-stat__num">
-          ${MOMENTUM.cashFlow[5]}K<small>+{pct(MOMENTUM.cashFlow)}%</small>
-        </span>
-        <Spark values={MOMENTUM.cashFlow} id="sp-cash" />
-        <span className="panel-stat__foot">collected across all sources</span>
-      </div>
-    </div>
-    <div className="momentum__foot">
-      <span className="k">Traced to LexCollect</span>
-      <strong className="v">every dollar</strong>
-      <span className="s">each payment carries its origin, message and outcome</span>
-    </div>
-  </figure>
-);
+const PROMISES = [
+  {
+    title: "Internal efficiency",
+    text: "Reconciliation, migration, follow-up and reporting run every day without a spreadsheet or a second hire.",
+  },
+  {
+    title: "Client connection",
+    text: "The right message to the right client at the right moment, by email or SMS, with a record of every reply.",
+  },
+  {
+    title: "Financial recognition",
+    text: "One reconciled, certified view of what the firm is owed, across every system it runs.",
+  },
+  {
+    title: "Revenue recognition",
+    text: "Every collected dollar carries its origin, so the revenue your firm earns, and the revenue LexCollect produces, is a report.",
+  },
+];
 
 const Hero = () => (
-  <section className="hero" id="top">
-    <div className="container hero__grid">
-      <div className="hero__copy">
-        <p className="eyebrow">AR oversight for firms</p>
-        <h1>
-          An elite accounting department, <em>at your fingertips.</em>
+  <section className="hero hero--brand" id="top">
+    <div className="container">
+      <div className="brand-hero">
+        <div className="brand-hero__mark" aria-hidden="true">
+          <BrandMark />
+        </div>
+        <p className="eyebrow">AR accounting services for firms</p>
+        <h1 className="brand-hero__slogan">
+          Every dollar accounted for. <em>Every client connected.</em>
         </h1>
         <p className="lead">
-          LexCollect is an accounts-receivable service for firms. It reconciles your client, payment, accounting and
-          bank data into one live view of what you're owed, automates the outreach that keeps clients current, and
-          rebuilds the connection between your firm and the people who owe it money.
+          LexCollect is an accounts-receivable accounting service. We give firms the visibility, automation and client
+          connection of an elite accounting department, built on the systems you already run.
         </p>
         <div className="actions">
           <a className="btn btn--primary" href="#contact">
             Book a diagnostic <Arrow />
           </a>
-          <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
-            See the results
+          <Link className="btn btn--ghost" to={MARKETING_ROUTES.about}>
+            Why LexCollect
           </Link>
         </div>
-        <p className="hero__note">Built inside a working firm on a $21M receivables book. Compatible with any system that exports or has an API.</p>
       </div>
-
-      <div className="hero__visual">
-        <div className="cradle">
-          <MomentumCard />
-        </div>
-        <p className="report__caption">Illustrative six-month trend. In the product this view is your firm's live data.</p>
-      </div>
+      <ul className="promises" aria-label="What LexCollect improves">
+        {PROMISES.map((p) => (
+          <li key={p.title} className="promise">
+            <h3>{p.title}</h3>
+            <p>{p.text}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   </section>
 );
@@ -159,7 +100,7 @@ const PILLARS: Pillar[] = [
   {
     title: "See every dollar: financial visibility",
     text: "One live receivables view across your client system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
-    mods: ["AR Oversight", "Controller AR Oversight", "AR Movement & Projection", "Monthly AR snapshots"],
+    mods: ["AR Management", "Controller AR Management", "AR Movement & Projection", "Monthly AR snapshots"],
     lead: true,
   },
   {
@@ -210,11 +151,10 @@ const Pillars = () => (
     <div className="container">
       <div className="section-head">
         <p className="eyebrow">What your firm gets</p>
-        <h2>Everything a firm needs from its receivables, in one service.</h2>
+        <h2>AR accounting as a service: everything a firm needs from its receivables.</h2>
         <p className="lead">
           Visibility, automation and the connection to your clients. Each one maps to a working part of LexCollect, not
-          a roadmap. The names under each are the screens your team will actually open.
-        </p>
+          a roadmap. The names under each are the screens your team will actually open.</p>
       </div>
       <ol className="pillars">
         {PILLARS.map((p, i) => (
@@ -239,12 +179,12 @@ const Pillars = () => (
   </section>
 );
 
-const Oversight = () => (
-  <section className="section section--deep section--rule" id="oversight">
+const Management = () => (
+  <section className="section section--deep section--rule" id="management">
     <div className="container">
       <div className="split split--center">
         <div>
-          <p className="eyebrow">AR Oversight</p>
+          <p className="eyebrow">AR Management</p>
           <h2>A receivables number the partners can trust, every month.</h2>
           <p className="lead">
             Most firms have four versions of "what we're owed": the client system, the processor, the books and a
@@ -266,10 +206,10 @@ const Oversight = () => (
             <Link to={MARKETING_ROUTES.results}>Read how.</Link>
           </p>
         </div>
-        <div className="monitor" aria-label="Example AR oversight checks">
+        <div className="monitor" aria-label="Example AR management checks">
           <div className="monitor__head">
             <span>
-              <b>Oversight checks</b>
+              <b>Management checks</b>
             </span>
             <span>Example</span>
           </div>
@@ -429,7 +369,7 @@ const Adapts = () => (
           <div className="card">
             <span className="kicker">Controllers &amp; administrators</span>
             <h3>Reconciled, forecastable, defensible</h3>
-            <p>Controller AR oversight, expected deposits, cashflow analytics and a report builder for the month-end packet.</p>
+            <p>Controller AR management, expected deposits, cashflow analytics and a report builder for the month-end packet.</p>
           </div>
           <div className="card">
             <span className="kicker">Billing &amp; client relations</span>
@@ -465,7 +405,7 @@ const Integrations = () => (
 const FAQS = [
   {
     q: "What is LexCollect?",
-    a: "LexCollect is an accounts-receivable service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software. It reconciles your client system, payment processor, accounting and bank into one view of what you're owed, then runs the outreach, commitments, escalations and reporting on top of that reconciled data.",
+    a: "LexCollect is an accounts-receivable accounting service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software and run by people who know receivables. It reconciles your client system, payment processor, accounting and bank into one view of what you're owed, then runs the outreach, commitments, escalations and reporting on top of that reconciled data.",
   },
   {
     q: "Do you provide collectors?",
@@ -558,7 +498,7 @@ const LandingPage = () => {
       <Hero />
       <Stats />
       <Pillars />
-      <Oversight />
+      <Management />
       <Connect />
       <Results />
       <Adapts />

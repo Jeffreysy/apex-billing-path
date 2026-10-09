@@ -2,9 +2,9 @@ import { CtaBand, FaqList, PageHero, SiteShell, usePageMeta } from "@/components
 import { INTEGRATIONS } from "@/lib/marketing";
 
 export const PLATFORM_META = {
-  title: "AR Oversight, Automation & Client Connection Platform for Firms | LexCollect",
+  title: "AR Management, Automation & Client Connection Platform for Firms | LexCollect",
   description:
-    "AR oversight, continuous reconciliation and migration, a Connect queue with automated email and SMS, team accountability, escalations, product and lifecycle analytics, CRM compatibility and forecasting for firms, in one service.",
+    "AR management, continuous reconciliation and migration, a Connect queue with automated email and SMS, team accountability, escalations, product and lifecycle analytics, CRM compatibility and forecasting for firms, in one service.",
 };
 
 interface Module {
@@ -19,12 +19,12 @@ interface Module {
 
 const MODULES: Module[] = [
   {
-    id: "oversight",
+    id: "management",
     num: "01",
-    eyebrow: "AR Oversight",
+    eyebrow: "AR Management",
     title: "One live view of everything your firm is owed",
     lede: "Aging, open AR over time, expected deposits and a certified monthly snapshot, reconciled across every system you run.",
-    screens: ["Financial Oversight", "AR Oversight", "Controller AR Oversight", "AR Movement & Projection", "Live AR"],
+    screens: ["Financial Management", "AR Management", "Controller AR Management", "AR Movement & Projection", "Live AR"],
     caps: [
       {
         title: "Aging you can defend",
@@ -207,7 +207,7 @@ const FAQS = [
   },
   {
     q: "Who on our team uses it?",
-    a: "Partners and owners for the certified number and executive insights. Controllers and administrators for oversight, forecasting and reporting. Billing and client relations for the Connect queue, sequences and commitments. Service teams for the pipeline, deadline watch and their escalation inbox. Access is by role.",
+    a: "Partners and owners for the certified number and executive insights. Controllers and administrators for management, forecasting and reporting. Billing and client relations for the Connect queue, sequences and commitments. Service teams for the pipeline, deadline watch and their escalation inbox. Access is by role.",
   },
   {
     q: "How is it configured for our firm?",

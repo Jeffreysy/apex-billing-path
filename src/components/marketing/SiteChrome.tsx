@@ -119,7 +119,7 @@ export const SiteFooter = () => (
           <h2>Platform</h2>
           <ul>
             <li>
-              <Link to={`${MARKETING_ROUTES.platform}#oversight`}>AR Oversight</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#management`}>AR Management</Link>
             </li>
             <li>
               <Link to={`${MARKETING_ROUTES.platform}#reconciliation`}>Reconciliation</Link>

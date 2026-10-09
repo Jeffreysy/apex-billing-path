@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Arrow, CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { Arrow, CtaBand, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import MomentumCard from "@/components/marketing/MomentumCard";
 import { MARKETING_ROUTES } from "@/lib/marketing";
 
 export const ABOUT_META = {
@@ -32,12 +33,39 @@ const AboutPage = () => {
 
   return (
     <SiteShell>
-      <PageHero
-        crumb="About"
-        eyebrow="About LexCollect"
-        title="An elite accounting department, built inside a firm, now at your fingertips."
-        lead="LexCollect didn't start as a product. It started as the finance department a growing firm needed and couldn't hire: one that could answer, every month, what the firm was owed, and reconnect it with the clients who owed it."
-      />
+      <section className="hero" id="top">
+        <div className="container hero__grid">
+          <div className="hero__copy">
+            <p className="breadcrumb">
+              <Link to={MARKETING_ROUTES.home}>Home</Link> / About
+            </p>
+            <p className="eyebrow">About LexCollect</p>
+            <h1>
+              An elite accounting department, <em>at your fingertips.</em>
+            </h1>
+            <p className="lead">
+              LexCollect is an AR accounting service for firms. It reconciles your client, payment, accounting and bank
+              data into one live view of what you're owed, automates the outreach that keeps clients current, and
+              rebuilds the connection between your firm and the people who owe it money.
+            </p>
+            <div className="actions">
+              <Link className="btn btn--primary" to={MARKETING_ROUTES.contact}>
+                Book a diagnostic <Arrow />
+              </Link>
+              <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
+                See the results
+              </Link>
+            </div>
+            <p className="hero__note">Built inside a working firm on a $21M receivables book. Compatible with any system that exports or has an API.</p>
+          </div>
+          <div className="hero__visual">
+            <div className="cradle">
+              <MomentumCard />
+            </div>
+            <p className="report__caption">Illustrative six-month trend. In the product this view is your firm's live data.</p>
+          </div>
+        </div>
+      </section>
 
       <section className="section">
         <div className="container">
