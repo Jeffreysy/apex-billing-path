@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AROversightTab from "@/components/finance/AROversightTab";
+import ARManagementTab from "@/components/finance/ARManagementTab";
 
-const AROversightDashboard = () => {
+const ARManagementDashboard = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
 
-  if (cl || pl) return <DashboardLayout title="AR Oversight"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  if (cl || pl) return <DashboardLayout title="AR Management"><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
 
   const totalAR = clients.reduce((s, c) => s + Math.max(0, c.totalOwed - c.totalPaid), 0);
   const totalCollected = payments.reduce((s, p) => s + p.amount, 0);
@@ -38,15 +38,15 @@ const AROversightDashboard = () => {
   ];
 
   return (
-    <DashboardLayout title="AR Oversight">
-      <div className="mb-6"><h1 className="text-2xl font-bold">AR Oversight Dashboard</h1><p className="text-muted-foreground">Full accounts receivable visibility, forecasting, and contract progression</p></div>
+    <DashboardLayout title="AR Management">
+      <div className="mb-6"><h1 className="text-2xl font-bold">AR Management Dashboard</h1><p className="text-muted-foreground">Full accounts receivable visibility, forecasting, and contract progression</p></div>
       <Tabs defaultValue="overview" className="mb-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="origination">AR Oversight</TabsTrigger>
+          <TabsTrigger value="origination">AR Management</TabsTrigger>
         </TabsList>
         <TabsContent value="origination">
-          <AROversightTab />
+          <ARManagementTab />
         </TabsContent>
         <TabsContent value="overview">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
@@ -142,4 +142,4 @@ const AROversightDashboard = () => {
   );
 };
 
-export default AROversightDashboard;
+export default ARManagementDashboard;

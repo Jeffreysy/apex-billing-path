@@ -66,7 +66,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: s
   );
 }
 
-const ControllerAROversightDashboard = () => {
+const ControllerARManagementDashboard = () => {
   const { data: agingSnaps = [], isLoading: l1 } = useControllerBucketAging();
   const { data: monthlyCol = [], isLoading: l2 } = useControllerMonthlyCollections();
   const { data: collectorMo = [], isLoading: l3 } = useControllerCollectorMonthly();
@@ -219,16 +219,16 @@ const ControllerAROversightDashboard = () => {
 
   if (loading) {
     return (
-      <DashboardLayout title="Controller AR Oversight">
+      <DashboardLayout title="Controller AR Management">
         <div className="p-8 text-center text-muted-foreground">Loading controller data...</div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Controller AR Oversight">
+    <DashboardLayout title="Controller AR Management">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Controller AR Oversight</h1>
+        <h1 className="text-2xl font-bold">Controller AR Management</h1>
         <p className="text-muted-foreground">
           Live AR movement, commission-aligned aging buckets, auto-pay tracking, and revenue forecast
         </p>
@@ -1125,4 +1125,4 @@ const ControllerAROversightDashboard = () => {
   );
 };
 
-export default ControllerAROversightDashboard;
+export default ControllerARManagementDashboard;

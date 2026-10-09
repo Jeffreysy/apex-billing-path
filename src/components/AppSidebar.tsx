@@ -36,7 +36,7 @@ const STATIC_SECTIONS = [
       { path: "/collections/queue", label: "Call Queue", icon: ListOrdered },
       { path: "/collections/escalations", label: "Escalations", icon: AlertTriangle },
       { path: "/legal", label: "Legal", icon: Scale },
-      { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
+      { path: "/financial-management", label: "Financial Management", icon: Eye },
       { path: "/ar-movement", label: "AR Movement", icon: TrendingUp },
       { path: "/contracts", label: "Contracts & AR", icon: FileText },
       { path: "/clients", label: "Client Lookup", icon: Search },
@@ -75,7 +75,7 @@ const AppSidebar = () => {
           return canAccessCollections(role);
         }
         if (item.path === "/legal") return canAccessLegal(role);
-        if (item.path === "/financial-oversight" || item.path === "/ar-movement") return canAccessFinancial(role);
+        if (item.path === "/financial-management" || item.path === "/ar-movement") return canAccessFinancial(role);
         if (item.path === "/contracts") return canAccessContracts(role);
         if (item.path === "/clients") return canAccessClients(role);
         if (item.path === "/import") return canAccessAdmin(role);
