@@ -25,7 +25,7 @@ const AdminDashboard = () => {
   // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
   // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor). Falls back to admin_kpi.total_remaining only if the certified row is
   // unavailable, so the tile never renders empty. Drives both the Total AR and Financial
-  // Oversight tiles. Do NOT exclude "Paid" rows — those 31 rows are real AR (LOCKED).
+  // Management tiles. Do NOT exclude "Paid" rows — those 31 rows are real AR (LOCKED).
   const totalAR = Number(firmSummary?.ar_total) || Number(kpi?.total_remaining) || 0;
   const totalCollected = Number(kpi?.total_collected) || 0;
   const arOnPlan = Number(kpi?.ar_on_plan) || 0;
@@ -141,12 +141,12 @@ const AdminDashboard = () => {
         {[
           { name: "Collections", icon: Phone, desc: `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
           { name: "Legal", icon: Scale, desc: `${activeCases} active cases` },
-          { name: "Financial Oversight", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
+          { name: "Financial Management", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
           { name: "Reporting", icon: TrendingUp, desc: `${paymentsThisMonth} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><dept.icon className="h-4 w-4 text-secondary" />{dept.name}</CardTitle></CardHeader>
-            <CardContent><p className="text-xs text-muted-foreground">{dept.desc}</p><div className="mt-2"><Badge variant="outline" className="text-[10px]">{deptData.find(d => d.name === dept.name || (dept.name === "Reporting" && d.name === "AR") || (dept.name === "Financial Oversight" && d.name === "AR"))?.tasks || 0} open tasks</Badge></div></CardContent>
+            <CardContent><p className="text-xs text-muted-foreground">{dept.desc}</p><div className="mt-2"><Badge variant="outline" className="text-[10px]">{deptData.find(d => d.name === dept.name || (dept.name === "Reporting" && d.name === "AR") || (dept.name === "Financial Management" && d.name === "AR"))?.tasks || 0} open tasks</Badge></div></CardContent>
           </Card>
         ))}
       </div>
