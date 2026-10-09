@@ -113,7 +113,7 @@ export const SiteFooter = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>AR oversight and collections software for firms. One live view of every dollar owed, a name on every delinquent account, and a record of every call, promise and hand-off until it's paid.</p>
+          <p>An accounting department at your fingertips. One live view of every dollar owed, automated email and SMS that reconnect your firm with its clients, and a record of every message, promise and hand-off until it's paid.</p>
         </div>
         <div className="footer-col">
           <h2>Platform</h2>
@@ -125,7 +125,7 @@ export const SiteFooter = () => (
               <Link to={`${MARKETING_ROUTES.platform}#reconciliation`}>Reconciliation</Link>
             </li>
             <li>
-              <Link to={`${MARKETING_ROUTES.platform}#collections`}>Collections</Link>
+              <Link to={`${MARKETING_ROUTES.platform}#collections`}>Connect</Link>
             </li>
             <li>
               <Link to={`${MARKETING_ROUTES.platform}#escalations`}>Escalations</Link>

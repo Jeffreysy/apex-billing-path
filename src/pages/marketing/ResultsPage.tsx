@@ -3,7 +3,7 @@ import { CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/marketin
 import { INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const RESULTS_META = {
-  title: "Results: Reconciliation, Migration & Collections at a Working Firm | LexCollect",
+  title: "Results: Reconciliation, Migration & Client Connection at a Working Firm | LexCollect",
   description:
     "What LexCollect did inside a working firm: a $21.4M book reconciled, 561 orphan contracts re-linked, a migration with zero mismatches, email segments from real balances, and escalations with seven hand-off queues.",
 };
@@ -30,15 +30,13 @@ const ResultsPage = () => {
             </div>
             <div className="win">
               <span className="win__label">Migration</span>
-              <span className="win__num">
-                0<small>mismatches</small>
-              </span>
-              <p className="win__text">1,395 records reconciled across the move from one client system to another. 733 missing ones surfaced.</p>
+              <span className="win__num">$3.5M</span>
+              <p className="win__text">Contract balances re-linked to the right clients through a mass financial migration between two incompatible CRMs. 1,395 records, 0 mismatches.</p>
             </div>
             <div className="win">
               <span className="win__label">Email segmentation</span>
               <span className="win__num">228</span>
-              <p className="win__text">Willing payers with a failed card ($928K) segmented for an "update your card" email instead of a collections call.</p>
+              <p className="win__text">Willing payers with a failed card ($928K) reconnected with one "update your card" message instead of a collections call.</p>
             </div>
             <div className="win win--pending">
               <span className="win__label">Paying clients gained</span>
@@ -113,7 +111,7 @@ const ResultsPage = () => {
               </p>
               <p>
                 <strong>Duplicates.</strong> Exact and near-duplicate client records were merged into one survivor, with
-                all 23 related tables repointed, so a client's calls, payments, plan and escalations finally sat in one
+                all 23 related tables repointed, so a client's messages, payments, plan and escalations finally sat in one
                 place.
               </p>
               <p>
@@ -173,12 +171,17 @@ const ResultsPage = () => {
                 03
               </p>
               <p className="eyebrow">Migration</p>
-              <h2>Migrating from one client system to another without losing a dollar</h2>
+              <h2>A mass financial migration between two incompatible CRMs, without losing a dollar</h2>
               <p className="story__lede">
-                A system migration is where receivables usually get lost. LexCollect reconciled both systems against
-                the firm's own client lists before, during and after the move from MyCase to Filevine.
+                Moving every client's balance, plan and history from MyCase to Filevine is where receivables usually
+                get lost. LexCollect sorted through what had been built in both systems and reconciled them against
+                the firm's own client lists before, during and after the move.
               </p>
               <ul className="facts">
+                <li>
+                  <b>$3.5M</b>
+                  <span>in contract balances re-linked to the right clients during the move</span>
+                </li>
                 <li>
                   <b>1,395</b>
                   <span>records in the new system reconciled against 548 records on the firm's own lists</span>
@@ -201,7 +204,7 @@ const ResultsPage = () => {
               <p>
                 <strong>Direct payment sync.</strong> Filevine payments now post straight into LexCollect through a
                 webhook, with no middleware. Each one matches by invoice number, updates the invoice and contract
-                balances, and logs a collections activity, so the collector sees it before the next call.
+                balances, and logs an activity on the account, so the next message reflects it.
               </p>
               <p>
                 <strong>History, through the same door.</strong> Historical Filevine payments were backfilled through
@@ -221,15 +224,15 @@ const ResultsPage = () => {
                 04
               </p>
               <p className="eyebrow">Hard debt</p>
-              <h2>Delinquent dollars, worked by name and measured by bucket</h2>
+              <h2>Delinquent dollars, reconnected by message and measured by bucket</h2>
               <p className="story__lede">
-                Once the book was reconciled, the firm could see its delinquent balance, split it by age, and put a
-                collector's name on every account.
+                Once the book was reconciled, the firm could see its delinquent balance, split it by age, and reach
+                every account with the right message instead of another round of calls.
               </p>
               <ul className="facts">
                 <li>
                   <b>$15.7M</b>
-                  <span>delinquent and late receivables made visible by aging bucket and collector</span>
+                  <span>delinquent and late receivables made visible by aging bucket and owner</span>
                 </li>
                 <li>
                   <b>$928K</b>
@@ -248,12 +251,12 @@ const ResultsPage = () => {
             <div className="prose-sm">
               <p>
                 <strong>The right list.</strong> Consult-only contacts, raw import noise and abandoned contracts are
-                classified and kept out of the queue by default, so collectors spend their day on real accounts.
+                classified and kept out of the queue by default, so every message and every conversation lands on a real account.
               </p>
               <p>
-                <strong>A record of every call.</strong> Outcome, dollars, duration, origin and commission are logged per
-                activity. The firm's old collector dashboard had been showing about 8% of real activity. LexCollect
-                now certifies per-collector figures from the full log.
+                <strong>A record of every contact.</strong> Outcome, dollars, origin and commission are logged per
+                activity, whether it was an email, an SMS or a conversation. The firm's old activity dashboard had
+                been showing about 8% of real activity. LexCollect now certifies per-person figures from the full log.
               </p>
               <p>
                 <strong>Promises that get followed.</strong> Payment commitments carry a date and an amount, and missed
@@ -319,7 +322,7 @@ const ResultsPage = () => {
               <p className="story__num" aria-hidden="true">
                 06
               </p>
-              <p className="eyebrow">Escalations</p>
+              <p className="eyebrow">Unique escalations &amp; internal connection</p>
               <h2>Internal hand-offs with a queue, a priority and an owner</h2>
               <p className="story__lede">
                 Before, an escalation was an email. Now it's a record that billing, service teams and management all
@@ -332,7 +335,7 @@ const ResultsPage = () => {
                 </li>
                 <li>
                   <b>9</b>
-                  <span>source contexts, from inbound call to service-team request to refund follow-up</span>
+                  <span>source contexts, from client reply to service-team request to refund follow-up</span>
                 </li>
                 <li>
                   <b>4</b>
@@ -343,11 +346,11 @@ const ResultsPage = () => {
             <div className="prose-sm">
               <p>
                 <strong>Inboxes per department.</strong> Service teams see what needs someone who knows the client.
-                Management sees what needs a decision. Collectors see what's theirs. The same escalation, three views.
+                Management sees what needs a decision. Billing sees what's theirs. The same escalation, three views.
               </p>
               <p>
                 <strong>Hardship handled, not hidden.</strong> Hardship requests are their own workflow, so a client in
-                trouble gets a considered answer instead of another call.
+                trouble gets a considered answer instead of another message.
               </p>
               <p>
                 <strong>Deadlines respected.</strong> A deadline watch shows the firm's commitments on the client record
@@ -364,7 +367,7 @@ const ResultsPage = () => {
               <p className="eyebrow">Growth you can trace</p>
               <h2>More paying clients, and revenue with a source on it</h2>
               <p className="story__lede">
-                Every collected dollar in LexCollect carries its origin, collector and outcome, so the revenue the
+                Every collected dollar in LexCollect carries its origin, message and outcome, so the revenue the
                 system produced is a report, not an estimate.
               </p>
               <ul className="facts">
@@ -382,7 +385,7 @@ const ResultsPage = () => {
                 </li>
                 <li>
                   <b>7</b>
-                  <span>origin buckets on every collected dollar: AR list, follow-up, transfer, service-team request, pending task, and more</span>
+                  <span>origin buckets on every collected dollar: AR list, email sequence, SMS, follow-up, transfer, service-team request, and more</span>
                 </li>
               </ul>
             </div>
@@ -398,9 +401,9 @@ const ResultsPage = () => {
                 and lost, so growth is net, not gross.
               </p>
               <p>
-                <strong>Revenue attribution.</strong> Dollars from the call queue, from a commitment kept, from an email
-                segment and from a transfer are summed separately, by collector and by month. That's the number you put
-                next to the LexCollect invoice.
+                <strong>Revenue attribution.</strong> Dollars from the Connect queue, from a commitment kept, from an
+                email or SMS sequence and from a transfer are summed separately, by person and by month. That's the
+                number you put next to the LexCollect invoice.
               </p>
             </div>
           </article>
@@ -414,8 +417,9 @@ const ResultsPage = () => {
               <p className="eyebrow">Suited to your firm</p>
               <h2>Everything above is configuration at your firm, not a rebuild.</h2>
               <p className="lead">
-                Collectors come from a live roster. Escalation targets are your departments. Product lines, aging
-                buckets, outcome labels and queues are set per firm. The integrations are the ones you already pay for.
+                Your team comes from a live roster. Escalation targets are your departments. Message sequences, product
+                lines, aging buckets, outcome labels and queues are set per firm. Any CRM that exports or has an API
+                can be connected.
               </p>
               <p className="muted">
                 The first deployment was a firm with thousands of installment plans and payers who weren't the client,
@@ -437,7 +441,7 @@ const ResultsPage = () => {
               <div className="card">
                 <span className="kicker">Week 3</span>
                 <h3>Work the queue</h3>
-                <p>Collectors start from a prioritized list with the ledger in front of them. Activity is logged from day one.</p>
+                <p>Sequences go out to reconciled lists. Your team works the clients who need a person, with the ledger in front of them. Activity is logged from day one.</p>
               </div>
               <div className="card">
                 <span className="kicker">Month 1</span>

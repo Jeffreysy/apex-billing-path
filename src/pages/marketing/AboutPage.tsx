@@ -3,15 +3,15 @@ import { Arrow, CtaBand, PageHero, SiteShell, usePageMeta } from "@/components/m
 import { MARKETING_ROUTES } from "@/lib/marketing";
 
 export const ABOUT_META = {
-  title: "About LexCollect | AR Oversight Built Inside a Firm",
+  title: "About LexCollect | An Accounting Department at Your Fingertips",
   description:
-    "LexCollect was built in a firm's finance department to reconcile receivables, run collections with accountability, and give partners a number they can trust.",
+    "LexCollect was built in a firm's finance department to reconcile receivables, automate client outreach, and give partners a number they can trust. An elite accounting firm's visibility and automation, as a service.",
 };
 
 const PRINCIPLES = [
   {
     title: "Reconcile before you collect",
-    text: "A call list built on unreconciled data wastes the collector's time and the client's trust. We tie every dollar to a client, contract and invoice first.",
+    text: "A message built on unreconciled data wastes the firm's credibility and the client's trust. We tie every dollar to a client, contract and invoice before anyone is contacted.",
   },
   {
     title: "Every finding has a price and an owner",
@@ -19,7 +19,7 @@ const PRINCIPLES = [
   },
   {
     title: "Measure people from the full record",
-    text: "Scorecards come from every logged call, not a sample. The first firm's old dashboard showed 8% of real activity. Ours certifies the whole thing.",
+    text: "Scorecards come from every logged contact, not a sample. The first firm's old dashboard showed 8% of real activity. Ours certifies the whole thing.",
   },
   {
     title: "Trust comes from checking",
@@ -35,8 +35,8 @@ const AboutPage = () => {
       <PageHero
         crumb="About"
         eyebrow="About LexCollect"
-        title="Built inside a firm's finance department, for every firm that bills."
-        lead="LexCollect didn't start as a product. It started as the tool a growing firm needed to answer one question every month: what are we actually owed, and who is going to collect it?"
+        title="An elite accounting department, built inside a firm, now at your fingertips."
+        lead="LexCollect didn't start as a product. It started as the finance department a growing firm needed and couldn't hire: one that could answer, every month, what the firm was owed, and reconnect it with the clients who owed it."
       />
 
       <section className="section">
@@ -53,7 +53,7 @@ const AboutPage = () => {
               <p>
                 So we built the thing in the middle. It reconciled a $21M book to the firm's own ground truth, found
                 hundreds of contracts marked paid that weren't, re-linked $3.5M of balances to the right clients, and
-                gave the collections team a queue with the ledger in front of them and a record of every call.
+                replaced rounds of calls with reconciled lists, automated email and SMS, and a record of every contact.
               </p>
               <p>
                 Then the escalations moved out of email and into queues with owners. Then the partners got a certified
@@ -61,8 +61,8 @@ const AboutPage = () => {
               </p>
             </div>
             <blockquote className="pullquote">
-              The partners didn't need a prettier report. They needed one number they could trust, and a list of who
-              was going to collect it.
+              The partners didn't need a prettier report. They needed one number they could trust, and a way to
+              reconnect with the clients behind it.
               <cite>Why LexCollect exists</cite>
             </blockquote>
           </div>
@@ -92,12 +92,12 @@ const AboutPage = () => {
             <div className="card">
               <span className="kicker">03</span>
               <h3>Recover hard debt</h3>
-              <p>A prioritized queue, promises that get followed, and failed cards handled gently.</p>
+              <p>A prioritized queue, sequences instead of call rounds, promises that get followed, and failed cards handled gently.</p>
             </div>
             <div className="card">
               <span className="kicker">04</span>
               <h3>Accountability</h3>
-              <p>Every collector measured from the full record, every day.</p>
+              <p>Every team member measured from the full record, every day.</p>
             </div>
             <div className="card">
               <span className="kicker">05</span>
@@ -107,7 +107,7 @@ const AboutPage = () => {
             <div className="card">
               <span className="kicker">06</span>
               <h3>Client trust</h3>
-              <p>Whoever picks up the phone knows what was paid, by whom and for what.</p>
+              <p>The connection between firm and client, rebuilt: nobody is chased for money they already paid.</p>
             </div>
             <div className="card">
               <span className="kicker">07</span>
@@ -116,8 +116,8 @@ const AboutPage = () => {
             </div>
             <div className="card">
               <span className="kicker">08</span>
-              <h3>CRM capability</h3>
-              <p>Leads validated by money, email segments built from real balances, and a client 360 the books agree with.</p>
+              <h3>Works with your CRM</h3>
+              <p>Compatible with any CRM that exports or has an API. Leads validated by money, and a client 360 the books agree with.</p>
             </div>
           </div>
         </div>

@@ -70,8 +70,8 @@ export const UPCOMING_POSTS: Post[] = [
     cat: "collections",
     fig: "paid",
     cover: "teal",
-    title: "Stop Calling Clients Who Already Paid",
-    summary: "Collections calls to clients who paid through someone else damage trust fast. Reconcile first, then call.",
+    title: "Stop Chasing Clients Who Already Paid",
+    summary: "A collections message to a client who paid through someone else damages trust fast. Reconcile first, then connect.",
     readTime: "5 min read",
   },
   {

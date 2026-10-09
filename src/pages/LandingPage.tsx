@@ -4,9 +4,9 @@ import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const HOME_META = {
-  title: "AR Oversight & Collections Software for Firms | LexCollect",
+  title: "Accounts Receivable Service for Firms | LexCollect",
   description:
-    "LexCollect gives firms one live view of every dollar owed, reconciles client, payment, accounting and bank data, and runs collections with a name on every account.",
+    "An elite accounting department at your fingertips: LexCollect reconciles your client, payment, accounting and bank data, automates client outreach by email and SMS, and reconnects your firm with the clients who owe it.",
 };
 
 /* Illustrative six-month trend. Your firm's data fills this view in the product. */
@@ -84,7 +84,7 @@ const MomentumCard = () => (
     <div className="momentum__foot">
       <span className="k">Traced to LexCollect</span>
       <strong className="v">every dollar</strong>
-      <span className="s">each payment carries its origin, collector and outcome</span>
+      <span className="s">each payment carries its origin, message and outcome</span>
     </div>
   </figure>
 );
@@ -95,12 +95,12 @@ const Hero = () => (
       <div className="hero__copy">
         <p className="eyebrow">AR oversight for firms</p>
         <h1>
-          Know where every dollar is. <em>Collect the ones that are late.</em>
+          An elite accounting department, <em>at your fingertips.</em>
         </h1>
         <p className="lead">
-          LexCollect is accounts-receivable oversight and collections software for firms. It reconciles your
-          client-management, payment, accounting and bank data into one live view of what you're owed, puts a name on
-          every delinquent account, and tracks every call, promise and escalation until the money lands.
+          LexCollect is an accounts-receivable service for firms. It reconciles your client, payment, accounting and
+          bank data into one live view of what you're owed, automates the outreach that keeps clients current, and
+          rebuilds the connection between your firm and the people who owe it money.
         </p>
         <div className="actions">
           <a className="btn btn--primary" href="#contact">
@@ -110,7 +110,7 @@ const Hero = () => (
             See the results
           </Link>
         </div>
-        <p className="hero__note">Built inside a working firm on a $21M receivables book. Fits any firm that bills.</p>
+        <p className="hero__note">Built inside a working firm on a $21M receivables book. Compatible with any system that exports or has an API.</p>
       </div>
 
       <div className="hero__visual">
@@ -132,11 +132,11 @@ const Stats = () => (
       </div>
       <div className="stat">
         <span className="stat__num">$3.5M</span>
-        <span className="stat__label">in contract balances re-linked to the right clients</span>
+        <span className="stat__label">in contract balances re-linked to the right clients through a migration between incompatible systems</span>
       </div>
       <div className="stat">
         <span className="stat__num">228</span>
-        <span className="stat__label">willing payers segmented for an "update your card" email instead of a collections call</span>
+        <span className="stat__label">willing payers reconnected with an "update your card" message instead of a collections call</span>
       </div>
       <div className="stat">
         <span className="stat__num">
@@ -158,27 +158,38 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     title: "See every dollar: financial visibility",
-    text: "One live receivables view across your client-management system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
+    text: "One live receivables view across your client system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
     mods: ["AR Oversight", "Controller AR Oversight", "AR Movement & Projection", "Monthly AR snapshots"],
     lead: true,
   },
   {
+    title: "Connect: rebuild the firm-to-client relationship",
+    text: "Most late accounts aren't refusals. They're clients the firm lost touch with. LexCollect reconnects them: the right message, by email or SMS, to the right list, at the right moment, with a person stepping in only when it matters.",
+    mods: ["Connect Queue", "Automated email & SMS", "Client lists", "Payment Commitments"],
+    lead: true,
+  },
+  {
     title: "Collect more of what you already earned",
-    text: "Most 'missing' money was billed and never followed. LexCollect shows what's late, who owes it and what each account is worth, so your team works the biggest dollars first.",
+    text: "Most 'missing' money was billed and never followed. LexCollect shows what's late, who owes it and what each account is worth, so the biggest dollars are worked first.",
     mods: ["Collections monthly view", "Aging breakdown", "Revenue forecast", "Collection flow"],
   },
   {
     title: "Recover hard debt without burning the relationship",
-    text: "A prioritized call queue, promise-to-pay tracking, hardship requests and reconciled balances, so nobody calls a client who already paid through a relative.",
-    mods: ["Call Queue", "Payment Commitments", "Collector Workspace", "Card Recovery"],
+    text: "Ninety-day-plus balances get a sequence, not a shouting match: reconciled balance first, a clear message, a plan the client can keep, and a record of every promise.",
+    mods: ["Hard-debt sequences", "Hardship requests", "Card Recovery", "Promise tracking"],
+  },
+  {
+    title: "Automation that runs like a finance department",
+    text: "Continuous reconciliation, duplicate and orphan cleanup, migration between systems and payment booking that can't double-count. The work an elite accounting team would do by hand, done every day.",
+    mods: ["Continuous reconciliation", "Migration reconciliation", "Unmatched payment review", "Idempotent booking"],
   },
   {
     title: "Hold the team accountable",
-    text: "Every call, outcome, dollar and commission by collector, by day. Scorecards for collectors and intake, contact rates, and a daily activity log that doesn't depend on memory.",
-    mods: ["Collector Performance", "Daily Activity Log", "Outcome Distribution", "Collections KPI"],
+    text: "Every outreach, outcome, dollar and commission by team member, by day. Scorecards, contact rates and a daily activity log that doesn't depend on memory.",
+    mods: ["Team Performance", "Daily Activity Log", "Outcome Distribution", "Collections KPI"],
   },
   {
-    title: "Improve internal communication",
+    title: "Unique escalations and internal connection",
     text: "Billing, service teams, intake and management look at the same client, the same contract status and the same escalation. Hand-offs carry a queue, a priority and an owner instead of an email chain.",
     mods: ["Escalation Management", "Department inboxes", "Hand-off queues", "Deadline watch"],
   },
@@ -188,14 +199,9 @@ const PILLARS: Pillar[] = [
     mods: ["Billing by Product", "Contract Lifecycle", "Service Pipeline", "Product Mix"],
   },
   {
-    title: "Build trust with clients",
-    text: "A client 360 with contact details, engagements, ledger and payment plan, blended with the latest processor payments. The person who picks up the phone knows what was paid, by whom, and for what.",
-    mods: ["Client Lookup", "Payment ledger", "Plan freshness", "Take a payment"],
-  },
-  {
-    title: "CRM capability, built in",
-    text: "Intake and consult tracking, HubSpot deals validated against real payments before a lead counts as a client, email segments built from real balances, and client data joined to money so the CRM and the books finally agree.",
-    mods: ["HubSpot sync", "Consult funnel", "Email segments", "Client 360"],
+    title: "Works with the CRM you already have",
+    text: "Compatible with any CRM or practice system that exports or has an API connection. Intake and consult tracking, deals validated against real payments, and client data joined to money so the CRM and the books finally agree.",
+    mods: ["Any CRM with export or API", "HubSpot sync", "Consult funnel", "Client 360"],
   },
 ];
 
@@ -204,10 +210,10 @@ const Pillars = () => (
     <div className="container">
       <div className="section-head">
         <p className="eyebrow">What your firm gets</p>
-        <h2>Eight things a firm needs from its receivables, in one system.</h2>
+        <h2>Everything a firm needs from its receivables, in one service.</h2>
         <p className="lead">
-          Each one maps to a working part of LexCollect, not a roadmap. The dashboard names under each are the screens
-          your team will actually open.
+          Visibility, automation and the connection to your clients. Each one maps to a working part of LexCollect, not
+          a roadmap. The names under each are the screens your team will actually open.
         </p>
       </div>
       <ol className="pillars">
@@ -274,7 +280,7 @@ const Oversight = () => (
               <span className="meta">Captured on the 1st · trend over 12 months</span>
             </li>
             <li>
-              <span className="name">reconcile.lawpay_to_contracts</span>
+              <span className="name">reconcile.processor_to_contracts</span>
               <span className="state">Healthy</span>
               <span className="meta">2,013 matched · 759 queued for review</span>
             </li>
@@ -301,32 +307,32 @@ const Oversight = () => (
   </section>
 );
 
-const HardDebt = () => (
-  <section className="section section--rule" id="collections">
+const Connect = () => (
+  <section className="section section--rule" id="connect">
     <div className="container">
       <div className="section-head">
-        <p className="eyebrow">Recover hard debt</p>
-        <h2>From "they stopped paying" to a plan, a promise and a payment.</h2>
+        <p className="eyebrow">Connect</p>
+        <h2>From "they stopped paying" to a message, a plan and a payment.</h2>
         <p className="lead">
-          Collections in LexCollect is a loop with a record at every step, so a partner can see what happened on any
-          account without asking.
+          The connection between a firm and its clients is the part most AR tools skip. LexCollect runs it as a loop
+          with a record at every step, so a partner can see what happened on any account without asking.
         </p>
       </div>
       <ol className="steps">
         <li className="step">
           <span className="step__num">01</span>
           <h3>Queue</h3>
-          <p>Delinquent accounts ranked by balance, aging and last contact. Consult-only and junk records are kept out by default.</p>
+          <p>Late accounts ranked by balance, aging and last contact, built from reconciled balances. Consult-only and junk records are kept out by default.</p>
         </li>
         <li className="step">
           <span className="step__num">02</span>
-          <h3>Call</h3>
-          <p>The collector sees the contract, ledger, plan and last payment before dialing. Every call is logged with an outcome.</p>
+          <h3>Connect</h3>
+          <p>Automated email and SMS to the right client list: a missed installment, a failed card, a balance due. Clear, on brand, and logged. A person steps in only when the client needs one.</p>
         </li>
         <li className="step">
           <span className="step__num">03</span>
           <h3>Commit</h3>
-          <p>Promises to pay get a date and an amount, then get followed up. Missed installments surface while they're small.</p>
+          <p>Promises to pay get a date and an amount, then get followed up automatically. Missed installments surface while they're small.</p>
         </li>
         <li className="step step--highlight">
           <span className="step__num">04</span>
@@ -336,16 +342,16 @@ const HardDebt = () => (
       </ol>
       <div className="split" style={{ marginTop: "var(--sp-60)" }}>
         <div className="card">
-          <span className="kicker">Aging you can act on</span>
-          <h3>Dollars collected by &lt;30, 31–60, 61–90 and 90+ days</h3>
-          <p>Every month, by collector. Hard debt is a bucket with a trend, not a feeling.</p>
+          <span className="kicker">Trust, regained</span>
+          <h3>Nobody gets a collections message for money they already paid</h3>
+          <p>Balances are reconciled before any message goes out, including payments made by a relative or employer. That alone changes how clients feel about the firm.</p>
         </div>
         <div className="card">
           <span className="kicker">Willing payers, separated</span>
           <h3>Failed cards are not delinquency</h3>
           <p>
             At one firm, LexCollect found $928K across 228 clients who wanted to pay but whose auto-draft had failed.
-            They get a "update your card" nudge, not a collections call.
+            They got an "update your card" message, not a collections call, and the relationship stayed intact.
           </p>
         </div>
       </div>
@@ -371,16 +377,14 @@ const Results = () => (
           <p className="win__text">Receivables book reconciled to the firm's ground truth, with the remaining gap explained line by line.</p>
         </div>
         <div className="win">
-          <span className="win__label">Data integrity</span>
-          <span className="win__num">428</span>
-          <p className="win__text">Contracts marked "Paid" with only ~4% collected were found and reclassified, with an audit trail.</p>
+          <span className="win__label">Migration</span>
+          <span className="win__num">$3.5M</span>
+          <p className="win__text">Contract balances re-linked to the right clients during a mass financial migration between two incompatible CRMs.</p>
         </div>
         <div className="win">
-          <span className="win__label">Migration</span>
-          <span className="win__num">
-            0<small>mismatches</small>
-          </span>
-          <p className="win__text">1,395 records reconciled against the firm's own lists during the MyCase-to-Filevine migration.</p>
+          <span className="win__label">Connection</span>
+          <span className="win__num">228</span>
+          <p className="win__text">Willing payers reconnected with one message instead of a collections call. $928K of balances kept out of hard debt.</p>
         </div>
         <div className="win">
           <span className="win__label">Escalations</span>
@@ -405,13 +409,14 @@ const Adapts = () => (
       <div className="split split--wide-right">
         <div>
           <p className="eyebrow">Suited to your firm</p>
-          <h2>Built for how firms actually work, then shaped to yours.</h2>
+          <h2>An accounting department's judgment, shaped to how your firm works.</h2>
           <p className="lead">
-            Roles, rosters, queues, product lines and integrations are configuration, not code. Your collectors appear
-            automatically. Your escalation targets are your departments.
+            Roles, rosters, queues, message sequences, product lines and integrations are configuration, not code. Your
+            team appears automatically. Your escalation targets are your departments. Your clients hear from your firm,
+            in your voice.
           </p>
           <p className="muted">
-            If your firm bills clients, runs payment plans and has someone chasing late accounts, it fits.{" "}
+            If your firm bills clients, runs payment plans and has money it can't quite account for, it fits.{" "}
             <Link to={MARKETING_ROUTES.contact}>Tell us about yours.</Link>
           </p>
         </div>
@@ -419,7 +424,7 @@ const Adapts = () => (
           <div className="card">
             <span className="kicker">Partners &amp; owners</span>
             <h3>The number, and the reason</h3>
-            <p>Executive insights, certified AR, collector performance and the biggest movers in the book this month.</p>
+            <p>Executive insights, certified AR, team performance and the biggest movers in the book this month.</p>
           </div>
           <div className="card">
             <span className="kicker">Controllers &amp; administrators</span>
@@ -427,9 +432,9 @@ const Adapts = () => (
             <p>Controller AR oversight, expected deposits, cashflow analytics and a report builder for the month-end packet.</p>
           </div>
           <div className="card">
-            <span className="kicker">Collections &amp; billing</span>
+            <span className="kicker">Billing &amp; client relations</span>
             <h3>A queue that's already prioritized</h3>
-            <p>Call queue, workspace, commitments, hardship requests and the client's full ledger on one screen.</p>
+            <p>Connect queue, automated email and SMS, commitments, hardship requests and the client's full ledger on one screen.</p>
           </div>
           <div className="card">
             <span className="kicker">Service teams</span>
@@ -445,13 +450,13 @@ const Adapts = () => (
 const Integrations = () => (
   <section className="integrations" aria-label="Integrations">
     <div className="container">
-      <span className="kicker">Connects to</span>
+      <span className="kicker">Compatible with any CRM that exports or has an API · working today with</span>
       <ul>
         {INTEGRATIONS.map((i) => (
           <li key={i}>{i}</li>
         ))}
         <li className="more">Your bank</li>
-        <li className="more">Spreadsheets &amp; imports</li>
+        <li className="more">Spreadsheets &amp; exports</li>
       </ul>
     </div>
   </section>
@@ -460,19 +465,19 @@ const Integrations = () => (
 const FAQS = [
   {
     q: "What is LexCollect?",
-    a: "LexCollect is accounts-receivable oversight and collections software for firms. It reconciles your client-management system, payment processor, accounting and bank into one view of what you're owed, then runs collections with a queue, commitments, escalations and performance tracking on top of that reconciled data.",
+    a: "LexCollect is an accounts-receivable service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software. It reconciles your client system, payment processor, accounting and bank into one view of what you're owed, then runs the outreach, commitments, escalations and reporting on top of that reconciled data.",
+  },
+  {
+    q: "Do you provide collectors?",
+    a: "No. LexCollect provides the connection: the queues, the automated email and SMS, the commitments and the record. Your own team handles the conversations that need a person, with the client's reconciled ledger in front of them.",
   },
   {
     q: "What kind of firm is it for?",
-    a: "Any firm that bills clients and carries receivables: flat fees, retainers, installment plans or invoices. The first deployment was a high-volume firm with thousands of payment plans and payers who weren't the client, which is the hardest version of the problem. Roles, queues and product lines are configured per firm.",
-  },
-  {
-    q: "How is it different from a collections tool?",
-    a: "A collections tool starts from a list of people who owe money. LexCollect starts a step earlier and reconciles whether they actually do, so your team calls the right people with the right balance. Collections is one of eight parts of the system.",
+    a: "Any firm that bills clients and carries receivables: flat fees, retainers, installment plans or invoices. The first deployment was a high-volume firm with thousands of payment plans and payers who weren't the client, which is the hardest version of the problem. Roles, queues, messages and product lines are configured per firm.",
   },
   {
     q: "Which systems does it connect to?",
-    a: `Today: ${INTEGRATIONS.join(", ")}, plus bank deposits and spreadsheet imports. If you run something else, tell us on the first call and we'll confirm the fit.`,
+    a: `Any CRM or practice system that exports or has an API connection. Working today with ${INTEGRATIONS.join(", ")}, plus bank deposits and spreadsheet exports. If you run something else, tell us on the first call and we'll confirm the fit.`,
   },
   {
     q: "Does it replace our client-management or accounting software?",
@@ -480,7 +485,7 @@ const FAQS = [
   },
   {
     q: "What does a diagnostic involve?",
-    a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, what's recoverable now, and what your team could clear first. No exports are needed for the first call.",
+    a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, which clients have simply lost touch, and what your firm could recover first. No exports are needed for the first call.",
   },
 ];
 
@@ -505,10 +510,10 @@ const BookDiagnostic = () => (
       <div className="split split--wide-left">
         <div>
           <p className="eyebrow">Book a diagnostic</p>
-          <h2>Find out what's late, what's unmatched and what's recoverable now.</h2>
+          <h2>Find out what's late, what's unmatched and who's just lost touch.</h2>
           <p className="lead">
             Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is
-            worth, and what your team can collect first.
+            worth, and which clients a single message would bring back.
           </p>
           <div style={{ marginTop: "var(--sp-50)" }}>
             <DiagnosticForm sourcePage="home" idPrefix="home" />
@@ -528,7 +533,7 @@ const BookDiagnostic = () => (
             </li>
             <li>
               <b>You see what's recoverable</b>
-              <span>A first view of your book: late, unmatched, failed-card and ready-to-call, with a dollar figure on each.</span>
+              <span>A first view of your book: late, unmatched, failed-card and ready-to-connect, with a dollar figure on each.</span>
             </li>
           </ol>
           <div className="contact-line">
@@ -554,7 +559,7 @@ const LandingPage = () => {
       <Stats />
       <Pillars />
       <Oversight />
-      <HardDebt />
+      <Connect />
       <Results />
       <Adapts />
       <Integrations />
@@ -562,7 +567,7 @@ const LandingPage = () => {
       <BookDiagnostic />
       <CtaBand
         title="See what your own book says."
-        lead="One conversation, your systems, and a first look at what's late, what's unmatched and what's recoverable this month."
+        lead="One conversation, your systems, and a first look at what's late, what's unmatched and which clients one message would bring back."
         secondary={{ to: MARKETING_ROUTES.platform, label: "Explore the platform" }}
       />
     </SiteShell>

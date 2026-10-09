@@ -2,9 +2,9 @@ import { CtaBand, FaqList, PageHero, SiteShell, usePageMeta } from "@/components
 import { INTEGRATIONS } from "@/lib/marketing";
 
 export const PLATFORM_META = {
-  title: "AR Oversight, Reconciliation & Collections Platform for Firms | LexCollect",
+  title: "AR Oversight, Automation & Client Connection Platform for Firms | LexCollect",
   description:
-    "AR oversight, payment reconciliation, a prioritized collections queue, collector accountability, escalations, product and lifecycle analytics, client CRM and forecasting for firms, in one system.",
+    "AR oversight, continuous reconciliation and migration, a Connect queue with automated email and SMS, team accountability, escalations, product and lifecycle analytics, CRM compatibility and forecasting for firms, in one service.",
 };
 
 interface Module {
@@ -43,10 +43,10 @@ const MODULES: Module[] = [
   {
     id: "reconciliation",
     num: "02",
-    eyebrow: "Reconciliation & data integrity",
-    title: "Every payment tied to a client, contract and invoice",
-    lede: "Processor, client system, CRM and books reconciled continuously. Anything that can't be tied is counted and queued for a person.",
-    screens: ["Processor reconciliation", "Migration reconciliation", "HubSpot validation", "Unmatched payment review", "Data Import"],
+    eyebrow: "Automation & data integrity",
+    title: "The work of a finance department, done every day",
+    lede: "Processor, client system, CRM and books reconciled continuously. Migrations between incompatible systems reconciled record by record. Anything that can't be tied is counted and queued for a person.",
+    screens: ["Continuous reconciliation", "Migration reconciliation", "CRM validation", "Unmatched payment review", "Data Import"],
     caps: [
       {
         title: "Ranked match suggestions",
@@ -65,22 +65,22 @@ const MODULES: Module[] = [
   {
     id: "collections",
     num: "03",
-    eyebrow: "Collections",
-    title: "A prioritized queue, a full ledger and a record of every call",
-    lede: "Collections built on reconciled balances, so your team calls the right people about the right amount.",
-    screens: ["Collections monthly view", "Call Queue", "Collector Workspace", "Payment Commitments", "Card Recovery", "Daily Activity Log"],
+    eyebrow: "Connect",
+    title: "Rebuild the connection between your firm and the clients who owe it",
+    lede: "A prioritized queue, automated email and SMS to the right client lists, and a record of every message, promise and reply. A person steps in only when the client needs one.",
+    screens: ["Connect Queue", "Automated email & SMS", "Client lists & sequences", "Payment Commitments", "Card Recovery", "Daily Activity Log"],
     caps: [
       {
         title: "Queue intelligence",
-        text: "Accounts ranked by balance, aging and last contact. Consult-only records, import noise and abandoned contracts stay out by default.",
+        text: "Accounts ranked by balance, aging and last contact, built from reconciled balances. Consult-only records, import noise and abandoned contracts stay out by default.",
+      },
+      {
+        title: "Automated messaging, in your voice",
+        text: "Missed installment, failed card, balance due, plan complete: each list gets its own email and SMS sequence, sent from your firm, logged on the account, and stopped the moment a payment lands.",
       },
       {
         title: "Commitments and hardship",
-        text: "Promises to pay carry a date and amount and get followed up. Hardship requests are a workflow, not a sticky note.",
-      },
-      {
-        title: "Failed cards, not delinquency",
-        text: "Willing payers whose auto-draft failed are separated into a billing nudge segment and measured by recovery rate per cohort.",
+        text: "Promises to pay carry a date and amount and get followed up automatically. Hardship requests are a workflow, not a sticky note.",
       },
     ],
   },
@@ -88,17 +88,17 @@ const MODULES: Module[] = [
     id: "accountability",
     num: "04",
     eyebrow: "Accountability",
-    title: "Every collector, every call, every dollar, every day",
-    lede: "Scorecards for collectors and intake, built from the full activity log and certified per person.",
-    screens: ["Collector Performance", "Collections KPI", "Outcome Distribution", "Origin breakdown", "Coverage tracking"],
+    title: "Every team member, every outreach, every dollar, every day",
+    lede: "Scorecards for billing, client relations and intake, built from the full activity log and certified per person.",
+    screens: ["Team Performance", "Collections KPI", "Outcome Distribution", "Origin breakdown", "Coverage tracking"],
     caps: [
       {
         title: "Monthly scorecards",
-        text: "Calls, dollars collected, average per call, duration, commission, collection rate, calls per day and connected per day, per team member.",
+        text: "Outreach, dollars collected, average per contact, commission, collection rate, contacts per day and connected per day, per team member.",
       },
       {
         title: "Outcomes and origins",
-        text: "Where collected dollars came from (AR list, follow-up, transfer, service-team request) and how calls ended, with dirty labels normalized.",
+        text: "Where collected dollars came from (AR list, email sequence, SMS, follow-up, transfer, service-team request) and how each contact ended, with dirty labels normalized.",
       },
       {
         title: "Today, not last month",
@@ -109,7 +109,7 @@ const MODULES: Module[] = [
   {
     id: "escalations",
     num: "05",
-    eyebrow: "Escalations & internal communication",
+    eyebrow: "Unique escalations & internal connection",
     title: "Hand-offs with a queue, a priority and an owner",
     lede: "Billing, service teams, intake and management look at the same record. An escalation has a status that has to be closed.",
     screens: ["Escalation Management", "Department inboxes", "Management inbox", "Hardship requests", "Deadline watch"],
@@ -120,7 +120,7 @@ const MODULES: Module[] = [
       },
       {
         title: "Context travels with it",
-        text: "Source (inbound call, service-team request, refund follow-up, compliance review), priority, notes and the client's ledger, all on the escalation.",
+        text: "Source (client reply, service-team request, refund follow-up, compliance review), priority, notes and the client's ledger, all on the escalation.",
       },
       {
         title: "Deadlines in view",
@@ -153,10 +153,10 @@ const MODULES: Module[] = [
   {
     id: "crm",
     num: "07",
-    eyebrow: "Client CRM",
-    title: "A client 360 that the CRM and the books both agree with",
-    lede: "Contact, engagements, ledger, plan and escalations on one screen, with the latest processor payments blended in.",
-    screens: ["Client Lookup", "Client 360", "HubSpot sync", "Email segments", "Consult funnel", "Take a payment"],
+    eyebrow: "Works with your CRM",
+    title: "Compatible with any CRM that exports or has an API",
+    lede: "Contact, engagements, ledger, plan and escalations on one screen, with the latest processor payments blended in. Your CRM stays your CRM.",
+    screens: ["Any CRM with export or API", "Client Lookup", "Client 360", "HubSpot sync", "Email segments", "Take a payment"],
     caps: [
       {
         title: "Everything about the client",
@@ -207,15 +207,15 @@ const FAQS = [
   },
   {
     q: "Who on our team uses it?",
-    a: "Partners and owners for the certified number and executive insights. Controllers and administrators for oversight, forecasting and reporting. Collectors and billing for the queue, workspace and commitments. Service teams for the pipeline, deadline watch and their escalation inbox. Access is by role.",
+    a: "Partners and owners for the certified number and executive insights. Controllers and administrators for oversight, forecasting and reporting. Billing and client relations for the Connect queue, sequences and commitments. Service teams for the pipeline, deadline watch and their escalation inbox. Access is by role.",
   },
   {
     q: "How is it configured for our firm?",
-    a: "Collectors come from a live roster. Escalation targets are your departments. Product lines, outcome labels, origin buckets and aging thresholds are set per firm. Integrations are the ones you already run.",
+    a: "Your team comes from a live roster. Escalation targets are your departments. Message sequences, product lines, outcome labels, origin buckets and aging thresholds are set per firm. Integrations are the ones you already run, and any CRM that exports or has an API can be connected.",
   },
   {
-    q: "Is LexCollect a collections agency?",
-    a: "No. LexCollect is software. Your firm keeps the client relationship and decides who is contacted, when and how.",
+    q: "Is LexCollect a collections agency? Do you provide collectors?",
+    a: "No to both. LexCollect is the accounting department's toolkit, delivered as a service: the reconciled book, the queues, the automated email and SMS, the commitments and the record. Your firm keeps the client relationship and decides who is contacted, when and how.",
   },
 ];
 
@@ -227,8 +227,8 @@ const PlatformPage = () => {
       <PageHero
         crumb="Platform"
         eyebrow="Platform"
-        title="AR oversight, reconciliation and collections for firms, in one system."
-        lead="Eight working parts. Each one is a screen your team will open, built on the same reconciled data, so the partner, the controller and the collector are looking at the same dollar."
+        title="An accounting department's visibility and automation, in one service."
+        lead="Eight working parts, the visibility and automation of a high-level accounting firm at your fingertips. Each one is a screen your team will open, built on the same reconciled data, so the partner, the controller and the person messaging the client are looking at the same dollar."
       >
         <nav className="jump" aria-label="On this page">
           {MODULES.map((m) => (
@@ -305,15 +305,21 @@ const PlatformPage = () => {
                   <td>Manually, monthly</td>
                 </tr>
                 <tr>
+                  <th scope="row">Automated email and SMS to reconciled client lists</th>
+                  <td className="is-us yes">Yes, in your voice</td>
+                  <td>Dialer</td>
+                  <td className="no">No</td>
+                </tr>
+                <tr>
                   <th scope="row">Separates failed cards from delinquency</th>
                   <td className="is-us yes">Yes</td>
                   <td className="no">No</td>
                   <td className="no">No</td>
                 </tr>
                 <tr>
-                  <th scope="row">Per-collector scorecards from the full call log</th>
+                  <th scope="row">Per-person scorecards from the full activity log</th>
                   <td className="is-us yes">Yes, certified</td>
-                  <td>Call counts</td>
+                  <td>Contact counts</td>
                   <td className="no">No</td>
                 </tr>
                 <tr>
@@ -336,7 +342,7 @@ const PlatformPage = () => {
                 </tr>
                 <tr>
                   <th scope="row">Integrations</th>
-                  <td className="is-us">{INTEGRATIONS.join(", ")}, bank</td>
+                  <td className="is-us">Any CRM with export or API · {INTEGRATIONS.join(", ")}, bank</td>
                   <td>Processor</td>
                   <td>Exports</td>
                 </tr>
@@ -350,7 +356,7 @@ const PlatformPage = () => {
         <div className="container">
           <div className="section-head">
             <p className="eyebrow">Getting started</p>
-            <h2>From first call to first certified snapshot</h2>
+            <h2>From first conversation to first certified snapshot</h2>
           </div>
           <ol className="steps">
             <li className="step">
@@ -361,12 +367,12 @@ const PlatformPage = () => {
             <li className="step">
               <span className="step__num">02</span>
               <h3>Reconcile and configure</h3>
-              <p>You get the first reconciled book with the gaps named, and we set roles, roster, queues and product lines to match your firm.</p>
+              <p>You get the first reconciled book with the gaps named, and we set roles, roster, queues, message sequences and product lines to match your firm.</p>
             </li>
             <li className="step step--highlight">
               <span className="step__num">03</span>
               <h3>Work the queue</h3>
-              <p>Collectors start from a prioritized list. LexCollect keeps reconciling and logging, so the first month ends with a certified number.</p>
+              <p>Sequences go out to reconciled lists and your team works the queue of clients who need a person. LexCollect keeps reconciling and logging, so the first month ends with a certified number.</p>
             </li>
           </ol>
         </div>
@@ -385,7 +391,7 @@ const PlatformPage = () => {
       </section>
 
       <CtaBand
-        title="Start with a reconciled book and a prioritized queue."
+        title="Start with a reconciled book and a connected client list."
         lead="We'll walk through your systems and show you what LexCollect would find first."
       />
     </SiteShell>
