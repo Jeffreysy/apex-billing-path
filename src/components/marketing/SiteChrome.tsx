@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BOOKING_URL, CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
+import { initMarketingSite } from "@/lib/marketing-site";
 import "@/styles/marketing.css";
 
 const NAV_LINKS = [
@@ -141,7 +142,7 @@ export const SiteFooter = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>An accounting department at your fingertips. One live view of every dollar owed, automated email and SMS that reconnect your firm with its clients, and a record of every message, promise and hand-off until it's paid.</p>
+          <p>Accounts-receivable accounting for firms. Every dollar accounted for, every client connected.</p>
         </div>
         <div className="footer-col">
           <h2>Platform</h2>
@@ -206,17 +207,24 @@ export const SiteFooter = () => (
   </footer>
 );
 
-/** Wraps a marketing page in the scoped `.lc` theme with header and footer. */
-export const SiteShell = ({ children }: { children: ReactNode }) => (
-  <div className="lc">
-    <a className="skip-link" href="#main">
-      Skip to content
-    </a>
-    <SiteHeader />
-    <main id="main">{children}</main>
-    <SiteFooter />
-  </div>
-);
+/**
+ * Wraps a marketing page in the scoped `.lc` theme with header and footer, and
+ * wires the page's interactions (src/lib/marketing-site.ts, shared with WordPress).
+ */
+export const SiteShell = ({ children }: { children: ReactNode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => (ref.current ? initMarketingSite(ref.current) : undefined), []);
+  return (
+    <div className="lc" ref={ref}>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <SiteHeader />
+      <main id="main">{children}</main>
+      <SiteFooter />
+    </div>
+  );
+};
 
 interface PageHeroProps {
   crumb: string;

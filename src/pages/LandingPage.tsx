@@ -1,62 +1,212 @@
 import { Link } from "react-router-dom";
-import { Arrow, BOOK_CALL_LABEL, BookCallLink, BrandMark, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { Arrow, BOOK_CALL_LABEL, BookCallLink, BrandMark, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const HOME_META = {
   title: "AR Accounting Services for Firms | LexCollect",
   description:
-    "LexCollect is an accounts-receivable accounting service for firms: internal efficiency, client connection, and financial and revenue recognition, built on the systems you already run.",
+    "LexCollect is an accounts-receivable accounting service for firms: one reconciled number for everything you're owed, and an automatic way back to the clients behind every late balance.",
 };
 
-const PROMISES = [
-  {
-    title: "Internal efficiency",
-    text: "Reconciliation, migration, follow-up and reporting run every day without a spreadsheet or a second hire.",
-  },
-  {
-    title: "Client connection",
-    text: "The right message to the right client at the right moment, by email or SMS, with a record of every reply.",
-  },
-  {
-    title: "Financial recognition",
-    text: "One reconciled, certified view of what the firm is owed, across every system it runs.",
-  },
-  {
-    title: "Revenue recognition",
-    text: "Every collected dollar carries its origin, so the revenue your firm earns, and the revenue LexCollect produces, is a report.",
-  },
+/*
+ * Every figure in a product mock on this page is example data and is labelled
+ * that way on screen. The only real figures are the deployment results (Proof,
+ * ResultsBand), which repeat what the Results page already publishes.
+ *
+ * One fictional client, Ana Morales, runs through the hero queue, the Connect
+ * tab and the four-step loop, so the page tells one story instead of four.
+ */
+
+const usd = (n: number, decimals = 0) =>
+  "$" + n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+/* ---------- Hero ---------- */
+
+const AGING = [
+  { key: "current", label: "Current", amt: 1_121_400 },
+  { key: "d30", label: "1–30 days", amt: 468_900 },
+  { key: "d60", label: "31–60", amt: 301_250 },
+  { key: "d90", label: "61–90", amt: 187_670 },
+  { key: "d90p", label: "90+", amt: 406_900 },
 ];
+const AGING_TOTAL = AGING.reduce((s, a) => s + a.amt, 0); // 2,486,120
+
+const QUEUE = [
+  { client: "A. Morales", kind: "Payment plan", due: 1050, late: "34 days", from: "Card failed", to: "Update link sent", tone: "info" },
+  { client: "J. Patel", kind: "Flat fee", due: 3200, late: "61 days", from: "No contact in 52 days", to: "Promise · Oct 15", tone: "info" },
+  { client: "K. Brooks", kind: "Retainer", due: 940, late: "12 days", from: "Installment due", to: "Paid · closed", tone: "ok" },
+];
+
+const HeroDash = () => (
+  <figure className="hm-dash" data-dash aria-label="Example of the LexCollect receivables view">
+    <div className="hm-dash__bar">
+      <span className="hm-dash__app">
+        <BrandMark />
+        Receivables
+      </span>
+      <span className="hm-dash__seg" aria-hidden="true">
+        <span className="is-on">Today</span>
+        <span>Month</span>
+        <span>Year</span>
+      </span>
+      <span className="hm-example">Example data</span>
+    </div>
+
+    <div className="hm-dash__kpis">
+      <div className="hm-kpi hm-kpi--lead">
+        <span className="hm-kpi__label">Open receivables</span>
+        <span className="hm-kpi__num" data-count={AGING_TOTAL} data-prefix="$">
+          {usd(AGING_TOTAL)}
+        </span>
+        <span className="hm-kpi__foot">Reconciled across 4 systems</span>
+      </div>
+      <div className="hm-kpi">
+        <span className="hm-kpi__label">Collected this week</span>
+        <span className="hm-kpi__num" data-count={84300} data-prefix="$">
+          {usd(84300)}
+        </span>
+        <span className="hm-kpi__foot">Traced to the bank</span>
+      </div>
+      <div className="hm-kpi">
+        <span className="hm-kpi__label">Promises due</span>
+        <span className="hm-kpi__num" data-count={12}>
+          12
+        </span>
+        <span className="hm-kpi__foot">This week</span>
+      </div>
+    </div>
+
+    <div className="hm-aging">
+      <div className="hm-aging__head">
+        <span>Aging</span>
+        <span>Hover or tap a band</span>
+      </div>
+      <div className="hm-aging__bar" role="img" aria-label="Aging of open receivables by days past due">
+        {AGING.map((a, i) => (
+          <span
+            key={a.key}
+            className={`hm-aging__band hm-aging__band--${i + 1}`}
+            data-seg={a.key}
+            style={{ flexGrow: a.amt, transitionDelay: `${120 + i * 90}ms` }}
+            aria-label={`${a.label}: ${usd(a.amt)}`}
+          />
+        ))}
+      </div>
+      <ul className="hm-aging__legend">
+        {AGING.map((a, i) => (
+          <li key={a.key} data-seg={a.key}>
+            <i className={`hm-aging__sw hm-aging__band--${i + 1}`} aria-hidden="true" />
+            <span>{a.label}</span>
+            <b>{usd(a.amt)}</b>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div className="hm-queue">
+      <div className="hm-queue__head">
+        <span>Today's queue</span>
+        <span>3 of 37</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Client</th>
+            <th scope="col">Past due</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {QUEUE.map((q) => (
+            <tr key={q.client}>
+              <td>
+                <b>{q.client}</b>
+                <span>
+                  {q.kind} · {q.late}
+                </span>
+              </td>
+              <td className="num">{usd(q.due)}</td>
+              <td>
+                <span className={`hm-chip hm-chip--${q.tone}`} data-status-from={q.from}>
+                  {q.to}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </figure>
+);
 
 const Hero = () => (
-  <section className="hero hero--brand" id="top">
+  <section className="hm-hero" id="top">
     <div className="container">
-      <div className="brand-hero">
-        <div className="brand-hero__mark" aria-hidden="true">
-          <BrandMark />
+      <div className="hm-hero__grid">
+        <div className="hm-hero__copy">
+          <p className="eyebrow">Accounts-receivable accounting for firms</p>
+          <h1>
+            Every dollar accounted for. <em>Every client connected.</em>
+          </h1>
+          <p className="lead">
+            One reconciled number for everything your firm is owed, across your client system, processor, books and
+            bank. And an automatic, on-brand way back to the client behind every late balance.
+          </p>
+          <div className="actions">
+            <BookCallLink className="btn btn--primary">
+              {BOOK_CALL_LABEL} <Arrow />
+            </BookCallLink>
+            <a className="btn btn--ghost" href="#platform">
+              See how it works
+            </a>
+          </div>
         </div>
-        <p className="eyebrow">AR accounting services for firms</p>
-        <h1 className="brand-hero__slogan">
-          Every dollar accounted for. <em>Every client connected.</em>
-        </h1>
-        <p className="lead">
-          LexCollect is an accounts-receivable accounting service. We give firms the visibility, automation and client
-          connection of an elite accounting department, built on the systems you already run.
-        </p>
-        <div className="actions">
-          <BookCallLink className="btn btn--primary">
-            {BOOK_CALL_LABEL} <Arrow />
-          </BookCallLink>
-          <Link className="btn btn--ghost" to={MARKETING_ROUTES.about}>
-            Why LexCollect
-          </Link>
+        <div className="hm-hero__visual">
+          <div className="hm-cradle" aria-hidden="true" />
+          <HeroDash />
         </div>
       </div>
-      <ul className="promises" aria-label="What LexCollect improves">
-        {PROMISES.map((p) => (
-          <li key={p.title} className="promise">
-            <h3>{p.title}</h3>
-            <p>{p.text}</p>
+      <div className="hm-works">
+        <span>Works across</span>
+        <ul>
+          {INTEGRATIONS.map((i) => (
+            <li key={i}>{i}</li>
+          ))}
+          <li>Your bank</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+);
+
+/* ---------- Proof ---------- */
+
+const PROOF = [
+  { n: 21.4, decimals: 1, prefix: "$", suffix: "M", label: "receivables book reconciled to the firm's own ground truth" },
+  { n: 3.5, decimals: 1, prefix: "$", suffix: "M", label: "in balances re-linked to the right clients through a system migration" },
+  { n: 228, decimals: 0, prefix: "", suffix: "", label: "willing payers reached with one message instead of a collections call" },
+  { n: 928, decimals: 0, prefix: "$", suffix: "K", label: "kept out of hard debt by separating failed cards from delinquency" },
+];
+
+const Proof = () => (
+  <section className="hm-proof" aria-label="Results from the first deployment">
+    <div className="container">
+      <p className="hm-proof__intro" data-reveal>
+        From the first deployment, inside a high-volume firm.{" "}
+        <Link to={MARKETING_ROUTES.results}>
+          Read the results <Arrow />
+        </Link>
+      </p>
+      <ul className="hm-proof__grid">
+        {PROOF.map((p, i) => (
+          <li key={p.label} data-reveal data-reveal-delay={i * 80}>
+            <span className="hm-proof__num" data-count={p.n} data-decimals={p.decimals} data-prefix={p.prefix} data-suffix={p.suffix}>
+              {p.prefix}
+              {p.n.toLocaleString("en-US", { minimumFractionDigits: p.decimals, maximumFractionDigits: p.decimals })}
+              {p.suffix}
+            </span>
+            <span className="hm-proof__label">{p.label}</span>
           </li>
         ))}
       </ul>
@@ -64,379 +214,567 @@ const Hero = () => (
   </section>
 );
 
-const Stats = () => (
-  <section className="stats" aria-label="LexCollect results at a glance">
-    <div className="container stats__grid">
-      <div className="stat">
-        <span className="stat__num">$21.4M</span>
-        <span className="stat__label">receivables book reconciled to the firm's ground truth</span>
-      </div>
-      <div className="stat">
-        <span className="stat__num">$3.5M</span>
-        <span className="stat__label">in contract balances re-linked to the right clients through a migration between incompatible systems</span>
-      </div>
-      <div className="stat">
-        <span className="stat__num">228</span>
-        <span className="stat__label">willing payers reconnected with an "update your card" message instead of a collections call</span>
-      </div>
-      <div className="stat">
-        <span className="stat__num">
-          7<small>queues</small>
-        </span>
-        <span className="stat__label">for escalations, so billing, service teams and management hand off with a record</span>
+/* ---------- The four versions, reconciled ---------- */
+
+const RECONCILED = 412_860;
+const SOURCES = [
+  { system: "Client system", tool: "MyCase", raw: 411_410, note: "+$1,450.00 · 2 payments made by a relative, now linked to the client" },
+  { system: "Processor", tool: "LawPay", raw: 412_860, note: "Matches the deposit record" },
+  { system: "Books", tool: "QuickBooks", raw: 414_060, note: "−$1,200.00 · 1 duplicate entry removed" },
+  { system: "Bank", tool: "Operating account", raw: 402_331.06, note: "+$10,528.94 · deposit in transit, cleared Oct 1" },
+];
+
+const Recon = () => (
+  <section className="section section--light hm-recon" id="reconcile">
+    <div className="container">
+      <div className="hm-recon__grid">
+        <div className="hm-recon__copy" data-reveal>
+          <p className="eyebrow">Every dollar accounted for</p>
+          <h2>Most firms have four versions of what they collected.</h2>
+          <p className="lead">
+            The client system, the processor, the books and the bank each tell a different story, so the partners pick
+            one and hope. LexCollect ties them into one number and explains every dollar of difference.
+          </p>
+          <ul className="hm-ticks">
+            <li>Payments traced from the client system to the bank deposit</li>
+            <li>Payments made by a relative or employer linked to the right client</li>
+            <li>A certified snapshot every month, so trends are real history</li>
+          </ul>
+        </div>
+
+        <div className="hm-recon__panel" data-recon data-state="after" data-reveal data-reveal-delay="120">
+          <div className="hm-recon__head">
+            <span className="hm-recon__title">Collections this month</span>
+            <div className="hm-toggle" role="group" aria-label="Show the numbers">
+              <button type="button" data-recon-set="before" aria-pressed="false">
+                Before
+              </button>
+              <button type="button" data-recon-set="after" aria-pressed="true">
+                With LexCollect
+              </button>
+            </div>
+          </div>
+          <ul className="hm-recon__rows">
+            {SOURCES.map((s) => {
+              const diff = s.raw - RECONCILED;
+              const off = Math.max(-1, Math.min(1, diff / 6000));
+              return (
+                <li key={s.tool} style={{ ["--off" as string]: off.toFixed(3) }}>
+                  <span className="hm-recon__src">
+                    <b>{s.system}</b>
+                    <span>{s.tool}</span>
+                  </span>
+                  <span className="hm-recon__track">
+                    <span className="hm-recon__amt">
+                      <span className="v-before">{usd(s.raw, 2)}</span>
+                      <span className="v-after">{usd(RECONCILED, 2)}</span>
+                    </span>
+                  </span>
+                  <span className="hm-recon__note">
+                    <span className={`v-before${diff === 0 ? "" : " is-off"}`}>{diff === 0 ? "Matches" : "Doesn't match"}</span>
+                    <span className="v-after">{s.note}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hm-recon__foot">
+            <span className="v-before">4 systems, 4 different answers</span>
+            <span className="v-after">
+              Reconciled <b>{usd(RECONCILED, 2)}</b> · every difference explained
+            </span>
+            <span className="hm-example">Example data</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 );
 
-interface Pillar {
+/* ---------- Platform explorer ---------- */
+
+const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"];
+const OPEN_AR = [2.71, 2.66, 2.61, 2.58, 2.52, 2.49]; // $M, example
+
+const ArChart = () => {
+  const w = 440;
+  const h = 200;
+  const base = 172;
+  const top = 28;
+  const bw = 40;
+  const gap = (w - 40 - bw * MONTHS.length) / (MONTHS.length - 1);
+  const y = (v: number) => base - (v / 3) * (base - top);
+  return (
+    <svg className="hm-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby="hm-chart-t">
+      <title id="hm-chart-t">Open receivables by month, certified on the 1st. Example data, falling from $2.71M in April to $2.49M in September.</title>
+      {[1, 2, 3].map((g) => (
+        <line key={g} className="hm-chart__grid" x1="20" x2={w - 20} y1={y(g)} y2={y(g)} />
+      ))}
+      <line className="hm-chart__base" x1="20" x2={w - 20} y1={base} y2={base} />
+      {OPEN_AR.map((v, i) => {
+        const x = 20 + i * (bw + gap);
+        const edge = i === 0 || i === OPEN_AR.length - 1;
+        return (
+          <g key={MONTHS[i]} className={`hm-chart__bar${edge ? " is-labelled" : ""}`}>
+            <title>{`${MONTHS[i]}: $${v.toFixed(2)}M`}</title>
+            <rect className="hm-chart__hit" x={x - gap / 2} y={top - 20} width={bw + gap} height={base - top + 40} />
+            <path d={`M${x},${base} V${y(v) + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${base} Z`} />
+            <text className="hm-chart__val" x={x + bw / 2} y={y(v) - 8} textAnchor="middle">
+              ${v.toFixed(2)}M
+            </text>
+            <text className="hm-chart__tick" x={x + bw / 2} y={base + 18} textAnchor="middle">
+              {MONTHS[i]}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+const MockSee = () => (
+  <div className="hm-mock">
+    <div className="hm-mock__head">
+      <span>Open receivables · certified on the 1st</span>
+      <span className="hm-example">Example data</span>
+    </div>
+    <ArChart />
+    <div className="hm-mock__foot">
+      <span>
+        <i className="hm-dot hm-dot--ok" aria-hidden="true" /> 6 of 6 monthly snapshots certified
+      </span>
+      <span>−8.1% in six months</span>
+    </div>
+  </div>
+);
+
+const MockConnect = () => (
+  <div className="hm-mock hm-mock--thread">
+    <div className="hm-mock__head">
+      <span>Ana Morales · Payment plan</span>
+      <span className="hm-example">Example data</span>
+    </div>
+    <ol className="hm-thread">
+      <li className="hm-msg hm-msg--out">
+        <span className="hm-msg__meta">Text · 9:14 AM · Delivered</span>
+        Hi Ana, it's the billing team at Morgan &amp; Hale. The card on your payment plan didn't go through. You can
+        update it here in about a minute: <u>pay.morganhale.com/u/8F2K</u>
+      </li>
+      <li className="hm-msg hm-msg--in">
+        <span className="hm-msg__meta">Reply · 9:31 AM</span>
+        Done, sorry about that. Can I catch up on the 15th?
+      </li>
+      <li className="hm-event">
+        <i className="hm-dot hm-dot--ok" aria-hidden="true" /> Card updated · promise logged: $1,050 on Oct 15
+      </li>
+    </ol>
+  </div>
+);
+
+const PROMISES = [
+  { client: "L. Nguyen", amt: 500, due: "Oct 3", status: "Kept", tone: "ok" },
+  { client: "A. Morales", amt: 1050, due: "Oct 15", status: "Reminder Oct 14", tone: "info" },
+  { client: "R. Diaz", amt: 250, due: "Oct 10", status: "Due Friday", tone: "info" },
+  { client: "T. Walker", amt: 400, due: "Sep 30", status: "Missed · follow-up sent", tone: "warn" },
+];
+
+const MockRecover = () => (
+  <div className="hm-mock">
+    <div className="hm-mock__head">
+      <span>Promises to pay</span>
+      <span className="hm-example">Example data</span>
+    </div>
+    <table className="hm-table">
+      <thead>
+        <tr>
+          <th scope="col">Client</th>
+          <th scope="col" className="num">
+            Amount
+          </th>
+          <th scope="col">Due</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {PROMISES.map((p) => (
+          <tr key={p.client}>
+            <td>
+              <b>{p.client}</b>
+            </td>
+            <td className="num">{usd(p.amt)}</td>
+            <td>{p.due}</td>
+            <td>
+              <span className={`hm-chip hm-chip--${p.tone}`}>{p.status}</span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const CHECKS = [
+  { name: "Monthly receivables snapshot", meta: "Captured on the 1st · 12-month trend", state: "Certified", tone: "ok" },
+  { name: "Processor to client system", meta: "2,013 matched · 759 queued for a person", state: "Healthy", tone: "ok" },
+  { name: "Contracts marked paid with no payments", meta: "428 found with ~4% collected · reclassified, reversible", state: "Flagged", tone: "warn" },
+  { name: "Duplicate and orphan clients", meta: "561 contracts re-linked · 89 duplicates merged", state: "Healthy", tone: "ok" },
+  { name: "Double-booking guard", meta: "A retried payment can't be booked twice", state: "Healthy", tone: "ok" },
+];
+
+const MockRun = () => (
+  <div className="hm-mock">
+    <div className="hm-mock__head">
+      <span>Daily checks</span>
+      <span className="hm-example">Example data</span>
+    </div>
+    <ul className="hm-checks">
+      {CHECKS.map((c) => (
+        <li key={c.name} className={c.tone === "warn" ? "is-flagged" : undefined}>
+          <span className="hm-checks__name">{c.name}</span>
+          <span className={`hm-chip hm-chip--${c.tone}`}>{c.state}</span>
+          <span className="hm-checks__meta">{c.meta}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+interface Capability {
+  id: string;
+  tab: string;
   title: string;
   text: string;
-  mods: string[];
-  lead?: boolean;
+  points: string[];
+  screens: string;
+  Mock: () => JSX.Element;
 }
 
-const PILLARS: Pillar[] = [
+const CAPABILITIES: Capability[] = [
   {
-    title: "See every dollar: financial visibility",
-    text: "One live receivables view across your client system, payment processor, books and bank. Aging, open AR over time, expected deposits and a certified monthly snapshot you can hand to the partners.",
-    mods: ["AR Management", "Controller AR Management", "AR Movement & Projection", "Monthly AR snapshots"],
-    lead: true,
+    id: "see",
+    tab: "See every dollar",
+    title: "A receivables number the partners can trust, every month.",
+    text: "One live view across your client system, processor, books and bank, with a certified snapshot on the 1st that you can hand to the partners.",
+    points: ["Aging and open AR from real history, not a re-run of today", "Expected deposits by week", "Unmatched payments counted and queued, never parked"],
+    screens: "AR Management · Controller view · AR Movement · Monthly snapshots",
+    Mock: MockSee,
   },
   {
-    title: "Connect: rebuild the firm-to-client relationship",
-    text: "Most late accounts aren't refusals. They're clients the firm lost touch with. LexCollect reconnects them: the right message, by email or SMS, to the right list, at the right moment, with a person stepping in only when it matters.",
-    mods: ["Connect Queue", "Automated email & SMS", "Client lists", "Payment Commitments"],
-    lead: true,
+    id: "connect",
+    tab: "Reconnect clients",
+    title: "Most late accounts aren't refusals. They're clients the firm lost touch with.",
+    text: "The right message, by email or text, goes to the right client at the right moment, in your firm's voice. A person steps in only when the client needs one.",
+    points: ["Balances reconciled before anything is sent", "Failed cards get an update link, not a collections call", "Every reply and promise logged to the account"],
+    screens: "Connect queue · Email & SMS · Client lists · Commitments",
+    Mock: MockConnect,
   },
   {
-    title: "Collect more of what you already earned",
-    text: "Most 'missing' money was billed and never followed. LexCollect shows what's late, who owes it and what each account is worth, so the biggest dollars are worked first.",
-    mods: ["Collections monthly view", "Aging breakdown", "Revenue forecast", "Collection flow"],
+    id: "recover",
+    tab: "Recover hard debt",
+    title: "Older balances get a plan the client can keep.",
+    text: "Ninety-day-plus accounts get a sequence instead of a shouting match: a reconciled balance first, a clear message, a plan, and a record of every promise.",
+    points: ["Promises tracked to the date and the dollar", "Missed installments surface while they're small", "Hardship requests routed to the right person"],
+    screens: "Hard-debt sequences · Promise tracking · Hardship requests · Card recovery",
+    Mock: MockRecover,
   },
   {
-    title: "Recover hard debt without burning the relationship",
-    text: "Ninety-day-plus balances get a sequence, not a shouting match: reconciled balance first, a clear message, a plan the client can keep, and a record of every promise.",
-    mods: ["Hard-debt sequences", "Hardship requests", "Card Recovery", "Promise tracking"],
-  },
-  {
-    title: "Automation that runs like a finance department",
-    text: "Continuous reconciliation, duplicate and orphan cleanup, migration between systems and payment booking that can't double-count. The work an elite accounting team would do by hand, done every day.",
-    mods: ["Continuous reconciliation", "Migration reconciliation", "Unmatched payment review", "Idempotent booking"],
-  },
-  {
-    title: "Hold the team accountable",
-    text: "Every outreach, outcome, dollar and commission by team member, by day. Scorecards, contact rates and a daily activity log that doesn't depend on memory.",
-    mods: ["Team Performance", "Daily Activity Log", "Outcome Distribution", "Collections KPI"],
-  },
-  {
-    title: "Unique escalations and internal connection",
-    text: "Billing, service teams, intake and management look at the same client, the same contract status and the same escalation. Hand-offs carry a queue, a priority and an owner instead of an email chain.",
-    mods: ["Escalation Management", "Department inboxes", "Hand-off queues", "Deadline watch"],
-  },
-  {
-    title: "Know which products make the money, and when",
-    text: "Billing by product, contract lifecycle and progression, and the service pipeline by stage. See which products generate cash and where in the life of an engagement it arrives.",
-    mods: ["Billing by Product", "Contract Lifecycle", "Service Pipeline", "Product Mix"],
-  },
-  {
-    title: "Works with the CRM you already have",
-    text: "Compatible with any CRM or practice system that exports or has an API connection. Intake and consult tracking, deals validated against real payments, and client data joined to money so the CRM and the books finally agree.",
-    mods: ["Any CRM with export or API", "HubSpot sync", "Consult funnel", "Client 360"],
+    id: "run",
+    tab: "Run like a department",
+    title: "The work an elite accounting team does by hand, done every day.",
+    text: "Reconciliation, duplicate cleanup, migration between systems and payment booking run on their own, each with a named check and an owner when something breaks.",
+    points: ["A green status means the job really ran", "Payments can't be booked twice", "Outcomes by team member, by day"],
+    screens: "Continuous reconciliation · Team performance · Escalations · Daily activity",
+    Mock: MockRun,
   },
 ];
 
-const Pillars = () => (
-  <section className="section" id="what-you-get">
+const Explore = () => (
+  <section className="section hm-explore" id="platform">
     <div className="container">
-      <div className="section-head">
-        <p className="eyebrow">What your firm gets</p>
-        <h2>AR accounting as a service: everything a firm needs from its receivables.</h2>
-        <p className="lead">
-          Visibility, automation and the connection to your clients. Each one maps to a working part of LexCollect, not
-          a roadmap. The names under each are the screens your team will actually open.</p>
+      <div className="hm-explore__head" data-reveal>
+        <p className="eyebrow">The platform</p>
+        <h2>One place for the whole receivables job.</h2>
+        <p className="lead">Four jobs an accounting department does for a firm, each one a working part of LexCollect today.</p>
       </div>
-      <ol className="pillars">
-        {PILLARS.map((p, i) => (
-          <li key={p.title} className={`pillar${p.lead ? " pillar--lead" : ""}`}>
-            <span className="pillar__num">0{i + 1}</span>
-            <h3>{p.title}</h3>
-            <p>{p.text}</p>
-            <div className="pillar__mods">
-              {p.mods.map((m) => (
-                <span key={m}>{m}</span>
-              ))}
+      <div className="hm-tabs" data-tabs data-autoplay="9000" data-reveal>
+        <div className="hm-tabs__list" aria-label="Platform capabilities">
+          {CAPABILITIES.map((c, i) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`hm-tab${i === 0 ? " is-active" : ""}`}
+              data-tab={c.id}
+              id={`tab-${c.id}`}
+              aria-controls={`panel-${c.id}`}
+            >
+              <span className="hm-tab__num">0{i + 1}</span>
+              <span className="hm-tab__label">{c.tab}</span>
+            </button>
+          ))}
+        </div>
+        {CAPABILITIES.map((c, i) => (
+          <div
+            key={c.id}
+            className={`hm-panel${i === 0 ? " is-active" : ""}`}
+            data-panel={c.id}
+            id={`panel-${c.id}`}
+            aria-labelledby={`tab-${c.id}`}
+          >
+            <div className="hm-panel__copy">
+              <h3>{c.title}</h3>
+              <p>{c.text}</p>
+              <ul className="hm-ticks">
+                {c.points.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+              <p className="hm-panel__screens">
+                <span>Screens</span> {c.screens}
+              </p>
             </div>
-          </li>
+            <div className="hm-panel__visual">
+              <c.Mock />
+            </div>
+          </div>
         ))}
-      </ol>
+      </div>
       <div className="actions">
         <Link className="btn btn--ghost" to={MARKETING_ROUTES.platform}>
-          Explore the platform <Arrow />
+          Explore the full platform <Arrow />
         </Link>
       </div>
     </div>
   </section>
 );
 
-const Management = () => (
-  <section className="section section--deep section--rule" id="management">
-    <div className="container">
-      <div className="split split--center">
-        <div>
-          <p className="eyebrow">AR Management</p>
-          <h2>A receivables number the partners can trust, every month.</h2>
-          <p className="lead">
-            Most firms have four versions of "what we're owed": the client system, the processor, the books and a
-            spreadsheet. LexCollect reconciles them into one, then explains every dollar of difference.
-          </p>
-          <p>
-            <strong>Reconciled, not exported.</strong> Payments are traced from the client system to the bank deposit,
-            including payments made by someone other than the client.
-            <br />
-            <strong>Certified snapshots.</strong> AR is captured monthly, so trends are real history, not a re-run of
-            today's data.
-            <br />
-            <strong>Nothing dropped.</strong> A payment that can't be tied to a client is counted and queued for a
-            person, never left in a suspense account.
-          </p>
-          <p className="muted">
-            At the first firm we deployed in, the reconciled book landed within 5% of the firm's own ground truth, and
-            the remaining gap was a named backlog with an owner.{" "}
-            <Link to={MARKETING_ROUTES.results}>Read how.</Link>
-          </p>
+/* ---------- The loop, one client at a time ---------- */
+
+const LOOP = [
+  {
+    key: "queue",
+    title: "Queue",
+    text: "Late accounts are ranked by balance, age and last contact, built from reconciled balances. Consult-only and junk records stay out.",
+    card: {
+      status: "In today's queue · #3",
+      tone: "warn",
+      rows: [
+        ["Past due", "$1,050 · 3 installments"],
+        ["Days late", "34"],
+        ["Last contact", "41 days ago"],
+        ["Reason", "Card on file failed"],
+      ],
+    },
+  },
+  {
+    key: "connect",
+    title: "Connect",
+    text: "A clear, on-brand text or email goes out: a failed card, a missed installment, a balance due. It's logged, and a person steps in only when needed.",
+    card: {
+      status: "Message sent · 9:14 AM",
+      tone: "info",
+      rows: [
+        ["Channel", "Text message"],
+        ["Template", "Update your card"],
+        ["Delivered", "Yes · read 9:20 AM"],
+        ["Reply", "“Can I catch up on the 15th?”"],
+      ],
+    },
+  },
+  {
+    key: "commit",
+    title: "Commit",
+    text: "A promise to pay gets a date and an amount, then a reminder the day before. A missed installment surfaces while it's still small.",
+    card: {
+      status: "Promise · $1,050 on Oct 15",
+      tone: "info",
+      rows: [
+        ["Card", "Updated by client"],
+        ["Reminder", "Oct 14 · scheduled"],
+        ["Owner", "Billing team"],
+        ["Autopay", "Resumes after catch-up"],
+      ],
+    },
+  },
+  {
+    key: "close",
+    title: "Close",
+    text: "Paid accounts drop off the queue on their own. Hardship and disputes go to the right team with a priority. Nothing sits in limbo.",
+    card: {
+      status: "Paid · removed from queue",
+      tone: "ok",
+      rows: [
+        ["Paid", "$1,050 · Oct 15"],
+        ["Plan", "Current · autopay on"],
+        ["Collections call", "Never needed"],
+        ["Record", "Every message and promise kept"],
+      ],
+    },
+  },
+];
+
+const LoopCard = ({ step }: { step: (typeof LOOP)[number] }) => (
+  <div className="hm-account">
+    <div className="hm-account__head">
+      <span className="hm-account__avatar" aria-hidden="true">
+        AM
+      </span>
+      <span>
+        <b>Ana Morales</b>
+        <span>Payment plan · $350 a month</span>
+      </span>
+      <span className="hm-example">Example</span>
+    </div>
+    <span className={`hm-chip hm-chip--${step.card.tone} hm-account__status`}>{step.card.status}</span>
+    <dl>
+      {step.card.rows.map(([k, v]) => (
+        <div key={k}>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
         </div>
-        <div className="monitor" aria-label="Example AR management checks">
-          <div className="monitor__head">
-            <span>
-              <b>Management checks</b>
-            </span>
-            <span>Example</span>
+      ))}
+    </dl>
+  </div>
+);
+
+const Loop = () => (
+  <section className="section section--light hm-loop" id="connect">
+    <div className="container">
+      <div className="hm-loop__head" data-reveal>
+        <p className="eyebrow">Every client connected</p>
+        <h2>From “they stopped paying” to a plan and a payment.</h2>
+        <p className="lead">One account, four steps, a record at every one. A partner can see what happened without asking.</p>
+      </div>
+      <div className="hm-loop__grid" data-scrolly>
+        <ol className="hm-loop__steps">
+          {LOOP.map((s, i) => (
+            <li key={s.key} className={`hm-step${i === 0 ? " is-active" : ""}`} data-step={s.key}>
+              <span className="hm-step__num">0{i + 1}</span>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+              <div className="hm-step__card">
+                <LoopCard step={s} />
+              </div>
+            </li>
+          ))}
+        </ol>
+        <div className="hm-loop__stage" aria-hidden="true">
+          <div className="hm-loop__sticky">
+            {LOOP.map((s, i) => (
+              <div key={s.key} className={`hm-loop__frame${i === 0 ? " is-active" : ""}`} data-stage={s.key}>
+                <LoopCard step={s} />
+              </div>
+            ))}
           </div>
-          <ul>
-            <li>
-              <span className="name">ar.snapshot.monthly</span>
-              <span className="state">Certified</span>
-              <span className="meta">Captured on the 1st · trend over 12 months</span>
-            </li>
-            <li>
-              <span className="name">reconcile.processor_to_contracts</span>
-              <span className="state">Healthy</span>
-              <span className="meta">2,013 matched · 759 queued for review</span>
-            </li>
-            <li className="is-flagged">
-              <span className="name">contracts.status.paid_without_payments</span>
-              <span className="state">Flagged</span>
-              <span className="meta">428 contracts marked Paid with ~4% collected · reclassified, audited, reversible</span>
-            </li>
-            <li>
-              <span className="name">clients.duplicates_and_orphans</span>
-              <span className="state">Healthy</span>
-              <span className="meta">561 orphan contracts re-linked · 89 duplicates merged</span>
-            </li>
-            <li>
-              <span className="name">payments.idempotency</span>
-              <span className="state">Healthy</span>
-              <span className="meta">Webhook retries can't book a payment twice</span>
-            </li>
-          </ul>
-          <div className="monitor__foot">Every check has an owner. A green status means the job really ran.</div>
         </div>
       </div>
     </div>
   </section>
 );
 
-const Connect = () => (
-  <section className="section section--rule" id="connect">
+/* ---------- Results ---------- */
+
+const FINDINGS = [
+  { num: "$928K", text: "across 228 clients whose cards had failed. They got an update-your-card message, not a collections call." },
+  { num: "428", text: "contracts marked Paid with about 4% actually collected, found, reclassified and audited." },
+  { num: "561", text: "orphan contracts re-linked to the right clients, and 89 duplicate client records merged." },
+];
+
+const ResultsBand = () => (
+  <section className="section section--deep hm-results" id="results">
     <div className="container">
-      <div className="section-head">
-        <p className="eyebrow">Connect</p>
-        <h2>From "they stopped paying" to a message, a plan and a payment.</h2>
+      <div className="hm-results__grid">
+        <div data-reveal>
+          <p className="eyebrow">Results</p>
+          <blockquote className="hm-results__quote">
+            At the first firm we deployed in, the reconciled book landed within 5% of the firm's own ground truth. The
+            rest was a named backlog with an owner.
+          </blockquote>
+          <p className="muted">
+            A high-volume firm running MyCase, Filevine, LawPay, HubSpot and QuickBooks, with thousands of payment plans
+            and payers who weren't the client.
+          </p>
+          <Link className="hm-link" to={MARKETING_ROUTES.results}>
+            Read the full results <Arrow />
+          </Link>
+        </div>
+        <ul className="hm-findings">
+          {FINDINGS.map((f, i) => (
+            <li key={f.num} data-reveal data-reveal-delay={i * 90}>
+              <span className="hm-findings__num">{f.num}</span>
+              <p>{f.text}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+);
+
+/* ---------- Roles ---------- */
+
+const ROLES = [
+  { who: "Partners & owners", what: "The number, and the reason behind it", text: "Certified AR, team performance and the biggest movers in the book this month." },
+  { who: "Controllers & administrators", what: "Reconciled, forecastable, defensible", text: "Expected deposits, cash-flow analytics and the month-end packet, ready." },
+  { who: "Billing & client relations", what: "A queue that's already prioritized", text: "Messages, promises, hardship requests and the client's full ledger on one screen." },
+  { who: "Service teams", what: "Delivery sees what billing sees", text: "Pipeline by stage, deadline watch and an inbox for escalations that need someone who knows the client." },
+];
+
+const Roles = () => (
+  <section className="section hm-roles" id="who">
+    <div className="container">
+      <div className="hm-roles__head" data-reveal>
+        <p className="eyebrow">Suited to your firm</p>
+        <h2>Built for everyone who touches the money.</h2>
         <p className="lead">
-          The connection between a firm and its clients is the part most AR tools skip. LexCollect runs it as a loop
-          with a record at every step, so a partner can see what happened on any account without asking.
+          Roles, queues, messages, product lines and integrations are configuration, not code. Your clients hear from
+          your firm, in your voice.
         </p>
       </div>
-      <ol className="steps">
-        <li className="step">
-          <span className="step__num">01</span>
-          <h3>Queue</h3>
-          <p>Late accounts ranked by balance, aging and last contact, built from reconciled balances. Consult-only and junk records are kept out by default.</p>
-        </li>
-        <li className="step">
-          <span className="step__num">02</span>
-          <h3>Connect</h3>
-          <p>Automated email and SMS to the right client list: a missed installment, a failed card, a balance due. Clear, on brand, and logged. A person steps in only when the client needs one.</p>
-        </li>
-        <li className="step">
-          <span className="step__num">03</span>
-          <h3>Commit</h3>
-          <p>Promises to pay get a date and an amount, then get followed up automatically. Missed installments surface while they're small.</p>
-        </li>
-        <li className="step step--highlight">
-          <span className="step__num">04</span>
-          <h3>Escalate or close</h3>
-          <p>Hardship, service questions and disputes go to the right queue with a priority. Paid accounts drop off. Nothing sits in limbo.</p>
-        </li>
-      </ol>
-      <div className="split" style={{ marginTop: "var(--sp-60)" }}>
-        <div className="card">
-          <span className="kicker">Trust, regained</span>
-          <h3>Nobody gets a collections message for money they already paid</h3>
-          <p>Balances are reconciled before any message goes out, including payments made by a relative or employer. That alone changes how clients feel about the firm.</p>
-        </div>
-        <div className="card">
-          <span className="kicker">Willing payers, separated</span>
-          <h3>Failed cards are not delinquency</h3>
-          <p>
-            At one firm, LexCollect found $928K across 228 clients who wanted to pay but whose auto-draft had failed.
-            They got an "update your card" message, not a collections call, and the relationship stayed intact.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const Results = () => (
-  <section className="section section--light section--rule" id="results">
-    <div className="container">
-      <div className="section-head">
-        <p className="eyebrow">Results</p>
-        <h2>What it did inside a working firm.</h2>
-        <p className="lead">
-          LexCollect was built in the finance department of a high-volume firm running MyCase, Filevine, LawPay,
-          HubSpot and QuickBooks. These are the numbers from that deployment.
-        </p>
-      </div>
-      <div className="wins">
-        <div className="win">
-          <span className="win__label">Reconciliation</span>
-          <span className="win__num">$21.4M</span>
-          <p className="win__text">Receivables book reconciled to the firm's ground truth, with the remaining gap explained line by line.</p>
-        </div>
-        <div className="win">
-          <span className="win__label">Migration</span>
-          <span className="win__num">$3.5M</span>
-          <p className="win__text">Contract balances re-linked to the right clients during a mass financial migration between two incompatible CRMs.</p>
-        </div>
-        <div className="win">
-          <span className="win__label">Connection</span>
-          <span className="win__num">228</span>
-          <p className="win__text">Willing payers reconnected with one message instead of a collections call. $928K of balances kept out of hard debt.</p>
-        </div>
-        <div className="win">
-          <span className="win__label">Escalations</span>
-          <span className="win__num">
-            7<small>queues</small>
-          </span>
-          <p className="win__text">Service teams, compliance, customer care, management, sales, billing ops and more, each with an inbox.</p>
-        </div>
-      </div>
-      <div className="actions">
-        <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
-          Read the full results <Arrow />
-        </Link>
-      </div>
-    </div>
-  </section>
-);
-
-const Adapts = () => (
-  <section className="section section--rule" id="adapts">
-    <div className="container">
-      <div className="split split--wide-right">
-        <div>
-          <p className="eyebrow">Suited to your firm</p>
-          <h2>An accounting department's judgment, shaped to how your firm works.</h2>
-          <p className="lead">
-            Roles, rosters, queues, message sequences, product lines and integrations are configuration, not code. Your
-            team appears automatically. Your escalation targets are your departments. Your clients hear from your firm,
-            in your voice.
-          </p>
-          <p className="muted">
-            If your firm bills clients, runs payment plans and has money it can't quite account for, it fits.{" "}
-            <Link to={MARKETING_ROUTES.contact}>Tell us about yours.</Link>
-          </p>
-        </div>
-        <div className="grid grid--2">
-          <div className="card">
-            <span className="kicker">Partners &amp; owners</span>
-            <h3>The number, and the reason</h3>
-            <p>Executive insights, certified AR, team performance and the biggest movers in the book this month.</p>
-          </div>
-          <div className="card">
-            <span className="kicker">Controllers &amp; administrators</span>
-            <h3>Reconciled, forecastable, defensible</h3>
-            <p>Controller AR management, expected deposits, cashflow analytics and a report builder for the month-end packet.</p>
-          </div>
-          <div className="card">
-            <span className="kicker">Billing &amp; client relations</span>
-            <h3>A queue that's already prioritized</h3>
-            <p>Connect queue, automated email and SMS, commitments, hardship requests and the client's full ledger on one screen.</p>
-          </div>
-          <div className="card">
-            <span className="kicker">Service teams</span>
-            <h3>Delivery sees what billing sees</h3>
-            <p>Pipeline by stage, deadline watch and an inbox for the escalations that need someone who knows the client.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const Integrations = () => (
-  <section className="integrations" aria-label="Integrations">
-    <div className="container">
-      <span className="kicker">Compatible with any CRM that exports or has an API · working today with</span>
-      <ul>
-        {INTEGRATIONS.map((i) => (
-          <li key={i}>{i}</li>
+      <ul className="hm-roles__grid">
+        {ROLES.map((r, i) => (
+          <li key={r.who} className="hm-role" data-reveal data-reveal-delay={i * 70}>
+            <span className="hm-role__who">{r.who}</span>
+            <h3>{r.what}</h3>
+            <p>{r.text}</p>
+          </li>
         ))}
-        <li className="more">Your bank</li>
-        <li className="more">Spreadsheets &amp; exports</li>
       </ul>
     </div>
   </section>
 );
+
+/* ---------- FAQ ---------- */
 
 const FAQS = [
   {
     q: "What is LexCollect?",
-    a: "LexCollect is an accounts-receivable accounting service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software and run by people who know receivables. It reconciles your client system, payment processor, accounting and bank into one view of what you're owed, then runs the outreach, commitments, escalations and reporting on top of that reconciled data.",
+    a: "An accounts-receivable accounting service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software and run by people who know receivables. It reconciles your client system, processor, books and bank into one view of what you're owed, then runs the outreach, promises, escalations and reporting on top of it.",
   },
   {
     q: "Do you provide collectors?",
-    a: "No. LexCollect provides the connection: the queues, the automated email and SMS, the commitments and the record. Your own team handles the conversations that need a person, with the client's reconciled ledger in front of them.",
-  },
-  {
-    q: "What kind of firm is it for?",
-    a: "Any firm that bills clients and carries receivables: flat fees, retainers, installment plans or invoices. The first deployment was a high-volume firm with thousands of payment plans and payers who weren't the client, which is the hardest version of the problem. Roles, queues, messages and product lines are configured per firm.",
-  },
-  {
-    q: "Which systems does it connect to?",
-    a: `Any CRM or practice system that exports or has an API connection. Working today with ${INTEGRATIONS.join(", ")}, plus bank deposits and spreadsheet exports. If you run something else, tell us on the first call and we'll confirm the fit.`,
+    a: "No. LexCollect provides the connection: the queues, the automated email and text, the promises and the record. Your own team handles the conversations that need a person, with the client's reconciled ledger in front of them.",
   },
   {
     q: "Does it replace our client-management or accounting software?",
-    a: "No. LexCollect sits across the systems you already use and reconciles them. Your team keeps working in the same client-management and accounting tools.",
+    a: "No. LexCollect sits across the systems you already run and reconciles them. Your team keeps working in the same tools.",
+  },
+  {
+    q: "Which systems does it connect to?",
+    a: `Any CRM or practice system that exports or has an API. Working today with ${INTEGRATIONS.join(", ")}, plus bank deposits and spreadsheet exports. If you run something else, tell us on the first call.`,
   },
   {
     q: "What does the first call involve?",
-    a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, which clients have simply lost touch, and what your firm could recover first. No exports are needed for the first call.",
+    a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, which clients have simply lost touch, and what you could recover first. No exports needed for the first call.",
   },
 ];
 
 const Faq = () => (
-  <section className="section section--rule" id="faq">
+  <section className="section section--rule hm-faq" id="faq">
     <div className="container">
       <div className="split">
-        <div>
+        <div data-reveal>
           <p className="eyebrow">Questions</p>
-          <h2>Frequently asked questions</h2>
-          <p className="lead">Short answers to what firm owners ask first.</p>
+          <h2>What firm owners ask first.</h2>
         </div>
         <FaqList items={FAQS} />
       </div>
@@ -444,47 +782,42 @@ const Faq = () => (
   </section>
 );
 
-const BookDiagnostic = () => (
-  <section className="section section--deep section--rule" id="contact">
+/* ---------- Start ---------- */
+
+const Start = () => (
+  <section className="section hm-start" id="contact">
     <div className="container">
-      <div className="split split--wide-left">
-        <div>
+      <div className="hm-start__grid">
+        <div className="hm-start__copy">
           <p className="eyebrow">Book a call</p>
-          <h2>Find out what's late, what's unmatched and who's just lost touch.</h2>
+          <h2>See what your own book says.</h2>
           <p className="lead">
             Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is
-            worth, and which clients a single message would bring back.
+            worth, and which clients one message would bring back.
           </p>
-          <div style={{ marginTop: "var(--sp-50)" }}>
-            <DiagnosticForm sourcePage="home" idPrefix="home" />
-          </div>
-        </div>
-
-        <aside className="contact-card">
-          <h3>What happens next</h3>
           <ol className="next-steps">
             <li>
               <b>We reply within one business day</b>
-              <span>to set up a time that works for your team.</span>
+              <span>to set a time that works for your team.</span>
             </li>
             <li>
               <b>We walk through your systems</b>
-              <span>Which client-management, payment and accounting tools you run, and where the money seems to go missing.</span>
+              <span>Your client-management, payment and accounting tools, and where money seems to go missing.</span>
             </li>
             <li>
               <b>You see what's recoverable</b>
-              <span>A first view of your book: late, unmatched, failed-card and ready-to-connect, with a dollar figure on each.</span>
+              <span>Late, unmatched, failed-card and ready-to-connect, with a dollar figure on each.</span>
             </li>
           </ol>
-          <div className="contact-line">
-            <span className="kicker">Email</span>
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </div>
-          <div className="contact-line">
-            <span className="kicker">Already a client?</span>
-            <Link to={MARKETING_ROUTES.login}>Log in to your workspace</Link>
-          </div>
-        </aside>
+          <p className="hm-start__alt">
+            Prefer email? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+            <br />
+            Already a client? <Link to={MARKETING_ROUTES.login}>Log in to your workspace</Link>
+          </p>
+        </div>
+        <div className="hm-start__form">
+          <DiagnosticForm sourcePage="home" idPrefix="home" />
+        </div>
       </div>
     </div>
   </section>
@@ -496,20 +829,14 @@ const LandingPage = () => {
   return (
     <SiteShell>
       <Hero />
-      <Stats />
-      <Pillars />
-      <Management />
-      <Connect />
-      <Results />
-      <Adapts />
-      <Integrations />
+      <Proof />
+      <Recon />
+      <Explore />
+      <Loop />
+      <ResultsBand />
+      <Roles />
       <Faq />
-      <BookDiagnostic />
-      <CtaBand
-        title="See what your own book says."
-        lead="One conversation, your systems, and a first look at what's late, what's unmatched and which clients one message would bring back."
-        secondary={{ to: MARKETING_ROUTES.platform, label: "Explore the platform" }}
-      />
+      <Start />
     </SiteShell>
   );
 };

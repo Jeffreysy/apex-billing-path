@@ -1,5 +1,16 @@
 # Handoff: publish the LexCollect site to WordPress
 
+## Current state (2026-10-08): published
+
+The site is live at **https://lex-collect.com** (WordPress.com Business). Read this before uploading anything:
+
+- **The theme on the site lives in the folder `lexcollect-v2`** (Theme Name "LexCollect 2"), not `lexcollect`. It was installed next to the site's older LexCollect 1.0.1 theme, which is not in this repo and stays installed as the rollback. To ship an update, re-zip `wordpress/lexcollect.zip` with the top folder renamed to `lexcollect-v2/` and the `Theme Name:` line changed to `LexCollect 2`, upload it, and choose "Replace installed with uploaded." Uploading `lexcollect.zip` as-is installs a second, separate theme.
+- **A theme upload does not change page content.** Each page stores its pattern's HTML in the post. After a pattern changes, write it to the page too: from any wp-admin editor screen, `wp.apiFetch({ path: '/wp/v2/pages/<id>', method: 'POST', data: { content, template: 'page-marketing' } })`, with `content` read from `/wp/v2/block-patterns/patterns`. Page ids: Home 10, About 11, Contact 14, Platform 50, Results 51, Blog 13. Services (12) is a draft.
+- **Version 2.1.0 is live:** a redesigned home page, plus page interactions in `src/lib/marketing-site.ts`, which `build-wordpress-theme.py` bundles into `assets/js/site.js` with esbuild. Interactions are driven by data attributes on server-rendered markup, so React and WordPress share one implementation.
+- **WordPress.com caches pages for a few minutes after an upload.** If a page still shows the old styles, check the `marketing.css?m=` timestamp and the `x-ac` response header before assuming the upload failed.
+
+The original publishing checklist follows.
+
 You are picking up from a cloud session that built the LexCollect marketing site and a matching WordPress theme. Everything is on branch `claude/kind-johnson-ydz4mq` of `Jeffreysy/apex-billing-path` (PR #4). Your job is to get the WordPress site updated, with the user logged in to wp-admin in their browser.
 
 ## What exists

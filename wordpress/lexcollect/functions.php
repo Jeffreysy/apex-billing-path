@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'LEXCOLLECT_VERSION', '2.0.0' );
+define( 'LEXCOLLECT_VERSION', '2.1.0' );
 
 /**
  * Site-wide links. Edit these two lines after installing the theme.
@@ -50,6 +50,16 @@ add_action(
 		wp_enqueue_style( 'lexcollect-marketing', get_theme_file_uri( 'assets/css/marketing.css' ), array( 'lexcollect' ), LEXCOLLECT_VERSION );
 		wp_enqueue_script( 'lexcollect-site', get_theme_file_uri( 'assets/js/site.js' ), array(), LEXCOLLECT_VERSION, true );
 	}
+);
+
+// Lets marketing.css hide inactive tab panels and stage entrance animations
+// before site.js runs, so the page never jumps. Same line as in the React index.html.
+add_action(
+	'wp_head',
+	function () {
+		echo '<script>document.documentElement.classList.add("lc-js");</script>' . PHP_EOL;
+	},
+	1
 );
 
 add_filter(
