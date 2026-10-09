@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Arrow, CtaBand, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { Arrow, BOOK_CALL_LABEL, BookCallLink, CtaBand, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import MomentumCard from "@/components/marketing/MomentumCard";
 import { MARKETING_ROUTES } from "@/lib/marketing";
 
@@ -49,9 +49,9 @@ const AboutPage = () => {
               rebuilds the connection between your firm and the people who owe it money.
             </p>
             <div className="actions">
-              <Link className="btn btn--primary" to={MARKETING_ROUTES.contact}>
-                Book a diagnostic <Arrow />
-              </Link>
+              <BookCallLink className="btn btn--primary">
+                {BOOK_CALL_LABEL} <Arrow />
+              </BookCallLink>
               <Link className="btn btn--ghost" to={MARKETING_ROUTES.results}>
                 See the results
               </Link>

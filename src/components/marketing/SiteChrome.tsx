@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
+import { BOOKING_URL, CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 import "@/styles/marketing.css";
 
 const NAV_LINKS = [
@@ -33,6 +33,36 @@ export const Arrow = () => (
     &rarr;
   </span>
 );
+
+export const BOOK_CALL_LABEL = "Book a call";
+
+/**
+ * The "Book a call" link. Opens the Google Calendar booking page when
+ * BOOKING_URL is set; otherwise goes to the contact page.
+ */
+export const BookCallLink = ({
+  className,
+  children,
+  onClick,
+}: {
+  className?: string;
+  children?: ReactNode;
+  onClick?: () => void;
+}) => {
+  const label = children ?? BOOK_CALL_LABEL;
+  if (BOOKING_URL) {
+    return (
+      <a className={className} href={BOOKING_URL} target="_blank" rel="noopener noreferrer" onClick={onClick}>
+        {label}
+      </a>
+    );
+  }
+  return (
+    <Link className={className} to={MARKETING_ROUTES.contact} onClick={onClick}>
+      {label}
+    </Link>
+  );
+};
 
 /** Sets the document title and meta description for a marketing page. */
 export function usePageMeta(title: string, description: string) {
@@ -98,9 +128,7 @@ export const SiteHeader = () => {
               </Link>
             </li>
           </ul>
-          <Link className="btn btn--primary btn--sm" to={MARKETING_ROUTES.contact} onClick={() => setOpen(false)}>
-            Book a diagnostic
-          </Link>
+          <BookCallLink className="btn btn--primary btn--sm" onClick={() => setOpen(false)} />
         </nav>
       </div>
     </header>
@@ -159,7 +187,7 @@ export const SiteFooter = () => (
           <h2>Get started</h2>
           <ul>
             <li>
-              <Link to={MARKETING_ROUTES.contact}>Book a diagnostic</Link>
+              <BookCallLink />
             </li>
             <li>
               <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
@@ -222,13 +250,13 @@ interface CtaBandProps {
 export const CtaBand = ({ title, lead, secondary }: CtaBandProps) => (
   <section className="cta-band">
     <div className="container">
-      <p className="eyebrow">Book a diagnostic</p>
+      <p className="eyebrow">Book a call</p>
       <h2>{title}</h2>
       {lead && <p className="lead">{lead}</p>}
       <div className="actions">
-        <Link className="btn btn--primary" to={MARKETING_ROUTES.contact}>
-          Book a diagnostic <Arrow />
-        </Link>
+        <BookCallLink className="btn btn--primary">
+          {BOOK_CALL_LABEL} <Arrow />
+        </BookCallLink>
         {secondary && (
           <Link className="btn btn--ghost" to={secondary.to}>
             {secondary.label}

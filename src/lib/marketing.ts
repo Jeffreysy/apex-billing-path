@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 // and on the contact page.
 export const CONTACT_EMAIL = "hello@yourdomain.com";
 
+// TODO: paste the Google Calendar appointment (booking) page URL here. While it
+// is empty, every "Book a call" button goes to the contact page instead.
+export const BOOKING_URL = "";
+
 export const MARKETING_ROUTES = {
   home: "/",
   platform: "/platform",

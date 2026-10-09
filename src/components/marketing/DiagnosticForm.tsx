@@ -175,7 +175,7 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
 
       <div>
         <button type="submit" className="btn btn--primary" disabled={status === "sending"}>
-          {status === "sending" ? "Sending…" : "Request my diagnostic"} <Arrow />
+          {status === "sending" ? "Sending…" : "Request my call"} <Arrow />
         </button>
         <p className="form-note" style={{ marginTop: "0.9rem" }}>
           We'll only use your details to respond to this request.

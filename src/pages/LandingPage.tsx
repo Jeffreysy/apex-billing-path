@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Arrow, BrandMark, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { Arrow, BOOK_CALL_LABEL, BookCallLink, BrandMark, CtaBand, FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
@@ -44,9 +44,9 @@ const Hero = () => (
           connection of an elite accounting department, built on the systems you already run.
         </p>
         <div className="actions">
-          <a className="btn btn--primary" href="#contact">
-            Book a diagnostic <Arrow />
-          </a>
+          <BookCallLink className="btn btn--primary">
+            {BOOK_CALL_LABEL} <Arrow />
+          </BookCallLink>
           <Link className="btn btn--ghost" to={MARKETING_ROUTES.about}>
             Why LexCollect
           </Link>
@@ -424,7 +424,7 @@ const FAQS = [
     a: "No. LexCollect sits across the systems you already use and reconciles them. Your team keeps working in the same client-management and accounting tools.",
   },
   {
-    q: "What does a diagnostic involve?",
+    q: "What does the first call involve?",
     a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, which clients have simply lost touch, and what your firm could recover first. No exports are needed for the first call.",
   },
 ];
@@ -449,7 +449,7 @@ const BookDiagnostic = () => (
     <div className="container">
       <div className="split split--wide-left">
         <div>
-          <p className="eyebrow">Book a diagnostic</p>
+          <p className="eyebrow">Book a call</p>
           <h2>Find out what's late, what's unmatched and who's just lost touch.</h2>
           <p className="lead">
             Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is

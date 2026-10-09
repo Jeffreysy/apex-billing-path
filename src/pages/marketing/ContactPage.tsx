@@ -4,9 +4,9 @@ import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const CONTACT_META = {
-  title: "Book an AR Diagnostic for Your Firm | LexCollect",
+  title: "Book a Call About Your Firm's Receivables | LexCollect",
   description:
-    "Tell us about your firm and the systems you use. We'll show you where money is stuck, what each break is worth, and what your team can fix now.",
+    "Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is worth, and which clients one message would bring back.",
 };
 
 const FAQS = [
@@ -32,14 +32,14 @@ const ContactPage = () => {
       <PageHero
         crumb="Contact"
         eyebrow="Contact"
-        title="Book an AR diagnostic for your firm."
-        lead="Tell us about your firm and the systems you use. We'll show you where money is stuck, what each break is worth, and what your team can fix now."
+        title="Book a call about your firm's receivables."
+        lead="Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is worth, and which clients one message would bring back."
       />
 
       <section className="section">
         <div className="container">
           <div className="split split--wide-left">
-            <DiagnosticForm heading="Request a diagnostic" sourcePage="contact" idPrefix="contact" />
+            <DiagnosticForm heading="Request a call" sourcePage="contact" idPrefix="contact" />
 
             <aside>
               <p className="eyebrow">What happens next</p>

@@ -31,6 +31,8 @@ if (!g.localStorage) {
 }
 
 const outDir = resolve(process.argv[2] ?? "dist-preview");
+/** "preview" (default) writes a clickable static site; "wp" writes fragments for the WordPress theme builder. */
+const TARGET = process.env.PRERENDER_TARGET === "wp" ? "wp" : "preview";
 mkdirSync(join(outDir, "brand"), { recursive: true });
 
 const [
@@ -83,9 +85,22 @@ const LINK_MAP: Record<string, string> = {
   "/login": "#",
 };
 
+/** WordPress: page slugs resolved at render time by the theme's lexcollect_page_url(). */
+const WP_LINK_MAP: Record<string, string> = {
+  "/": "<?php echo esc_url( home_url( '/' ) ); ?>",
+  "/platform": "<?php echo esc_url( lexcollect_page_url( 'platform' ) ); ?>",
+  "/results": "<?php echo esc_url( lexcollect_page_url( 'results' ) ); ?>",
+  "/about": "<?php echo esc_url( lexcollect_page_url( 'about' ) ); ?>",
+  "/blog": "<?php echo esc_url( lexcollect_page_url( 'blog' ) ); ?>",
+  [`/blog/${BLOG_POST_SLUG}`]: `<?php echo esc_url( lexcollect_post_url( '${BLOG_POST_SLUG}' ) ); ?>`,
+  "/contact": "<?php echo esc_url( lexcollect_page_url( 'contact' ) ); ?>",
+  "/login": "<?php echo esc_url( LEXCOLLECT_APP_LOGIN_URL ); ?>",
+};
+
 function rewriteLinks(html: string): string {
+  const map = TARGET === "wp" ? WP_LINK_MAP : LINK_MAP;
   return html.replace(/href="(\/[^"#]*)(#[^"]*)?"/g, (m, path: string, hash: string | undefined) => {
-    const target = LINK_MAP[path];
+    const target = map[path];
     if (!target) return m;
     if (target === "#") return 'href="#" title="Client log in (workspace, not part of this preview)"';
     return `href="${target}${hash ?? ""}"`;
@@ -151,6 +166,27 @@ ${body}
 }
 
 for (const page of PAGES) {
+  if (TARGET === "wp") {
+    const markup = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: [page.path] },
+        createElement(Routes, null, createElement(Route, { path: page.pattern ?? page.path, element: createElement(page.component) })),
+      ),
+    );
+    const html = rewriteLinks(markup);
+    const main = html.match(/<main id="main">([\s\S]*)<\/main>/)?.[1] ?? "";
+    const header = html.match(/(<header class="site-header[\s\S]*?<\/header>)/)?.[1] ?? "";
+    const footer = html.match(/(<footer class="site-footer[\s\S]*?<\/footer>)/)?.[1] ?? "";
+    const stem = page.file.replace(/\.html$/, "");
+    writeFileSync(join(outDir, `${stem}.main.html`), main);
+    if (page.file === "index.html") {
+      writeFileSync(join(outDir, "header.html"), header);
+      writeFileSync(join(outDir, "footer.html"), footer);
+    }
+    console.log(`wrote ${stem}.main.html (${(main.length / 1024).toFixed(0)} KB)`);
+    continue;
+  }
   const markup = renderToStaticMarkup(
     createElement(
       MemoryRouter,

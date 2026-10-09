@@ -139,7 +139,7 @@ const Article = () => (
 
         <p>
           LexCollect does this reconciliation continuously for firms. If you'd like to see what's fixable at your
-          firm, <Link to={MARKETING_ROUTES.contact}>book a diagnostic</Link>.
+          firm, <Link to={MARKETING_ROUTES.contact}>book a call</Link>.
         </p>
       </div>
     </div>
