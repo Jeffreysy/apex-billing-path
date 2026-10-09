@@ -231,20 +231,106 @@ interface PageHeroProps {
   eyebrow: string;
   title: ReactNode;
   lead: ReactNode;
+  /** Actions or other content under the lead. */
   children?: ReactNode;
+  /** A product visual beside the copy; the hero becomes two columns. */
+  aside?: ReactNode;
   narrow?: boolean;
 }
 
-export const PageHero = ({ crumb, eyebrow, title, lead, children }: PageHeroProps) => (
-  <section className="page-hero">
+export const PageHero = ({ crumb, eyebrow, title, lead, children, aside }: PageHeroProps) => (
+  <section className={`page-hero${aside ? " page-hero--split" : ""}`}>
     <div className="container">
-      <p className="breadcrumb">
-        <Link to={MARKETING_ROUTES.home}>Home</Link> / {crumb}
-      </p>
-      <p className="eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p className="lead">{lead}</p>
-      {children}
+      <div className="page-hero__grid">
+        <div className="page-hero__copy">
+          <p className="breadcrumb">
+            <Link to={MARKETING_ROUTES.home}>Home</Link> / {crumb}
+          </p>
+          <p className="eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className="lead">{lead}</p>
+          {children}
+        </div>
+        {aside && <div className="page-hero__aside">{aside}</div>}
+      </div>
+    </div>
+  </section>
+);
+
+export interface SubNavItem {
+  id: string;
+  label: string;
+}
+
+/** Sticky in-page menu that marks the section you're reading (data-spy, src/lib/marketing-site.ts). */
+export const SubNav = ({ label, items }: { label: string; items: SubNavItem[] }) => (
+  <nav className="subnav" aria-label={label} data-spy>
+    <div className="container">
+      <ol>
+        {items.map((it, i) => (
+          <li key={it.id}>
+            <a href={`#${it.id}`} className={i === 0 ? "is-active" : undefined}>
+              <span>{String(i + 1).padStart(2, "0")}</span>
+              {it.label}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </nav>
+);
+
+export interface TimelineItem {
+  kicker: string;
+  title: string;
+  text: string;
+}
+
+/** Horizontal steps joined by a rule, the brand's square nodes on it. */
+export const Timeline = ({ items }: { items: TimelineItem[] }) => (
+  <ol className="tl">
+    {items.map((it, i) => (
+      <li key={it.title} className="tl__item" data-reveal data-reveal-delay={i * 90}>
+        <span className="tl__kicker">{it.kicker}</span>
+        <h3>{it.title}</h3>
+        <p>{it.text}</p>
+      </li>
+    ))}
+  </ol>
+);
+
+export interface ProofItem {
+  n: number;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  label: string;
+}
+
+/** A band of headline figures that count up as they scroll into view. */
+export const ProofStrip = ({ intro, items, label }: { intro?: ReactNode; items: ProofItem[]; label: string }) => (
+  <section className="hm-proof" aria-label={label}>
+    <div className="container">
+      {intro && (
+        <p className="hm-proof__intro" data-reveal>
+          {intro}
+        </p>
+      )}
+      <ul className="hm-proof__grid">
+        {items.map((p, i) => {
+          const d = p.decimals ?? 0;
+          return (
+            <li key={p.label} data-reveal data-reveal-delay={i * 80}>
+              <span className="hm-proof__num" data-count={p.n} data-decimals={d} data-prefix={p.prefix ?? ""} data-suffix={p.suffix ?? ""}>
+                {p.prefix}
+                {p.n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })}
+                {p.suffix}
+              </span>
+              <span className="hm-proof__label">{p.label}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   </section>
 );

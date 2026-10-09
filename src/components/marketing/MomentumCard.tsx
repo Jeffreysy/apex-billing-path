@@ -39,9 +39,9 @@ const MomentumCard = () => (
   <figure className="momentum" aria-label="Illustrative collections momentum over six months">
     <div className="momentum__head">
       <span>
-        <b>AR Management</b> · Collections momentum
+        <b>Collections momentum</b> · {MOMENTUM.months[0]}–{MOMENTUM.months[5]}
       </span>
-      <span>{MOMENTUM.months[0]}–{MOMENTUM.months[5]}</span>
+      <span className="hm-example">Example data</span>
     </div>
     <div className="momentum__grid">
       <div className="panel-stat">

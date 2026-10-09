@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FaqList, PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
+import { FaqList, SiteShell, usePageMeta } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 
@@ -29,48 +29,43 @@ const ContactPage = () => {
 
   return (
     <SiteShell>
-      <PageHero
-        crumb="Contact"
-        eyebrow="Contact"
-        title="Book a call about your firm's receivables."
-        lead="Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is worth, and which clients one message would bring back."
-      />
-
-      <section className="section">
+      <section className="ct-hero">
         <div className="container">
-          <div className="split split--wide-left">
-            <DiagnosticForm heading="Request a call" sourcePage="contact" idPrefix="contact" />
-
-            <aside>
-              <p className="eyebrow">What happens next</p>
+          <div className="ct-hero__grid">
+            <div className="ct-hero__copy">
+              <p className="breadcrumb">
+                <Link to={MARKETING_ROUTES.home}>Home</Link> / Contact
+              </p>
+              <p className="eyebrow">Book a call</p>
+              <h1>Book a call about your firm's receivables.</h1>
+              <p className="lead">
+                Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account
+                is worth, and which clients one message would bring back.
+              </p>
               <ol className="next-steps">
                 <li>
                   <b>We reply within one business day</b>
-                  <span>To set up a time that works for your team.</span>
+                  <span>to set up a time that works for your team.</span>
                 </li>
                 <li>
                   <b>We walk through your systems</b>
-                  <span>
-                    Which client-management, payment and accounting tools you run, and where the money seems to go
-                    missing.
-                  </span>
+                  <span>Your client-management, payment and accounting tools, and where the money seems to go missing.</span>
                 </li>
                 <li>
                   <b>You see what's fixable</b>
                   <span>A first view of where money is stuck, by cause, and what your team could clear first.</span>
                 </li>
               </ol>
-              <div style={{ marginTop: "var(--sp-50)" }}>
-                <div className="contact-line">
-                  <span className="kicker">Email</span>
-                  <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-                </div>
-                <div className="contact-line">
-                  <span className="kicker">Already a client?</span>
-                  <Link to={MARKETING_ROUTES.login}>Log in to your workspace</Link>
-                </div>
-              </div>
-            </aside>
+              <p className="hm-start__alt">
+                Prefer email? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                <br />
+                Already a client? <Link to={MARKETING_ROUTES.login}>Log in to your workspace</Link>
+              </p>
+            </div>
+            <div className="hm-start__form ct-form">
+              <p className="ct-form__title">Request a call</p>
+              <DiagnosticForm sourcePage="contact" idPrefix="contact" />
+            </div>
           </div>
         </div>
       </section>
@@ -78,7 +73,7 @@ const ContactPage = () => {
       <section className="section section--deep section--rule">
         <div className="container">
           <div className="split">
-            <div>
+            <div data-reveal>
               <p className="eyebrow">Before you book</p>
               <h2>Common questions</h2>
             </div>

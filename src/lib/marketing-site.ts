@@ -14,6 +14,8 @@
  *   data-recon             before/after reconciliation toggle (data-recon-set buttons)
  *   data-dash              hero dashboard: entrance sequence + linked legend hover
  *   data-scrolly           steps that drive a sticky stage as you scroll
+ *   data-spy               in-page menu that marks the section being read
+ *   data-fit               checklist that scores itself (data-fit-result, data-fit-labels)
  *   .site-header           gets data-scrolled once the page moves
  *
  * State lives in attributes React does not own (data-motion, data-scrolled), so a
@@ -381,6 +383,78 @@ function initScrolly(el: HTMLElement): Cleanup {
   return () => io.disconnect();
 }
 
+/* ---------- In-page menu that follows the reader ---------- */
+
+function initSpy(nav: HTMLElement): Cleanup {
+  const links = all<HTMLAnchorElement>(nav, 'a[href^="#"]');
+  const targets = links
+    .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
+    .filter((t): t is HTMLElement => !!t);
+  if (!targets.length) return () => {};
+  const list = nav.querySelector<HTMLElement>("ol, ul");
+  let current = "";
+  const activate = (id: string) => {
+    if (id === current) return;
+    current = id;
+    links.forEach((a) => {
+      const on = a.hash === `#${id}`;
+      a.classList.toggle("is-active", on);
+      if (on) {
+        a.setAttribute("aria-current", "true");
+        // Keep the active item in view when the menu scrolls sideways (phones).
+        if (list && list.scrollWidth > list.clientWidth) {
+          list.scrollTo({ left: a.offsetLeft - 16, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+        }
+      } else {
+        a.removeAttribute("aria-current");
+      }
+    });
+  };
+  // The active section is the last one whose top has passed a line a third of
+  // the way down the screen. Computed from scroll position, so a jump straight
+  // to a section (anchor link, back button) still lands on the right item.
+  let raf = 0;
+  const update = () => {
+    raf = 0;
+    const line = window.innerHeight * 0.35;
+    let id = targets[0].id;
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= line) id = t.id;
+      else break;
+    }
+    activate(id);
+  };
+  const onScroll = () => {
+    if (!raf) raf = requestAnimationFrame(update);
+  };
+  update();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  return () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onScroll);
+  };
+}
+
+/* ---------- Self-scoring checklist ---------- */
+
+function initFit(el: HTMLElement): Cleanup {
+  const boxes = all<HTMLInputElement>(el, 'input[type="checkbox"]');
+  const out = el.querySelector<HTMLElement>("[data-fit-result]");
+  const labels = (el.getAttribute("data-fit-labels") ?? "").split("|");
+  if (!boxes.length || !out || labels.length < 2) return () => {};
+  const update = () => {
+    const n = boxes.filter((b) => b.checked).length;
+    const i = Math.min(labels.length - 1, Math.round((n / boxes.length) * (labels.length - 1)));
+    out.textContent = labels[i];
+    el.setAttribute("data-fit-level", String(i));
+  };
+  boxes.forEach((b) => b.addEventListener("change", update));
+  update();
+  return () => boxes.forEach((b) => b.removeEventListener("change", update));
+}
+
 /* ---------- Entry point ---------- */
 
 /** Wires every interaction inside `root`. Returns a cleanup for SPA navigation. */
@@ -395,6 +469,8 @@ export function initMarketingSite(root: HTMLElement): Cleanup {
     ...all(root, "[data-recon]").map((el) => initRecon(el, motion)),
     ...all(root, "[data-dash]").map((el) => initDash(el, motion)),
     ...all(root, "[data-scrolly]").map((el) => initScrolly(el)),
+    ...all(root, "[data-spy]").map((el) => initSpy(el)),
+    ...all(root, "[data-fit]").map((el) => initFit(el)),
   ];
   return () => {
     cleanups.forEach((c) => c());
