@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'LEXCOLLECT_VERSION', '2.2.0' );
+define( 'LEXCOLLECT_VERSION', '2.2.1' );
 
 /**
  * Site-wide links. Edit these two lines after installing the theme.

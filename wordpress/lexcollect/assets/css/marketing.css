@@ -1060,7 +1060,8 @@
 .lc .subnav a.is-active::after { transform: scaleX(1); }
 
 /* ---------- Timeline ---------- */
-.lc .tl { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-50) var(--sp-40); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); position: relative; }
+/* overflow: hidden trims the connecting rule where a row ends, so it never widens the page. */
+.lc .tl { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-50) var(--sp-40); grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); position: relative; overflow: hidden; }
 .lc .tl__item { position: relative; padding-top: 2.25rem; }
 /* The rule runs through every node; the square node is the brand's corner. */
 .lc .tl__item::before { content: ""; position: absolute; top: 0.45rem; left: 0; right: calc(-1 * var(--sp-40)); height: 1px; background: var(--line-strong); }
