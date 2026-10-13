@@ -81,3 +81,15 @@ export const arAtRisk = {
   unlinked_invoices_at_risk_60: 12, invoices: 3924, snapshot_date: "2026-10-12", basis: "invoice_clock",
   legacy_contract_dpd_at_risk_60: 8985310.81, refreshed_at: null,
 };
+
+// --- v_exec_collector_activity_monthly (Sep 2026; calendar month; VP read-back, cert 6b600cd2) ------------
+// [collector, activities, hours, payments, commission, failed, is_system_actor]
+const sepActivity: [string, number, number, number, number, number, boolean][] = [
+  ["Aida Lino", 1427, 149.7, 95, 1069, 0, false], ["Alejandro A", 204, 122.2, 1, 0, 0, false],
+  ["Emilio Suarez", 3349, 186.9, 48, 419, 0, false], ["Hiram Perez", 1377, 272.3, 19, 217, 2, false],
+  ["Maritza V", 909, 90.7, 63, 914, 1, false], ["Patricio D", 411, 0, 34, 469, 0, false],
+  ["Ximena G", 2538, 151.7, 98, 1283, 0, false], ["System-Auto", 1524, 0, 1524, 0, 0, true],
+];
+export const collectorActivitySep = sepActivity.map(([collector, activities, hours, payments, commission, failed, is_system_actor]) => ({
+  month: "2026-09-01", collector, activities, minutes: hours * 60, payments, commission, failed, is_system_actor,
+}));

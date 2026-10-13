@@ -265,14 +265,24 @@ function PTPSection() {
 
 // ---------- AR Roll-Forward ----------
 function ARRollForwardSection() {
+  // Only the columns the roll-forward reads, sorted on a unique key (stable paging, fast plan). Payments are
+  // limited to the 6 months the table shows instead of paging all of payments_clean. 2026-10-13.
   const { data: contracts = [] } = useQuery({
-    queryKey: ["arrf-contracts"],
-    queryFn: async () => fetchAllRows<any>("ar_dashboard"),
+    queryKey: ["arrf-contracts", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("ar_dashboard", { columns: "contract_id, start_date, total_contract_value", orderBy: "contract_id" }),
     staleTime: 5 * 60 * 1000,
   });
   const { data: payments = [] } = useQuery({
-    queryKey: ["arrf-payments"],
-    queryFn: async () => fetchAllRows<any>("payments_clean"),
+    queryKey: ["arrf-payments", "v2"],
+    queryFn: async () => {
+      const from = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+      return fetchAllRows<any>("payments_clean", {
+        columns: "id, payment_date, amount",
+        orderBy: "id",
+        filter: (q) => q.gte("payment_date", from),
+      });
+    },
     staleTime: 5 * 60 * 1000,
   });
 
@@ -413,16 +423,24 @@ function ARRollForwardSection() {
 
 // ---------- Stale Queue ----------
 function StaleQueueSection() {
+  // Only the columns the stale queue reads, sorted on unique keys. The unsorted select=* pull of ar_dashboard
+  // timed out under load, which left this section showing "0 stale accounts / $0". 2026-10-13.
   const { data: clients = [] } = useQuery({
-    queryKey: ["stale-clients"],
-    queryFn: async () => fetchAllRows<any>("ar_dashboard"),
+    queryKey: ["stale-clients", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("ar_dashboard", {
+        columns:
+          "contract_id, client_id, client_name, collector, phone, email, remaining_balance, amount_collected, delinquency_status, days_past_due, next_due_date, start_date",
+        orderBy: "contract_id",
+      }),
     staleTime: 5 * 60 * 1000,
   });
 
   // Need clients table for last_transaction_date and contact info
   const { data: clientDetails = [] } = useQuery({
-    queryKey: ["stale-client-details"],
-    queryFn: async () => fetchAllRows<any>("clients"),
+    queryKey: ["stale-client-details", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("clients", { columns: "id, last_transaction_date, phone, email, case_stage", orderBy: "id" }),
     staleTime: 5 * 60 * 1000,
   });
 

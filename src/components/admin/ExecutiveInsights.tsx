@@ -5,6 +5,7 @@ import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
+  useExecCollectorActivityMonthly, useExecFailedActivities,
   type ExecCollectedMonth, type ExecDriftCell, type ExecCaseMixRow,
 } from "@/hooks/useSupabaseData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -59,19 +60,20 @@ function monthValToDate(monthVal: string): Date {
   return new Date(y, (m || 1) - 1, 1);
 }
 
-// The panel only ever looks back MONTH_OPTIONS months (selector) + 8 months (sparkline), so it
-// fetches that window and only the columns it reads. 10-13: it used to pull every row of
-// payments_clean (~22.6k) and collection_activities (~42k) with select * on every load.
+// The panel only ever looks back MONTH_OPTIONS months (the selector), so it fetches that window and only
+// the columns it reads. 10-13: it used to pull every row of payments_clean (~22.6k) and
+// collection_activities (~42k) with select * on every load. Collector activity is now aggregated
+// server-side (v_exec_collector_activity_monthly), and payments only feed the selected month (the old
+// +8-month sparkline window is gone), so the payments window is MONTH_OPTIONS.
 const MONTH_OPTIONS = 6;
-const PAYMENT_LOOKBACK_MONTHS = MONTH_OPTIONS + 8;
+const PAYMENT_LOOKBACK_MONTHS = MONTH_OPTIONS;
 
 function useInsightsData() {
   return useQuery({
     queryKey: ["admin-insights-v3"],
     queryFn: async () => {
       const paymentsFrom = format(startOfMonth(subMonths(new Date(), PAYMENT_LOOKBACK_MONTHS)), "yyyy-MM-dd");
-      const activitiesFrom = format(startOfMonth(subMonths(new Date(), MONTH_OPTIONS)), "yyyy-MM-dd");
-      const [ar, payments, activities] = await Promise.all([
+      const [ar, payments] = await Promise.all([
         // Stable ORDER BY on a unique key is REQUIRED: fetchAllRows paginates via .range()
         // (LIMIT/OFFSET). Without a deterministic sort, PostgREST can skip/duplicate rows
         // across pages, silently under-counting large tables — payments_clean (~19k) and
@@ -85,13 +87,8 @@ function useInsightsData() {
           columns: "id, payment_date, amount, aging_bucket",
           filter: (q) => q.gte("payment_date", paymentsFrom),
         }),
-        fetchAllRows<any>("collection_activities", {
-          orderBy: "id",
-          columns: "id, activity_date, is_junk, collector, client_name, duration_minutes, collected_amount, commission, outcome",
-          filter: (q) => q.gte("activity_date", activitiesFrom),
-        }),
       ]);
-      return { ar, payments, activities };
+      return { ar, payments };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -119,7 +116,6 @@ export default function ExecutiveInsights() {
     // bled in via the unreliable invoice_number join. Filtering them understated AR by ~$104K.
     const ar = data.ar;
     const payments = data.payments;
-    const activities = data.activities || [];
 
     // ---------- Monthly aggregates for selected month vs prior ----------
     const monthAggs: Record<string, { collected: number; count: number }> = {};
@@ -203,51 +199,9 @@ export default function ExecutiveInsights() {
       { name: "Closing AR", value: arTotalCertified, type: "balance" },
     ];
 
-    // ---------- Collector time & activity (selected month) ----------
-    const inMonth = (d: string | null | undefined) => {
-      if (!d) return false;
-      const dt = new Date(d);
-      return dt >= monthStart && dt <= monthEnd;
-    };
-    const failedOutcomes = ["failed", "refund", "disputed", "disconnected", "no collection"];
-    const isFailedOutcome = (o: string | null) => {
-      const v = (o || "").toLowerCase().trim();
-      return failedOutcomes.some((x) => v.includes(x));
-    };
-
-    const collectorActivity: Record<
-      string,
-      { collector: string; minutes: number; activities: number; payments: number; collected: number; commission: number; failed: number }
-    > = {};
-    const failedList: any[] = [];
-
-    activities.forEach((a: any) => {
-      if (!inMonth(a.activity_date)) return;
-      if (a.is_junk) return;
-      const c = a.collector || "Unassigned";
-      collectorActivity[c] = collectorActivity[c] || {
-        collector: c, minutes: 0, activities: 0, payments: 0, collected: 0, commission: 0, failed: 0,
-      };
-      const row = collectorActivity[c];
-      row.activities += 1;
-      // A single activity's logged duration cannot be negative; a bad/reversal row
-      // (e.g. duration_minutes = -1005) must not drag the collector's hours below zero.
-      // Clamp per-row at 0 so "Hours" is always truthful. Root-cause data fix is owned
-      // by collections-activity-agent (bad source rows), this is display sanitation only.
-      row.minutes += Math.max(0, Number(a.duration_minutes) || 0);
-      row.collected += Number(a.collected_amount) || 0;
-      row.commission += Number(a.commission) || 0;
-      if ((Number(a.collected_amount) || 0) > 0) row.payments += 1;
-      if (isFailedOutcome(a.outcome)) {
-        row.failed += 1;
-        failedList.push(a);
-      }
-    });
-    const collectorActivityRows = Object.values(collectorActivity).sort((a, b) => b.collected - a.collected);
-    const failedRecent = failedList
-      .sort((a, b) => (b.activity_date || "").localeCompare(a.activity_date || ""))
-      .slice(0, 10);
-    const failedTotal = failedList.length;
+    // Calendar-month test on the DATE string. new Date("yyyy-mm-dd") is UTC midnight, i.e. the previous
+    // evening in US time zones, which used to count every payment dated the 1st in the previous month.
+    const inMonth = (d: string | null | undefined) => !!d && d.slice(0, 7) === monthVal;
 
     // ---------- Bucket movement (collections by aging bucket, selected month) ----------
     const BUCKET_ORDER = ["Current", "1-30", "31-60", "61-90", "91-120", "120+"];
@@ -273,25 +227,34 @@ export default function ExecutiveInsights() {
       collectorRows,
       heatMax,
       waterfall,
-      collectorActivityRows,
-      failedRecent,
-      failedTotal,
       bucketRows,
       bucketMax,
       recoveredFromDelinquent,
     };
   }, [data, monthVal, firmSummary]);
 
-  // Collector-table "Collected" repointed to the certified per-collector figure for the selected month
-  // (de-duplicated, credited to the human who logged the payment; System-Auto holds pure auto-pay).
-  // Hours / Activities / Payments / Commission stay raw. Re-sorted by the certified amount.
+  // Collector time & activity (selected month), aggregated server-side (v_exec_collector_activity_monthly,
+  // VP cert 6b600cd2) instead of paging every collection_activities row into the browser. "Collected" is the
+  // certified per-collector figure (de-duplicated, credited to the human who logged the payment; System-Auto
+  // holds pure auto-pay, flagged is_system_actor). Re-sorted by the certified amount.
+  const { data: activityRows = [] } = useExecCollectorActivityMonthly(monthVal);
+  const { data: failedRecent = [] } = useExecFailedActivities(monthVal);
+  const failedTotal = activityRows.reduce((s, r) => s + r.failed, 0);
   const collectorRowsCertified = useMemo(() => {
-    const rows = view?.collectorActivityRows ?? [];
     const cert = certifiedCollectedByCollector(byCollectorWeeks, (wk) => wk.slice(0, 7) === monthVal);
-    return rows
-      .map((r) => ({ ...r, collected: cert.get(r.collector) ?? 0 }))
+    return activityRows
+      .map((r) => ({
+        collector: r.collector,
+        isSystem: r.is_system_actor,
+        minutes: r.minutes,
+        activities: r.activities,
+        payments: r.payments,
+        commission: r.commission,
+        failed: r.failed,
+        collected: cert.get(r.collector) ?? 0,
+      }))
       .sort((a, b) => b.collected - a.collected);
-  }, [view, byCollectorWeeks, monthVal]);
+  }, [activityRows, byCollectorWeeks, monthVal]);
 
   const sections = [
     { id: "hero", label: "Executive" },
@@ -522,7 +485,17 @@ export default function ExecutiveInsights() {
                   <tr><td colSpan={7} className="py-6 text-center text-xs text-muted-foreground">No activity logged this month.</td></tr>
                 ) : collectorRowsCertified.map((r) => (
                   <tr key={r.collector} className="transition-colors hover:bg-muted/30">
-                    <td className="py-2.5 pl-1 font-medium tracking-tight">{r.collector}</td>
+                    <td className="py-2.5 pl-1 font-medium tracking-tight">
+                      {r.collector}
+                      {r.isSystem && (
+                        <span
+                          className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground"
+                          title="Automatic / system postings (autopay), not human collector work"
+                        >
+                          system
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{(r.minutes / 60).toFixed(1)}</td>
                     <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{r.activities}</td>
                     <td className="py-2.5 text-right font-mono tabular-nums text-[13px]">{r.payments}</td>
@@ -586,7 +559,7 @@ export default function ExecutiveInsights() {
               title="Failed Transactions & Issues"
               caption={`Failed payments, refunds, disputes & disconnections · ${monthLabel}`}
             />
-            <Metric mini label="Total Issues" value={String(view.failedTotal)} />
+            <Metric mini label="Total Issues" value={String(failedTotal)} />
           </div>
           <div className="mt-6 overflow-x-auto">
             <table className="w-full text-sm">
@@ -600,9 +573,9 @@ export default function ExecutiveInsights() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {view.failedRecent.length === 0 ? (
+                {failedRecent.length === 0 ? (
                   <tr><td colSpan={5} className="py-6 text-center text-xs text-muted-foreground">No failed transactions or issues this month.</td></tr>
-                ) : view.failedRecent.map((a: any) => (
+                ) : failedRecent.map((a: any) => (
                   <tr key={a.id} className="transition-colors hover:bg-muted/30">
                     <td className="py-2.5 pl-1 text-xs text-muted-foreground tabular-nums">{a.activity_date}</td>
                     <td className="py-2.5 font-medium tracking-tight">{a.client_name || "—"}</td>

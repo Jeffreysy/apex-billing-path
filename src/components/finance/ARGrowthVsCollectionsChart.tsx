@@ -20,10 +20,14 @@ function useARGrowthVsCollections() {
   return useQuery({
     queryKey: ["ar-growth-vs-collections"],
     queryFn: async () => {
+      // Only the columns this chart reads, each sorted on a unique key so offset paging is stable
+      // (unsorted ar_dashboard pages also got a slow plan). 2026-10-13.
       const [arRows, payments, activities] = await Promise.all([
-        fetchAllRows<any>("ar_dashboard"),
-        fetchAllRows<any>("payments_clean"),
+        fetchAllRows<any>("ar_dashboard", { columns: "contract_id, start_date, total_contract_value", orderBy: "contract_id" }),
+        fetchAllRows<any>("payments_clean", { columns: "id, payment_date, amount", orderBy: "id" }),
         fetchAllRows<any>("collection_activities", {
+          columns: "id, activity_date, collected_amount",
+          orderBy: "id",
           filter: (q: any) => q.gt("collected_amount", 0),
         }),
       ]);
