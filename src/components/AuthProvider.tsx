@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -40,6 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Whose profile is currently loaded: undefined = nothing resolved yet, null = signed out.
+  const loadedUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(nextSession);
       const nextUser = nextSession?.user ?? null;
       setUser(nextUser);
+      loadedUserId.current = nextUser?.id ?? null;
 
       if (!nextUser) {
         setProfile(null);
@@ -74,7 +77,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const nextUserId = nextSession?.user?.id ?? null;
+      const sameUser =
+        loadedUserId.current !== undefined && nextUserId !== null && nextUserId === loadedUserId.current;
+      if (sameUser && event !== "SIGNED_OUT") {
+        // TOKEN_REFRESHED, or the SIGNED_IN supabase-js re-emits when the tab regains focus, for the user
+        // already loaded: swap in the fresh session WITHOUT the full-app loader. Flipping `loading` here
+        // unmounted every page on each token refresh / refocus — resetting page state (e.g. the Executive
+        // Insights month) and re-firing every query.
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+        if (event === "USER_UPDATED") {
+          setMustChangePassword(Boolean(nextSession?.user?.user_metadata?.must_change_password));
+        }
+        return;
+      }
+      // Initial session, a different user signing in, or sign-out: full reload of profile + role.
       setLoading(true);
       void syncAuthState(nextSession);
     });

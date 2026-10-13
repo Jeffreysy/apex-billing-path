@@ -2,15 +2,21 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
+import {
+  useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
+  useFirmFinancialSummary as useCertifiedFirmSummary,
+  type ExecCollectedMonth, type ExecDriftCell, type ExecCaseMixRow,
+} from "@/hooks/useSupabaseData";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
+  format, subMonths, startOfMonth, endOfMonth,
 } from "date-fns";
 import {
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
-import { ArrowUpRight, ArrowDownRight, Printer } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Printer, LayoutGrid } from "lucide-react";
 
 const AGING_BUCKETS = [
   { key: "current", label: "Current", max: 0 },
@@ -94,7 +100,7 @@ function useInsightsData() {
 export default function ExecutiveInsights() {
   const [monthVal, setMonthVal] = useState(format(new Date(), "yyyy-MM"));
   const months = monthOptions(MONTH_OPTIONS);
-  const { data, isLoading } = useInsightsData();
+  const { data, isLoading, isError: insightsError, refetch: refetchInsights } = useInsightsData();
   // VP-certified firm-wide snapshot (single row) — authoritative month new-AR source. Shared
   // query key with AdminDashboard, so it is fetched once, and the panel renders without waiting
   // for it (falls back to the row-sum until it arrives).
@@ -102,6 +108,8 @@ export default function ExecutiveInsights() {
   // Certified per-collector cash (v_activity_collected_by_collector_weekly) — replaces the raw
   // SUM(collection_activities.collected_amount) in the collector table below.
   const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
+  // Hero band (2026-10-13): each tile fetches its own VP-certified view and owns its loading /
+  // error state, so the band renders independently of the legacy browser-side pull below.
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -113,21 +121,6 @@ export default function ExecutiveInsights() {
     const payments = data.payments;
     const activities = data.activities || [];
 
-    // ---------- Weekly collections (8w sparkline) ----------
-    const weeks: { key: string; total: number }[] = [];
-    const now = new Date();
-    for (let i = 7; i >= 0; i--) {
-      const ws = startOfWeek(addWeeks(now, -i), { weekStartsOn: 1 });
-      weeks.push({ key: format(ws, "yyyy-MM-dd"), total: 0 });
-    }
-    const weekMap = new Map(weeks.map((w) => [w.key, w]));
-    payments.forEach((p: any) => {
-      if (!p.payment_date) return;
-      const ws = format(startOfWeek(new Date(p.payment_date), { weekStartsOn: 1 }), "yyyy-MM-dd");
-      if (weekMap.has(ws)) weekMap.get(ws)!.total += Number(p.amount) || 0;
-    });
-    const weeklySeries = weeks.map((w) => w.total);
-
     // ---------- Monthly aggregates for selected month vs prior ----------
     const monthAggs: Record<string, { collected: number; count: number }> = {};
     payments.forEach((p: any) => {
@@ -137,44 +130,14 @@ export default function ExecutiveInsights() {
       monthAggs[m].collected += Number(p.amount) || 0;
       monthAggs[m].count += 1;
     });
-    const prevMonth = format(subMonths(monthValToDate(monthVal), 1), "yyyy-MM");
+    // Contract-attached payments (payments_clean) for the selected month. NOT the firm's
+    // collections — the hero "Collected" tile reads v_exec_collected_split_monthly. Kept only as
+    // the Money Flow donut's past-month "− Collected" fallback.
     const curr = monthAggs[monthVal] || { collected: 0, count: 0 };
-    const prev = monthAggs[prevMonth] || { collected: 0, count: 0 };
-
-    // MTD-vs-MTD: when the selected month is the current (incomplete) month, compare only
-    // through today's day-of-month in the prior month, so the delta pill isn't partial-vs-full.
     const isCurrentMonth = monthVal === format(new Date(), "yyyy-MM");
-    const cutoffDay = new Date().getDate();
-    let prevComparable = prev.collected;
-    if (isCurrentMonth) {
-      prevComparable = 0;
-      payments.forEach((p: any) => {
-        const ds = (p.payment_date || "").substring(0, 10); // YYYY-MM-DD
-        if (ds.substring(0, 7) !== prevMonth) return;
-        const day = Number(ds.substring(8, 10));
-        if (day && day <= cutoffDay) prevComparable += Number(p.amount) || 0;
-      });
-    }
-
-    // last 8 months sparkline of collections
-    const collSpark: number[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const m = format(subMonths(monthValToDate(monthVal), i), "yyyy-MM");
-      collSpark.push(monthAggs[m]?.collected || 0);
-    }
 
     // ---------- AR totals ----------
     const totalAR = ar.reduce((s: number, r: any) => s + (Number(r.remaining_balance) || 0), 0);
-    const atRisk = ar
-      .filter((r: any) => (Number(r.days_past_due) || 0) > 60)
-      .reduce((s: number, r: any) => s + (Number(r.remaining_balance) || 0), 0);
-
-    // Avg DSO (weighted)
-    const dsoNumerator = ar.reduce(
-      (s: number, r: any) => s + (Number(r.remaining_balance) || 0) * (Number(r.days_past_due) || 0),
-      0,
-    );
-    const dso = totalAR > 0 ? Math.round(dsoNumerator / totalAR) : 0;
 
     // ---------- Aging × Collector heatmap ----------
     const collectorBuckets: Record<string, Record<string, number>> = {};
@@ -305,16 +268,8 @@ export default function ExecutiveInsights() {
       .reduce((s, r) => s + r.collected, 0);
 
     return {
-      weeklySeries,
-      collSpark,
-      curr,
-      prev,
-      prevComparable,
-      isCurrentMonth,
       totalAR,
       arTotalCertified,
-      atRisk,
-      dso,
       collectorRows,
       heatMax,
       waterfall,
@@ -338,10 +293,6 @@ export default function ExecutiveInsights() {
       .sort((a, b) => b.collected - a.collected);
   }, [view, byCollectorWeeks, monthVal]);
 
-  if (isLoading || !view) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">Loading executive insights…</div>;
-  }
-
   const sections = [
     { id: "hero", label: "Executive" },
     { id: "flow", label: "Money Flow" },
@@ -351,7 +302,6 @@ export default function ExecutiveInsights() {
     { id: "failed", label: "Failed / Issues" },
   ];
 
-  const netChange = view.waterfall[1].value + view.waterfall[2].value;
   const monthLabel = format(monthValToDate(monthVal), "MMMM yyyy");
 
   return (
@@ -405,39 +355,16 @@ export default function ExecutiveInsights() {
       {/* ─────────── Hero KPI band ─────────── */}
       <section id="hero" className="scroll-mt-24">
         <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-muted/30 shadow-[0_1px_0_0_hsl(var(--border)),0_24px_60px_-30px_hsl(var(--primary)/0.25)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
-          <HeroKpi
-            label="Total AR"
-            value={fmtMoney(view.arTotalCertified)}
-            spark={view.weeklySeries}
-            sparkColor="hsl(var(--primary))"
-            sublabel="Outstanding balance"
-          />
-          <HeroKpi
-            label={`Collected · ${format(monthValToDate(monthVal), "MMM")}`}
-            value={fmtMoney(view.curr.collected)}
-            spark={view.collSpark}
-            sparkColor="hsl(var(--secondary))"
-            delta={<DeltaPill prev={view.prevComparable} curr={view.curr.collected} />}
-            sublabel={view.isCurrentMonth ? "vs prior month (MTD)" : "vs prior month"}
-          />
-          <HeroKpi
-            label="Weighted DSO"
-            value={`${view.dso}`}
-            unit="days"
-            accent={view.dso > 60 ? "warn" : "ok"}
-            sublabel="Days sales outstanding"
-          />
-          <HeroKpi
-            label="AR at Risk"
-            value={fmtMoney(view.atRisk)}
-            accent="warn"
-            sublabel="60+ days past due"
-          />
+          <TotalArKpi />
+          <CollectedKpi monthVal={monthVal} />
+          <DriftKpi monthVal={monthVal} />
+          <ArAtRiskKpi />
         </div>
       </section>
 
       {/* ─────────── Money flow + Net change ─────────── */}
       <section id="flow" className="scroll-mt-24 grid gap-4 lg:grid-cols-3">
+        {view ? (
         <Card className="lg:col-span-2 rounded-2xl border-border/70 p-6 shadow-none">
           <SectionHeader
             eyebrow="Cash Movement"
@@ -510,33 +437,21 @@ export default function ExecutiveInsights() {
             );
           })()}
         </Card>
+        ) : (
+          <LegacyPending
+            className="lg:col-span-2"
+            title="Money Flow"
+            loading={isLoading}
+            error={insightsError}
+            onRetry={() => refetchInsights()}
+          />
+        )}
 
-        <Card className="rounded-2xl border-border/70 p-6 shadow-none">
-          <SectionHeader eyebrow="Period Result" title="Net AR Change" />
-          <div className="mt-6 flex items-baseline gap-2">
-            <span className="text-4xl font-semibold tracking-tight tabular-nums">
-              {netChange >= 0 ? "+" : ""}{fmtMoney(netChange)}
-            </span>
-            <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${netChange >= 0 ? "text-destructive" : "text-success"}`}>
-              {netChange >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-              {netChange >= 0 ? "Portfolio growing" : "Drawing down"}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Net AR movement for {format(monthValToDate(monthVal), "MMM yyyy")} (new AR less reductions).
-          </p>
-
-          <dl className="mt-6 space-y-3 border-t border-border/60 pt-4 text-sm">
-            <FlowRow label="Opening AR" value={fmtMoney(view.waterfall[0].value)} tone="neutral" />
-            <FlowRow label="+ New AR" value={fmtMoney(view.waterfall[1].value)} tone="up" />
-            <FlowRow label={view.waterfall[2].name} value={fmtMoney(Math.abs(view.waterfall[2].value))} tone="down" />
-            <div className="border-t border-border/60 pt-3">
-              <FlowRow label="Closing AR" value={fmtMoney(view.arTotalCertified)} tone="neutral" bold />
-            </div>
-          </dl>
-        </Card>
+        <CaseMixCard monthVal={monthVal} />
       </section>
 
+      {view ? (
+      <>
       {/* ─────────── Aging matrix ─────────── */}
       <section id="aging" className="scroll-mt-24">
         <Card className="rounded-2xl border-border/70 p-6 shadow-none">
@@ -703,6 +618,15 @@ export default function ExecutiveInsights() {
           </div>
         </Card>
       </section>
+      </>
+      ) : (
+        <LegacyPending
+          title="Aging × Collector · Collector Activity · Bucket Movement · Failed / Issues"
+          loading={isLoading}
+          error={insightsError}
+          onRetry={() => refetchInsights()}
+        />
+      )}
     </div>
   );
 }
@@ -738,13 +662,13 @@ function HeroKpi({
   sublabel,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   unit?: string;
   spark?: number[];
   sparkColor?: string;
   delta?: React.ReactNode;
   accent?: "ok" | "warn";
-  sublabel?: string;
+  sublabel?: React.ReactNode;
 }) {
   const dot =
     accent === "warn"
@@ -775,7 +699,7 @@ function HeroKpi({
       <div className="flex items-end justify-between">
         <span className="text-[11px] text-muted-foreground/80">{sublabel}</span>
         {spark ? (
-          <Sparkline values={spark} width={88} height={24} stroke={sparkColor} fill={`${sparkColor.replace(")", " / 0.12)").replace("hsl(", "hsl(")}`} />
+          <Sparkline values={spark} width={88} height={24} stroke={sparkColor} fill={sparkColor.replace(/\)\s*$/, " / 0.12)")} />
         ) : null}
       </div>
     </div>
@@ -798,27 +722,6 @@ function DeltaPill({ prev, curr }: { prev: number; curr: number }) {
   );
 }
 
-function FlowRow({
-  label,
-  value,
-  tone,
-  bold,
-}: {
-  label: string;
-  value: string;
-  tone: "up" | "down" | "neutral";
-  bold?: boolean;
-}) {
-  const toneColor =
-    tone === "up" ? "text-destructive" : tone === "down" ? "text-success" : "text-foreground";
-  return (
-    <div className="flex items-baseline justify-between">
-      <dt className={`text-xs ${bold ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</dt>
-      <dd className={`font-mono text-sm tabular-nums ${toneColor} ${bold ? "font-semibold" : ""}`}>{value}</dd>
-    </div>
-  );
-}
-
 function Metric({ label, value, mini }: { label: string; value: string; mini?: boolean }) {
   return (
     <div className="text-right">
@@ -826,4 +729,434 @@ function Metric({ label, value, mini }: { label: string; value: string; mini?: b
       <div className={`font-mono font-semibold tabular-nums ${mini ? "text-sm" : "text-base"}`}>{value}</div>
     </div>
   );
+}
+
+/* ─────────────────── Hero band tiles (2026-10-13) ─────────────────── */
+
+/** Parse a yyyy-MM-dd date string as a LOCAL date (no UTC shift). */
+function ymd(d: string): Date {
+  const [y, m, dd] = d.slice(0, 10).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, dd || 1);
+}
+
+const DASH = "—";
+
+/** COLLECTED — firm cash actually collected (v_exec_collected_split_monthly: canonical ledger,
+ *  MyCase Completed + Offline), split into clients vs non-clients (consult fees). */
+function CollectedKpi({ monthVal }: { monthVal: string }) {
+  const q = useExecCollectedSplitMonthly();
+  const rows: ExecCollectedMonth[] | undefined = q.data;
+  const label = `Collected · ${format(monthValToDate(monthVal), "MMM")}`;
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading firm ledger" />;
+  if (q.isError || !rows) return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
+
+  const byMonth = new Map(rows.map((r) => [r.month.slice(0, 7), r]));
+  const row = byMonth.get(monthVal);
+  if (!row) return <HeroKpi label={label} value={DASH} sublabel="No payments on the ledger this month" />;
+
+  const prevKey = format(subMonths(monthValToDate(monthVal), 1), "yyyy-MM");
+  const prev = byMonth.get(prevKey);
+  const prevMon = format(monthValToDate(prevKey), "MMM");
+  const spark = Array.from(
+    { length: 8 },
+    (_, i) => byMonth.get(format(subMonths(monthValToDate(monthVal), 7 - i), "yyyy-MM"))?.total_collected ?? 0,
+  );
+  // Current month: MTD vs MTD through the day of the newest ledger payment (feed-lag aware).
+  const mtd = row.is_current_month;
+  const prevBasis = prev ? (mtd ? prev.total_mtd_comparable : prev.total_collected) : 0;
+  const currBasis = mtd ? row.total_mtd_comparable : row.total_collected;
+  const compare = mtd
+    ? `vs ${prevMon} 1–${row.mtd_cutoff_day}${row.ledger_through ? ` · ledger thru ${format(ymd(row.ledger_through), "MMM d")}` : ""}`
+    : `vs ${prevMon}`;
+  // A closed month whose consult ledger only covers part of it (Feb 2026: from Feb 17) would
+  // overstate "Clients" — show a dash rather than a wrong split.
+  const consultPartial = row.consult_source_status === "PARTIAL_MONTH" && !row.is_current_month;
+  const clientsText = row.client_collected == null || consultPartial ? DASH : fmtMoney(row.client_collected);
+  const consultText = row.nonclient_consult_cash == null ? DASH : `${fmtMoney(row.nonclient_consult_cash)}${consultPartial ? " (partial)" : ""}`;
+  // Current month: the consult ledger can run a day ahead of the MyCase ledger.
+  const splitNote =
+    row.consult_through && row.ledger_through && row.consult_through > row.ledger_through
+      ? `Consults run through ${format(ymd(row.consult_through), "MMM d")}, the payment ledger through ${format(ymd(row.ledger_through), "MMM d")}: Clients reads slightly low until the ledger catches up.`
+      : "Clients = firm ledger total minus consult fees (HubSpot consult ledger, LawPay-confirmed).";
+
+  return (
+    <HeroKpi
+      label={label}
+      value={fmtMoney(row.total_collected)}
+      spark={spark}
+      sparkColor="hsl(var(--secondary))"
+      delta={
+        prev ? (
+          <span title={`${prevMon} comparable: ${fmtMoney(prevBasis)}`}>
+            <DeltaPill prev={prevBasis} curr={currBasis} />
+          </span>
+        ) : undefined
+      }
+      sublabel={
+        <span className="flex flex-col gap-0.5">
+          <span title={splitNote}>
+            <span className="font-medium text-foreground/80">Clients {clientsText}</span>
+            {" · "}Consults {consultText}
+          </span>
+          <span className="text-[10px] text-muted-foreground/70">{compare}</span>
+        </span>
+      }
+    />
+  );
+}
+
+const DRIFT_BUCKETS = ["Current", "1-30", "31-60", "61-90", "91-180", "181-365", "365+"];
+
+/** DRIFT — clients whose worst MyCase aging bucket got worse vs recovered between the AR snapshot
+ *  on/before the 1st and the latest snapshot in the month (v_exec_client_bucket_drift). */
+function DriftKpi({ monthVal }: { monthVal: string }) {
+  const q = useExecClientBucketDrift();
+  const cells: ExecDriftCell[] | undefined = q.data;
+  const label = "Drift";
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading AR snapshots" />;
+  if (q.isError || !cells) return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
+
+  const mc = cells.filter((c) => c.month.slice(0, 7) === monthVal);
+  if (mc.length === 0) {
+    return (
+      <HeroKpi
+        label={label}
+        value={DASH}
+        sublabel={`No MyCase AR snapshot pair (≤31 days apart) for ${format(monthValToDate(monthVal), "MMM")}`}
+      />
+    );
+  }
+  const count = (m: ExecDriftCell["movement"]) => mc.filter((c) => c.movement === m).reduce((s, c) => s + c.clients, 0);
+  const worse = count("worse");
+  const recovered = count("recovered");
+  const added = count("new");
+  const left = count("left");
+  const base = mc[0].base_snapshot_date;
+  const end = mc[0].end_snapshot_date;
+  const refreshed = mc[0].refreshed_at ? new Date(mc[0].refreshed_at) : null;
+
+  return (
+    <HeroKpi
+      label={label}
+      accent={worse > recovered ? "warn" : "ok"}
+      value={
+        <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-destructive">{worse.toLocaleString()}</span>
+          <span className="text-xs font-medium text-muted-foreground">worse</span>
+          <span className="text-lg text-muted-foreground/50">·</span>
+          <span className="text-success">{recovered.toLocaleString()}</span>
+          <span className="text-xs font-medium text-muted-foreground">recovered</span>
+        </span>
+      }
+      delta={<DriftMatrix cells={mc} base={base} end={end} />}
+      sublabel={
+        <span className="flex flex-col gap-0.5">
+          <span>
+            since {format(ymd(base), "MMM d")} · {added.toLocaleString()} new · {left.toLocaleString()} left
+          </span>
+          <span className="text-[10px] text-muted-foreground/70">
+            clients · worst MyCase bucket · to {format(ymd(end), "MMM d")}
+            {refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
+/** From→to bucket matrix behind the Drift tile. Rows = bucket on the base snapshot (or not on
+ *  the book), columns = bucket on the end snapshot (or left the book). Cells = clients. */
+function DriftMatrix({ cells, base, end }: { cells: ExecDriftCell[]; base: string; end: string }) {
+  const at = new Map(cells.map((c) => [`${c.from_ord}|${c.to_ord}`, c]));
+  const fromOrds = [-1, 0, 1, 2, 3, 4, 5, 6];
+  const toOrds = [0, 1, 2, 3, 4, 5, 6, -1];
+  const sumBy = (m: ExecDriftCell["movement"], k: "base_balance" | "end_balance") =>
+    cells.filter((c) => c.movement === m).reduce((s, c) => s + c[k], 0);
+  const tone = (from: number, to: number) =>
+    from === -1 ? "bg-primary/10 text-primary"
+    : to === -1 ? "bg-muted/60 text-muted-foreground"
+    : to > from ? "bg-destructive/10 text-destructive"
+    : to < from ? "bg-success/10 text-success"
+    : "bg-muted/30 text-foreground/80";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-full border border-border/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Show bucket drift matrix"
+        >
+          <LayoutGrid className="h-2.5 w-2.5" />
+          Matrix
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto max-w-[calc(100vw-2rem)] p-4">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-secondary">Client bucket drift</div>
+        <div className="mt-0.5 text-xs text-muted-foreground">
+          Worst MyCase aging bucket per client · {format(ymd(base), "MMM d")} → {format(ymd(end), "MMM d, yyyy")}
+        </div>
+        <div className="mt-3 overflow-x-auto">
+          <table className="border-collapse text-[11px] tabular-nums">
+            <thead>
+              <tr>
+                <th className="px-1.5 py-1 text-left text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
+                  From ↓ / To →
+                </th>
+                {toOrds.map((t) => (
+                  <th key={t} className="px-1.5 py-1 text-right text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/70">
+                    {t === -1 ? "Left" : DRIFT_BUCKETS[t]}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {fromOrds.map((f) => (
+                <tr key={f} className="border-t border-border/40">
+                  <td className="whitespace-nowrap px-1.5 py-1 font-medium text-muted-foreground">
+                    {f === -1 ? "New" : DRIFT_BUCKETS[f]}
+                  </td>
+                  {toOrds.map((t) => {
+                    const c = at.get(`${f}|${t}`);
+                    if (f === -1 && t === -1) return <td key={t} />;
+                    return (
+                      <td key={t} className="p-0.5 text-right">
+                        {c ? (
+                          <span
+                            className={`block rounded px-1.5 py-0.5 font-mono ${tone(f, t)}`}
+                            title={`${c.clients.toLocaleString()} clients · ${fmtMoney(c.end_balance)} now / ${fmtMoney(c.base_balance)} before`}
+                          >
+                            {c.clients.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="block px-1.5 py-0.5 text-muted-foreground/40">·</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 border-t border-border/60 pt-3 text-[11px]">
+          <dt className="text-destructive">Worse</dt>
+          <dd className="text-right font-mono tabular-nums">{fmtMoney(sumBy("worse", "end_balance"))} now</dd>
+          <dt className="text-success">Recovered</dt>
+          <dd className="text-right font-mono tabular-nums">
+            {fmtMoney(sumBy("recovered", "end_balance"))} now · was {fmtMoney(sumBy("recovered", "base_balance"))}
+          </dd>
+          <dt className="text-primary">New on the book</dt>
+          <dd className="text-right font-mono tabular-nums">{fmtMoney(sumBy("new", "end_balance"))}</dd>
+          <dt className="text-muted-foreground">Left the book</dt>
+          <dd className="text-right font-mono tabular-nums">{fmtMoney(sumBy("left", "base_balance"))} before</dd>
+        </dl>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** CASE MIX — services sold in the month (revenue cases opened, invoiced > 0) and the contract
+ *  value they bring (v_exec_case_mix_monthly). Carries a feed-freshness line so a partially
+ *  loaded month never reads as a collapse in sales. */
+function CaseMixCard({ monthVal }: { monthVal: string }) {
+  const q = useExecCaseMixMonthly();
+  const rows: ExecCaseMixRow[] | undefined = q.data;
+  const monthStart = monthValToDate(monthVal);
+  const monthLabel = format(monthStart, "MMMM yyyy");
+  const mr = (rows ?? [])
+    .filter((r) => r.month.slice(0, 7) === monthVal)
+    .sort((a, b) => b.contract_value - a.contract_value);
+  const totalCases = mr.reduce((s, r) => s + r.revenue_cases, 0);
+  const totalValue = mr.reduce((s, r) => s + r.contract_value, 0);
+  const maxValue = Math.max(1, ...mr.map((r) => r.contract_value));
+  const freshRow = rows?.find((r) => r.cases_loaded_through) ?? null;
+  const loadedThrough = freshRow?.cases_loaded_through ? ymd(freshRow.cases_loaded_through) : null;
+  const syncedAt = freshRow?.invoices_synced_at ? new Date(freshRow.invoices_synced_at) : null;
+  const refreshedAt = freshRow?.refreshed_at ? new Date(freshRow.refreshed_at) : null;
+  const monthEnd = endOfMonth(monthStart);
+  const today = new Date();
+  const coverageEnd = monthEnd < today ? monthEnd : today;
+  const partial = !!loadedThrough && loadedThrough < coverageEnd && loadedThrough >= monthStart;
+  const notLoaded = !!loadedThrough && loadedThrough < monthStart;
+
+  return (
+    <Card className="rounded-2xl border-border/70 p-6 shadow-none">
+      <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
+      {q.isLoading ? (
+        <div className="py-8 text-center text-xs text-muted-foreground">Loading case mix…</div>
+      ) : q.isError || !rows ? (
+        <div className="py-8 text-center text-xs text-muted-foreground">
+          <TileError onRetry={() => q.refetch()} />
+        </div>
+      ) : (
+        <>
+          <div className="mt-5 flex items-baseline gap-2">
+            <span className="text-3xl font-semibold tracking-tight tabular-nums">{mr.length ? fmtMoney(totalValue) : DASH}</span>
+            <span className="text-xs text-muted-foreground">contract value</span>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+            {totalCases.toLocaleString()} revenue {totalCases === 1 ? "case" : "cases"}
+            {totalCases > 0 ? ` · avg ${fmtMoney(totalValue / totalCases)} per case` : ""}
+          </p>
+
+          {mr.length === 0 ? (
+            <div className="mt-5 rounded-lg border border-dashed border-border/70 py-6 text-center text-xs text-muted-foreground">
+              {notLoaded ? "No cases loaded for this month yet." : "No revenue cases opened this month."}
+            </div>
+          ) : (
+            <ul className="mt-5 space-y-2.5 border-t border-border/60 pt-4">
+              {mr.map((r) => {
+                const share = totalValue > 0 ? (r.contract_value / totalValue) * 100 : 0;
+                return (
+                  <li key={r.reporting_family}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-xs font-medium tracking-tight" title={r.reporting_family}>
+                        {r.reporting_family}
+                      </span>
+                      <span className="font-mono text-[12px] font-semibold tabular-nums">{fmtMoney(r.contract_value)}</span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted/50" title={`${share.toFixed(1)}% of contract value`}>
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-secondary/60 to-secondary"
+                          style={{ width: `${(r.contract_value / maxValue) * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-[104px] text-right text-[10px] text-muted-foreground tabular-nums">
+                        {r.revenue_cases} · avg {fmtMoney(r.avg_per_case)} · {share.toFixed(0)}%
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+              <li className="flex items-baseline justify-between border-t border-border/60 pt-2.5 text-xs font-semibold">
+                <span>Total · {totalCases.toLocaleString()} cases</span>
+                <span className="font-mono tabular-nums">{fmtMoney(totalValue)}</span>
+              </li>
+            </ul>
+          )}
+
+          <p className={`mt-4 text-[10px] leading-snug ${partial || notLoaded ? "text-warning" : "text-muted-foreground/70"}`}>
+            {loadedThrough ? `Cases loaded through ${format(loadedThrough, "MMM d, yyyy")}` : "Case feed date unknown"}
+            {syncedAt ? ` · invoices synced ${format(syncedAt, "MMM d")}` : ""}
+            {partial ? " — partial month: cases opened after that date are not counted yet, not a drop in sales." : ""}
+            {notLoaded ? " — the MyCase case feed has not reached this month yet." : ""}
+            {refreshedAt ? ` · updated ${fmtUpdated(refreshedAt)}` : ""}
+          </p>
+        </>
+      )}
+    </Card>
+  );
+}
+
+/** Per-tile error state with a retry, so one failed query never blanks the band. */
+function TileError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-destructive">
+      Couldn&apos;t load
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-full border border-border/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        Retry
+      </button>
+    </span>
+  );
+}
+
+/** TOTAL AR — certified firm-wide AR (v_firm_financial_summary.ar_total, pinned AR snapshot). */
+function TotalArKpi() {
+  const q = useCertifiedFirmSummary();
+  const label = "Total AR";
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading certified AR" />;
+  const s: any = q.data;
+  if (q.isError || !s || s.ar_total == null) {
+    return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
+  }
+  return (
+    <HeroKpi
+      label={label}
+      value={fmtMoney(Number(s.ar_total) || 0)}
+      sublabel={
+        <span className="flex flex-col gap-0.5">
+          <span>Outstanding balance</span>
+          <span className="text-[10px] text-muted-foreground/70">
+            certified{s.as_of ? ` · MyCase AR as of ${format(ymd(String(s.as_of)), "MMM d")}` : ""}
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
+/** AR AT RISK — 60+ days past due (v_exec_ar_at_risk hourly cache of ar_dashboard; the legacy
+ *  definition, unchanged), with its share of the same book. */
+function ArAtRiskKpi() {
+  const q = useExecArAtRisk();
+  const label = "AR at Risk";
+  if (q.isLoading) return <HeroKpi label={label} value="…" accent="warn" sublabel="Loading AR aging" />;
+  const r = q.data;
+  if (q.isError || !r) {
+    return <HeroKpi label={label} value={DASH} accent="warn" sublabel={<TileError onRetry={() => q.refetch()} />} />;
+  }
+  const share = r.ar_total > 0 ? (r.ar_at_risk_60 / r.ar_total) * 100 : 0;
+  const refreshed = r.refreshed_at ? new Date(r.refreshed_at) : null;
+  // The previous tile used ar_dashboard days_past_due > 60 (contract grain). Kept in the tooltip so the
+  // basis change (Jeff 2026-10-13) is visible, not silent.
+  const tip =
+    "Invoice clock: open invoices more than 60 days past their effective due date, counted from the last payment. " +
+    (r.legacy_contract_dpd_at_risk_60 != null
+      ? `Previous basis (contract days past due > 60): ${fmtMoney(r.legacy_contract_dpd_at_risk_60)}.`
+      : "");
+  return (
+    <HeroKpi
+      label={label}
+      value={<span title={tip}>{fmtMoney(r.ar_at_risk_60)}</span>}
+      accent="warn"
+      sublabel={
+        <span className="flex flex-col gap-0.5" title={tip}>
+          <span>60+ days · {share.toFixed(1)}% of AR</span>
+          <span className="text-[10px] text-muted-foreground/70">
+            {r.invoices_at_risk_60.toLocaleString()} invoices · {r.clients_at_risk_60.toLocaleString()} clients
+            {refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
+          </span>
+          <span className="text-[10px] text-muted-foreground/70">
+            basis: invoice clock (days since last payment / effective due date)
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
+/** Placeholder for the legacy sections (Money Flow, Aging, Activity, Movement, Failed), which
+ *  still compute in the browser from useInsightsData. They no longer gate the hero band. */
+function LegacyPending({
+  title,
+  loading,
+  error,
+  onRetry,
+  className = "",
+}: {
+  title: string;
+  loading: boolean;
+  error: boolean;
+  onRetry: () => void;
+  className?: string;
+}) {
+  return (
+    <Card className={`rounded-2xl border-border/70 p-6 shadow-none ${className}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary">{title}</div>
+      <div className="mt-6 py-6 text-center text-xs text-muted-foreground">
+        {error || !loading ? <TileError onRetry={onRetry} /> : "Loading detail…"}
+      </div>
+    </Card>
+  );
+}
+
+/** Cache stamp: time only when refreshed today, else date + time. */
+function fmtUpdated(d: Date): string {
+  return format(d, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? format(d, "h:mm a") : format(d, "MMM d, h:mm a");
 }

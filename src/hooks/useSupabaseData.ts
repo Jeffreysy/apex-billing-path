@@ -329,7 +329,9 @@ export function useMergedClients() {
       // Keep ALL ar_dashboard rows — do NOT drop delinquency_status = 'Paid'. The 08-04 client-ar + VP
       // ruling LOCKED that those "Paid"-but-open rows are REAL AR (~$104K; "Paid" is a stale contracts
       // label bled via the unreliable invoice_number join). Matches ExecutiveInsights + the certified book.
-      const rows = await fetchAllRows<any>("ar_dashboard");
+      // ORDER BY the unique contract_id: stable offset paging AND a fast plan (unsorted pages took
+      // ~6.5 s and timed out under load; sorted ~0.5 s each). 2026-10-13.
+      const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
 
       return rows.map((row): Client => {
         const totalOwed = Number(row.total_contract_value) || 0;
@@ -1541,5 +1543,235 @@ export function useARLiveTrend() {
     queryKey: ["ar-live-trend"],
     queryFn: async () => fetchAllRows<any>("ar_live_trend"),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// EXECUTIVE INSIGHTS HERO BAND (2026-10-13)
+// ========================
+// One VP-certified view per tile, aggregated server-side. Drift, Case Mix and AR at Risk read
+// hourly caches (refresh_exec_insights_cache; refreshed_at shown on the tile) because the live
+// logic timed out under a full Admin page load. Each hook THROWS on error so its tile gets its
+// own error/retry state; a slow or failed tile never blanks the rest of the band.
+
+/** v_exec_collected_split_monthly — GRAIN: one row per month. Firm cash actually collected
+ *  (canonical ledger), split clients vs non-clients (consult fees). nonclient/client are null
+ *  before 2026-02 (no consult ledger) — display a dash, never 0. */
+export interface ExecCollectedMonth {
+  month: string; // yyyy-MM-dd (1st of month)
+  total_collected: number;
+  completed_amount: number;
+  offline_amount: number;
+  payment_count: number;
+  total_mtd_comparable: number;
+  mtd_cutoff_day: number;
+  nonclient_consult_cash: number | null;
+  nonclient_consult_payments: number | null;
+  client_collected: number | null;
+  consult_source_status: string | null;
+  ledger_through: string | null;
+  consult_through: string | null;
+  is_current_month: boolean;
+}
+
+const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+
+export function useExecCollectedSplitMonthly() {
+  return useQuery<ExecCollectedMonth[]>({
+    queryKey: ["exec-collected-split-monthly"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_collected_split_monthly")
+        .select(
+          "month, total_collected, completed_amount, offline_amount, payment_count, total_mtd_comparable, mtd_cutoff_day, nonclient_consult_cash, nonclient_consult_payments, client_collected, consult_source_status, ledger_through, consult_through, is_current_month",
+        )
+        .order("month");
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        ...r,
+        total_collected: Number(r.total_collected) || 0,
+        completed_amount: Number(r.completed_amount) || 0,
+        offline_amount: Number(r.offline_amount) || 0,
+        payment_count: Number(r.payment_count) || 0,
+        total_mtd_comparable: Number(r.total_mtd_comparable) || 0,
+        mtd_cutoff_day: Number(r.mtd_cutoff_day) || 0,
+        nonclient_consult_cash: numOrNull(r.nonclient_consult_cash),
+        nonclient_consult_payments: numOrNull(r.nonclient_consult_payments),
+        client_collected: numOrNull(r.client_collected),
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_exec_client_bucket_drift (hourly cache) — GRAIN: one row per (month, from_ord, to_ord).
+ *  CLIENT-grain counts of clients whose worst MyCase aging bucket moved between the snapshot
+ *  on/before the 1st (within 31 days) and the latest snapshot in the month. ord -1 = not on that
+ *  snapshot's book. */
+export type ExecDriftMovement = "worse" | "recovered" | "same" | "new" | "left";
+export interface ExecDriftCell {
+  month: string;
+  base_snapshot_date: string;
+  end_snapshot_date: string;
+  window_days: number | null;
+  from_ord: number;
+  to_ord: number;
+  from_bucket: string | null;
+  to_bucket: string | null;
+  movement: ExecDriftMovement;
+  clients: number;
+  base_balance: number;
+  end_balance: number;
+  refreshed_at: string | null;
+}
+
+export function useExecClientBucketDrift() {
+  return useQuery<ExecDriftCell[]>({
+    queryKey: ["exec-client-bucket-drift"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_client_bucket_drift")
+        .select("month, base_snapshot_date, end_snapshot_date, window_days, from_ord, to_ord, from_bucket, to_bucket, movement, clients, base_balance, end_balance, refreshed_at")
+        .order("month")
+        .order("from_ord")
+        .order("to_ord");
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        ...r,
+        window_days: numOrNull(r.window_days),
+        from_ord: Number(r.from_ord),
+        to_ord: Number(r.to_ord),
+        clients: Number(r.clients) || 0,
+        base_balance: Number(r.base_balance) || 0,
+        end_balance: Number(r.end_balance) || 0,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_exec_case_mix_monthly (hourly cache) — GRAIN: one row per (month, reporting_family).
+ *  Revenue cases opened in the month (invoiced > 0) and the contract value they bring.
+ *  cases_loaded_through / invoices_synced_at = MyCase feed freshness (a month past it is
+ *  partial, not a collapse); refreshed_at = cache build time. */
+export interface ExecCaseMixRow {
+  month: string;
+  reporting_family: string;
+  family_sort: number;
+  revenue_cases: number;
+  contract_value: number;
+  avg_per_case: number;
+  cases_loaded_through: string | null;
+  invoices_synced_at: string | null;
+  refreshed_at: string | null;
+}
+
+export function useExecCaseMixMonthly() {
+  return useQuery<ExecCaseMixRow[]>({
+    queryKey: ["exec-case-mix-monthly"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_case_mix_monthly")
+        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at")
+        .order("month")
+        .order("contract_value", { ascending: false });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        ...r,
+        family_sort: Number(r.family_sort) || 0,
+        revenue_cases: Number(r.revenue_cases) || 0,
+        contract_value: Number(r.contract_value) || 0,
+        avg_per_case: Number(r.avg_per_case) || 0,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. INVOICE-CLOCK basis (Jeff 2026-10-13):
+ *  ar_at_risk_60 = SUM(v_ar_invoice_clock.amount_due) where effective_aging_days > 60 on the active AR
+ *  snapshot. invoices_at_risk_60 = invoice grain; clients_at_risk_60 = client grain (distinct client_id);
+ *  ar_total ties to v_firm_financial_summary.ar_total. legacy_contract_dpd_at_risk_60 = the previous
+ *  basis (ar_dashboard days_past_due > 60), shown only in the tooltip so the switch is visible. */
+export interface ExecArAtRisk {
+  ar_at_risk_60: number;
+  ar_total: number;
+  invoices_at_risk_60: number;
+  clients_at_risk_60: number;
+  unlinked_invoices_at_risk_60: number;
+  invoices: number;
+  snapshot_date: string | null;
+  basis: string | null;
+  legacy_contract_dpd_at_risk_60: number | null;
+  refreshed_at: string | null;
+}
+
+export function useExecArAtRisk() {
+  return useQuery<ExecArAtRisk | null>({
+    queryKey: ["exec-ar-at-risk-clock"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_ar_at_risk")
+        .select(
+          "ar_at_risk_60, ar_total, invoices_at_risk_60, clients_at_risk_60, unlinked_invoices_at_risk_60, invoices, snapshot_date, basis, legacy_contract_dpd_at_risk_60, refreshed_at",
+        )
+        .limit(1);
+      if (error) throw error;
+      const r = (data ?? [])[0];
+      if (!r) return null;
+      return {
+        ...r,
+        ar_at_risk_60: Number(r.ar_at_risk_60) || 0,
+        ar_total: Number(r.ar_total) || 0,
+        invoices_at_risk_60: Number(r.invoices_at_risk_60) || 0,
+        clients_at_risk_60: Number(r.clients_at_risk_60) || 0,
+        unlinked_invoices_at_risk_60: Number(r.unlinked_invoices_at_risk_60) || 0,
+        invoices: Number(r.invoices) || 0,
+        legacy_contract_dpd_at_risk_60: numOrNull(r.legacy_contract_dpd_at_risk_60),
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// HEADER CLIENT SEARCH (2026-10-13)
+// ========================
+/** One header-search hit (CONTRACT grain — the AR book ClientLookup can open). `contractId` is the
+ *  ClientLookup deep-link key (?clientId=<contract_id>); `clientId` is the canonical client. */
+export interface ClientSearchHit {
+  contractId: string;
+  clientId: string | null;
+  name: string;
+  caseNumber: string;
+  invoiceNumber: string;
+  caseType: string;
+  status: Client["status"];
+  matchField: "name" | "case_number" | "invoice_number" | "email";
+}
+
+/** Server-side header search (public.search_ar_clients: active users, >= 2 chars, max 20 rows).
+ *  Replaces pulling every ar_dashboard row into every page. Pass an already-debounced term. */
+export function useClientSearch(term: string) {
+  const q = term.trim();
+  return useQuery<ClientSearchHit[]>({
+    queryKey: ["client-search", q.toLowerCase()],
+    enabled: q.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("search_ar_clients", { p_term: q, p_limit: 20 });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        contractId: r.contract_id,
+        clientId: r.client_id ?? null,
+        name: r.client_name || "Unknown",
+        caseNumber: r.case_number || "",
+        invoiceNumber: r.invoice_number || "",
+        caseType: r.practice_area || "",
+        status: mapStatus(r.contract_status, r.delinquency_status),
+        matchField: r.match_field,
+      }));
+    },
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 }
