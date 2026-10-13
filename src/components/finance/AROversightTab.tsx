@@ -305,11 +305,9 @@ function ARRollForwardSection() {
     // For each month: New AR added (contracts created that month, by value),
     // Collections (payments that month), Net Movement
     const rows = months.map(m => {
-      const newContracts = contracts.filter((c: any) => {
-        if (!c.start_date) return false;
-        const d = new Date(c.start_date);
-        return d >= m.start && d <= m.end;
-      });
+      // Calendar-month test on the DATE string: new Date("yyyy-mm-dd") is UTC midnight (the previous evening
+      // in US time zones), which dropped every contract starting on the 1st into the prior month.
+      const newContracts = contracts.filter((c: any) => !!c.start_date && String(c.start_date).slice(0, 7) === m.key);
       const newAR = newContracts.reduce((s: number, c: any) => s + (Number(c.total_contract_value) || 0), 0);
 
       const monthPayments = payments.filter((p: any) => {

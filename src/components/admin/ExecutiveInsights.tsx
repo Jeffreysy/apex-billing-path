@@ -158,13 +158,9 @@ export default function ExecutiveInsights() {
     );
 
     // ---------- Money flow (waterfall) for selected month ----------
-    const monthStart = startOfMonth(monthValToDate(monthVal));
-    const monthEnd = endOfMonth(monthStart);
+    // Calendar-month test on the DATE string (new Date("yyyy-mm-dd") shifted the 1st into the prior month).
     const startDateAdded = ar
-      .filter((r: any) => {
-        const d = r.start_date ? new Date(r.start_date) : null;
-        return d && d >= monthStart && d <= monthEnd;
-      })
+      .filter((r: any) => !!r.start_date && String(r.start_date).slice(0, 7) === monthVal)
       .reduce((s: number, r: any) => s + (Number(r.total_contract_value) || 0), 0);
     // New AR: for the CURRENT month, read the VP-certified live-snapshot additions
     // (v_firm_financial_summary.ar_additions). ar_dashboard.start_date comes from the frozen
