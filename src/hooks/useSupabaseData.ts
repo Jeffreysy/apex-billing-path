@@ -79,13 +79,13 @@ export function useCollectorRoster() {
 }
 
 // --- Paginated fetch helper ---
-export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
+export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean; /** PostgREST column projection, default "*". */ columns?: string }): Promise<T[]> {
   const allData: T[] = [];
   const pageSize = 1000;
   let from = 0;
   let hasMore = true;
   while (hasMore) {
-    let query = supabase.from(table).select("*").range(from, from + pageSize - 1);
+    let query = supabase.from(table).select(options?.columns ?? "*").range(from, from + pageSize - 1);
     if (options?.filter) query = options.filter(query);
     if (options?.orderBy) query = query.order(options.orderBy, { ascending: options.ascending ?? true });
     const { data, error } = await query;
@@ -139,6 +139,44 @@ export function useAdminKPI() {
       const { data, error } = await supabase.from("admin_kpi").select("*").limit(1);
       if (error) throw error;
       return (data && data[0]) || null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** 1a. Contract status — one row per status from the per-invoice AR clock (mv_ar_invoice_clock),
+ *  contract/invoice grain, ties to Total AR to the penny. Replaces admin_kpi's status columns,
+ *  which read the legacy contracts table (975 invoices / $4.6M had no status, "Paid" rows fell
+ *  off the tiles). Returns null when the view is unavailable so the page can fall back. */
+export type AdminContractStatusRow = {
+  status_key: "current" | "paying_but_behind" | "delinquent" | "never_paid";
+  label: string;
+  sort_order: number;
+  contracts: number;
+  clients: number;
+  ar: number;
+  unlinked_contracts: number;
+  snapshot_date: string | null;
+  clock_as_of: string | null;
+  payments_through: string | null;
+};
+
+export function useAdminContractStatus() {
+  return useQuery<AdminContractStatusRow[] | null>({
+    queryKey: ["admin-contract-status"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_admin_contract_status")
+        .select("status_key, label, sort_order, contracts, clients, ar, unlinked_contracts, snapshot_date, clock_as_of, payments_through")
+        .order("sort_order");
+      if (error || !data || data.length === 0) return null;
+      return (data as any[]).map((r) => ({
+        ...r,
+        contracts: Number(r.contracts) || 0,
+        clients: Number(r.clients) || 0,
+        ar: Number(r.ar) || 0,
+        unlinked_contracts: Number(r.unlinked_contracts) || 0,
+      }));
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -1133,6 +1171,47 @@ export type ClassifiedMonthlyCollection = {
   delinquentCount: number;
   unknownCount: number;
 };
+
+/** Certified monthly cash (mv_collections_certified_monthly, refreshed daily, bank-supported
+ *  ONLINE+OFFLINE basis). 10-13 VP: get_classified_monthly_collections reads `payments`, which only
+ *  holds LawPay charges linked to a client (Jul: 578 of 3,476) — $286,820 vs $1,768,833.95 real cash.
+ *  Do NOT read the live v_collections_certified_monthly here (~75 s). */
+export type CertifiedMonthlyCollection = {
+  monthKey: string;
+  month: string;
+  total: number;
+  onPlan: number;
+  delinquent: number;
+  from180: number;
+};
+
+export function useCertifiedMonthlyCollections(months = 5) {
+  return useQuery<CertifiedMonthlyCollection[]>({
+    queryKey: ["certified-monthly-collections", months],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("mv_collections_certified_monthly")
+        .select("mon, real_cash_total, delinquent_recovery, recovery_from_180plus")
+        .order("mon", { ascending: false })
+        .limit(months);
+      if (error) throw error;
+      return ((data ?? []) as any[]).reverse().map((r) => {
+        const total = Math.round(Number(r.real_cash_total) || 0);
+        const delinquent = Math.round(Number(r.delinquent_recovery) || 0);
+        const d = new Date(`${String(r.mon).slice(0, 10)}T00:00:00`);
+        return {
+          monthKey: String(r.mon).slice(0, 7),
+          month: format(d, "MMM yyyy"),
+          total,
+          onPlan: total - delinquent,
+          delinquent,
+          from180: Math.round(Number(r.recovery_from_180plus) || 0),
+        };
+      });
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 /** Monthly collections classified by contract schedule: current vs delinquent at time of payment. */
 export function useClassifiedMonthlyCollections(monthsBack = 4) {

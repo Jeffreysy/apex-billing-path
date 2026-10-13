@@ -3,65 +3,97 @@ import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import ExecutiveInsights from "@/components/admin/ExecutiveInsights";
-import { useAdminKPI, useFirmFinancialSummary, useCollectionActivities, useCollectors, usePaymentsData, useEscalations, useClassifiedMonthlyCollections, computeWeeklyCollections } from "@/hooks/useSupabaseData";
-import { DollarSign, Users, Phone, TrendingUp, FileText, Scale, Eye, AlertTriangle, Briefcase, Percent } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
+import { useAdminKPI, useAdminContractStatus, useFirmFinancialSummary, useCollectors, useEscalations, useCertifiedMonthlyCollections } from "@/hooks/useSupabaseData";
+import { DollarSign, Phone, TrendingUp, FileText, Scale, Eye, Briefcase, Percent } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const COLORS = ["hsl(152 60% 40%)", "hsl(38 92% 50%)", "hsl(0 72% 51%)", "hsl(220 13% 65%)", "hsl(174 60% 40%)"];
+// Contract status colours, in sort order: current / paying-but-behind / delinquent / never paid.
+const STATUS_STYLE: Record<string, { color: string; tile: string; title: string; caption: string }> = {
+  current: {
+    color: "hsl(152 60% 40%)",
+    tile: "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300",
+    title: "text-emerald-600 dark:text-emerald-400",
+    caption: "paying on schedule",
+  },
+  paying_but_behind: {
+    color: "hsl(38 92% 50%)",
+    tile: "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+    title: "text-amber-600 dark:text-amber-400",
+    caption: "paying, but behind (needs a nudge)",
+  },
+  delinquent: {
+    color: "hsl(0 72% 51%)",
+    tile: "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 text-red-700 dark:text-red-300",
+    title: "text-red-600 dark:text-red-400",
+    caption: "no payment past the grace window",
+  },
+  never_paid: {
+    color: "hsl(220 13% 60%)",
+    tile: "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900 text-slate-700 dark:text-slate-300",
+    title: "text-slate-600 dark:text-slate-400",
+    caption: "balance but no payment on record",
+  },
+};
+
+const LINE_SERIES = [
+  { key: "total", name: "Total cash collected", color: "hsl(222 47% 25%)", width: 3, dash: undefined },
+  { key: "onPlan", name: "From clients on plan", color: "hsl(152 60% 40%)", width: 2, dash: undefined },
+  { key: "delinquent", name: "Recovered from delinquent clients", color: "hsl(0 72% 51%)", width: 2, dash: undefined },
+  { key: "from180", name: "…of which 180+ days behind", color: "hsl(0 72% 51%)", width: 1.5, dash: "5 4" },
+];
+
+const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+const shortDate = (d: string | null | undefined) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—");
 
 const AdminDashboard = () => {
+  // Nothing here blocks the whole page any more: each section renders as soon as its own query lands.
   const { data: kpi, isLoading: kpiLoading } = useAdminKPI();
-  const { data: firmSummary, isLoading: fsLoading } = useFirmFinancialSummary();
-  const { data: payments = [], isLoading: pl } = usePaymentsData();
-  const { data: callLogs = [], isLoading: cal } = useCollectionActivities();
+  const { data: contractStatus, isLoading: csLoading } = useAdminContractStatus();
+  const { data: firmSummary } = useFirmFinancialSummary();
   const { data: collectors = [], isLoading: col } = useCollectors();
-  const { data: unresolvedEscalations = [], isLoading: escalationsLoading } = useEscalations(true);
-  const { data: classifiedCollections = [], isLoading: mcl } = useClassifiedMonthlyCollections(4);
+  const { data: unresolvedEscalations = [] } = useEscalations(true);
+  const { data: monthlyCash = [], isLoading: mcl } = useCertifiedMonthlyCollections(5);
 
-  if (kpiLoading || fsLoading || pl || cal || col || escalationsLoading || mcl) return <DashboardLayout title="Admin Dashboard"><div className="p-8 text-center text-muted-foreground">Loading dashboard...</div></DashboardLayout>;
-
-  // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
-  // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor). Falls back to admin_kpi.total_remaining only if the certified row is
-  // unavailable, so the tile never renders empty. Drives both the Total AR and Financial
-  // Oversight tiles. Do NOT exclude "Paid" rows — those 31 rows are real AR (LOCKED).
+  // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor). admin_kpi.total_remaining
+  // carries the same figure and arrives in well under a second, so the tile shows it while the certified row loads.
   const totalAR = Number(firmSummary?.ar_total) || Number(kpi?.total_remaining) || 0;
   const totalCollected = Number(kpi?.total_collected) || 0;
-  const arOnPlan = Number(kpi?.ar_on_plan) || 0;
-  const arLate = Number(kpi?.ar_late) || 0;
-  const arDelinquent = Number(kpi?.ar_delinquent) || 0;
-  const arActionable = Number(kpi?.ar_actionable) || 0;
-  const contractsOnPlan = Number(kpi?.contracts_on_plan) || 0;
-  const contractsLate = Number(kpi?.contracts_late) || 0;
-  const contractsDelinquent = Number(kpi?.contracts_delinquent) || 0;
-  const contractsActionable = Number(kpi?.contracts_actionable) || 0;
   const activeContracts = Number(kpi?.total_contracts) || 0;
-  const riskContracts = Number(kpi?.risk_contracts) || 0;
-  const totalClients = Number(kpi?.total_clients) || 0;
-  const delinquent = Number(kpi?.delinquent_clients) || 0;
-  const currentClients = Number(kpi?.current_clients) || 0;
   const activeCases = Number(kpi?.active_cases) || 0;
   const collectionRate = Number(kpi?.collection_rate_pct) || 0;
-  const collectedThisMonth = Number(kpi?.collected_this_month) || 0;
+  // Certified month-to-date cash; admin_kpi.collected_this_month reads the linked-LawPay-only `payments` table (~40% of real cash).
+  const now = new Date();
+  const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const collectedThisMonth = monthlyCash.find((m) => m.monthKey === thisMonthKey)?.total ?? (Number(kpi?.collected_this_month) || 0);
+  const paymentsThisMonth = Number(kpi?.payments_this_month) || 0;
+  const totalClients = Number(kpi?.total_clients) || 0;
   const unresolvedCount = unresolvedEscalations.length;
-  const openTasks = unresolvedCount;
+
+  // Contract status: the per-invoice AR clock when available (ties to Total AR); otherwise the legacy admin_kpi split.
+  const statusRows = contractStatus
+    ? contractStatus.map((r) => ({ key: r.status_key, label: r.label, contracts: r.contracts, clients: r.clients, ar: r.ar }))
+    : kpi
+      ? [
+          { key: "current", label: "On plan (current)", contracts: Number(kpi.contracts_on_plan) || 0, clients: Number(kpi.current_clients) || 0, ar: Number(kpi.ar_on_plan) || 0 },
+          { key: "paying_but_behind", label: "Late (needs nudge)", contracts: Number(kpi.contracts_late) || 0, clients: Number(kpi.late_clients) || 0, ar: Number(kpi.ar_late) || 0 },
+          { key: "delinquent", label: "Delinquent", contracts: Number(kpi.contracts_delinquent) || 0, clients: Number(kpi.delinquent_clients) || 0, ar: Number(kpi.ar_delinquent) || 0 },
+          { key: "never_paid", label: "Unclassified (legacy)", contracts: Number(kpi.contracts_actionable) || 0, clients: Number(kpi.unclassified_clients) || 0, ar: Number(kpi.ar_actionable) || 0 },
+        ]
+      : [];
+  const statusAR = statusRows.reduce((s, r) => s + r.ar, 0);
+  const statusContracts = statusRows.reduce((s, r) => s + r.contracts, 0);
+  const behindContracts = statusRows.filter((r) => r.key === "paying_but_behind" || r.key === "delinquent").reduce((s, r) => s + r.contracts, 0);
+  const delinquentClients = statusRows.find((r) => r.key === "delinquent")?.clients ?? 0;
+  const asOf = contractStatus?.[0];
 
   const deptData = [
     { name: "Collections", tasks: unresolvedEscalations.filter((t: any) => !t.handoff_queue || t.handoff_queue === "collections").length },
     { name: "Legal", tasks: unresolvedEscalations.filter((t: any) => ["legal", "attorney", "case_management"].includes(t.handoff_queue)).length },
     { name: "AR", tasks: unresolvedEscalations.filter((t: any) => ["billing_ops", "finance", "ar"].includes(t.handoff_queue)).length },
     { name: "Admin", tasks: unresolvedEscalations.filter((t: any) => ["management", "admin"].includes(t.handoff_queue)).length },
-  ];
-
-  const lateClients = Number(kpi?.late_clients) || 0;
-  const unclassifiedClients = Number(kpi?.unclassified_clients) || 0;
-  const paymentsThisMonth = Number(kpi?.payments_this_month) || 0;
-  const statusPie = [
-    { name: "Current", value: currentClients },
-    { name: "Late", value: lateClients },
-    { name: "Delinquent", value: delinquent },
-    { name: "Unclassified", value: unclassifiedClients },
   ];
 
   return (
@@ -72,76 +104,104 @@ const AdminDashboard = () => {
 
       <div className="my-8 border-t" />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard label="Total AR" value={`$${totalAR.toLocaleString()}`} icon={<DollarSign className="h-5 w-5" />} />
-        <StatCard label="Collected (Active Book)" value={`$${totalCollected.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} caption="Collected-to-date on active AR — not firm all-time" />
-        <StatCard label="Active Contracts" value={String(activeContracts)} icon={<FileText className="h-5 w-5" />} />
-        <StatCard label="Active Imm. Cases" value={String(activeCases)} icon={<Briefcase className="h-5 w-5" />} />
-        <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />
-      </div>
+      {kpiLoading ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-xl" />)}</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <StatCard label="Total AR" value={`$${totalAR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<DollarSign className="h-5 w-5" />} />
+          <StatCard label="Collected (Active Book)" value={money(totalCollected)} icon={<TrendingUp className="h-5 w-5" />} caption="Collected-to-date on active AR — not firm all-time" />
+          <StatCard label="Active Contracts" value={activeContracts.toLocaleString()} icon={<FileText className="h-5 w-5" />} />
+          <StatCard label="Active Imm. Cases" value={activeCases.toLocaleString()} icon={<Briefcase className="h-5 w-5" />} />
+          <StatCard label="Collection Rate" value={`${collectionRate}%`} icon={<Percent className="h-5 w-5" />} />
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">On-Plan (Current)</p>
-          <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">${arOnPlan.toLocaleString()}</p>
-          <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">{contractsOnPlan} contracts paying on schedule</p>
-        </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Late (Needs Nudge)</p>
-          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-300">${arLate.toLocaleString()}</p>
-          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">{contractsLate} contracts behind on payments</p>
-        </div>
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Delinquent</p>
-          <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">${arDelinquent.toLocaleString()}</p>
-          <p className="text-[10px] text-red-600/70 dark:text-red-400/70">{contractsDelinquent} contracts past due</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">Unclassified</p>
-          <p className="mt-1 text-lg font-bold text-slate-700 dark:text-slate-300">${arActionable.toLocaleString()}</p>
-          <p className="text-[10px] text-slate-600/70 dark:text-slate-400/70">{contractsActionable} contracts need status assignment</p>
-        </div>
+        {(kpiLoading && csLoading) || statusRows.length === 0
+          ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[78px] rounded-lg" />)
+          : statusRows.map((r) => {
+              const st = STATUS_STYLE[r.key] ?? STATUS_STYLE.never_paid;
+              const pct = statusAR > 0 ? Math.round((r.ar / statusAR) * 1000) / 10 : 0;
+              return (
+                <div key={r.key} className={`rounded-lg border px-4 py-3 ${st.tile}`}>
+                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${st.title}`}>{r.label}</p>
+                  <p className="mt-1 text-lg font-bold">{money(r.ar)} <span className="text-xs font-medium opacity-70">· {pct}% of AR</span></p>
+                  <p className="text-[10px] opacity-70">{r.contracts.toLocaleString()} contracts · {r.clients.toLocaleString()} clients · {st.caption}</p>
+                </div>
+              );
+            })}
       </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        {contractStatus
+          ? <>Status per contract from the AR clock · {statusContracts.toLocaleString()} contracts · {money(statusAR)} (ties to Total AR) · balances from the {shortDate(asOf?.snapshot_date)} MyCase snapshot · payments credited through {shortDate(asOf?.payments_through)}</>
+          : <>Status from the legacy contracts table — the AR-clock status view is not available yet.</>}
+      </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Badge variant="outline" className="text-xs">Total Clients: {totalClients}</Badge>
-        <Badge variant="outline" className="text-xs">Delinquent: {delinquent}</Badge>
-        <Badge variant="outline" className="text-xs">Risk Contracts: {riskContracts}</Badge>
-        <Badge variant="outline" className="text-xs">Collected This Month: ${collectedThisMonth.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs">Total Clients: {totalClients.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs">Delinquent clients: {delinquentClients.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs">Behind contracts (late + delinquent): {behindContracts.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs">Collected This Month: {money(collectedThisMonth)}</Badge>
         <Badge variant={unresolvedCount > 0 ? "destructive" : "outline"} className="text-xs">Unresolved Escalations: {unresolvedCount}</Badge>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="dashboard-section lg:col-span-2">
-          <h2 className="mb-2 text-lg font-semibold">Monthly Collections (Quarter View)</h2>
-          <p className="mb-3 text-xs text-muted-foreground">Classified by contract schedule: current vs delinquent at time of payment</p>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={classifiedCollections}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
-              <Legend />
-              <Bar dataKey="current" stackId="collections" fill="hsl(152 60% 40%)" name="System / Current" />
-              <Bar dataKey="delinquent" stackId="collections" fill="hsl(0 72% 51%)" name="Delinquent Collections" />
-              <Bar dataKey="unknown" stackId="collections" fill="hsl(220 13% 70%)" radius={[4, 4, 0, 0]} name="Unknown / Review" />
-            </BarChart>
-          </ResponsiveContainer>
+          <h2 className="mb-1 text-lg font-semibold">Monthly Collections</h2>
+          <p className="mb-3 text-xs text-muted-foreground">Certified cash (online + offline, bank-supported) · last 4 months plus month to date · split by whether the client was behind when they paid</p>
+          {mcl ? <Skeleton className="h-[300px] w-full" /> : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={monthlyCash} margin={{ top: 10, right: 16, left: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" tickLine={false} axisLine={false} width={56}
+                  tickFormatter={(v) => (v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}k`)} />
+                <Tooltip
+                  formatter={(value: number, name: string) => [money(value), name]}
+                  contentStyle={{ borderRadius: 8, border: "1px solid hsl(220 13% 88%)", fontSize: 12 }}
+                />
+                <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                {LINE_SERIES.map((s) => (
+                  <Line key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={s.width}
+                    strokeDasharray={s.dash} dot={{ r: 3, strokeWidth: 0, fill: s.color }} activeDot={{ r: 5 }} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold">Contract Status</h2>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart><Pie data={statusPie} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">{statusPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 grid grid-cols-2 gap-1">{statusPie.map((s, i) => (<div key={s.name} className="flex items-center gap-2 text-xs"><div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i] }} /><span>{s.name}: {s.value}</span></div>))}</div>
+          <h2 className="mb-1 text-lg font-semibold">Contract Status</h2>
+          <p className="mb-2 text-xs text-muted-foreground">Share of AR dollars by contract status</p>
+          {statusRows.length === 0 ? <Skeleton className="h-[200px] w-full" /> : (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={statusRows} cx="50%" cy="50%" innerRadius={55} outerRadius={82} paddingAngle={2} dataKey="ar" nameKey="label">
+                    {statusRows.map((r) => <Cell key={r.key} fill={(STATUS_STYLE[r.key] ?? STATUS_STYLE.never_paid).color} />)}
+                  </Pie>
+                  <Tooltip formatter={(value: number, name: string) => [money(value), name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 space-y-1">
+                {statusRows.map((r) => (
+                  <div key={r.key} className="flex items-center gap-2 text-xs">
+                    <div className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: (STATUS_STYLE[r.key] ?? STATUS_STYLE.never_paid).color }} />
+                    <span className="flex-1">{r.label}</span>
+                    <span className="tabular-nums text-muted-foreground">{r.contracts.toLocaleString()} contracts</span>
+                    <span className="w-24 text-right font-medium tabular-nums">{money(r.ar)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { name: "Collections", icon: Phone, desc: `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
-          { name: "Legal", icon: Scale, desc: `${activeCases} active cases` },
-          { name: "Financial Oversight", icon: Eye, desc: `$${totalAR.toLocaleString()} outstanding · ${delinquent} delinquent` },
+          { name: "Collections", icon: Phone, desc: col ? "Loading…" : `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
+          { name: "Legal", icon: Scale, desc: `${activeCases.toLocaleString()} active cases` },
+          { name: "Financial Oversight", icon: Eye, desc: `${money(totalAR)} outstanding · ${delinquentClients.toLocaleString()} delinquent clients` },
           { name: "Reporting", icon: TrendingUp, desc: `${paymentsThisMonth} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">

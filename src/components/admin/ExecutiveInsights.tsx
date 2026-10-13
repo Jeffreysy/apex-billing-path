@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector } from "@/hooks/useSupabaseData";
+import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,22 +53,39 @@ function monthValToDate(monthVal: string): Date {
   return new Date(y, (m || 1) - 1, 1);
 }
 
+// The panel only ever looks back MONTH_OPTIONS months (selector) + 8 months (sparkline), so it
+// fetches that window and only the columns it reads. 10-13: it used to pull every row of
+// payments_clean (~22.6k) and collection_activities (~42k) with select * on every load.
+const MONTH_OPTIONS = 6;
+const PAYMENT_LOOKBACK_MONTHS = MONTH_OPTIONS + 8;
+
 function useInsightsData() {
   return useQuery({
-    queryKey: ["admin-insights-v2"],
+    queryKey: ["admin-insights-v3"],
     queryFn: async () => {
-      const [ar, payments, activities, firmSummaryRows] = await Promise.all([
+      const paymentsFrom = format(startOfMonth(subMonths(new Date(), PAYMENT_LOOKBACK_MONTHS)), "yyyy-MM-dd");
+      const activitiesFrom = format(startOfMonth(subMonths(new Date(), MONTH_OPTIONS)), "yyyy-MM-dd");
+      const [ar, payments, activities] = await Promise.all([
         // Stable ORDER BY on a unique key is REQUIRED: fetchAllRows paginates via .range()
         // (LIMIT/OFFSET). Without a deterministic sort, PostgREST can skip/duplicate rows
         // across pages, silently under-counting large tables — payments_clean (~19k) and
         // collection_activities (~42k) were losing ~40-60% of rows, halving month totals.
-        fetchAllRows<any>("ar_dashboard", { orderBy: "invoice_number" }),
-        fetchAllRows<any>("payments_clean", { orderBy: "id" }),
-        fetchAllRows<any>("collection_activities", { orderBy: "id" }),
-        // VP-certified firm-wide snapshot (single row) — authoritative month new-AR source.
-        fetchAllRows<any>("v_firm_financial_summary"),
+        fetchAllRows<any>("ar_dashboard", {
+          orderBy: "invoice_number",
+          columns: "invoice_number, remaining_balance, days_past_due, collector, start_date, total_contract_value",
+        }),
+        fetchAllRows<any>("payments_clean", {
+          orderBy: "id",
+          columns: "id, payment_date, amount, aging_bucket",
+          filter: (q) => q.gte("payment_date", paymentsFrom),
+        }),
+        fetchAllRows<any>("collection_activities", {
+          orderBy: "id",
+          columns: "id, activity_date, is_junk, collector, client_name, duration_minutes, collected_amount, commission, outcome",
+          filter: (q) => q.gte("activity_date", activitiesFrom),
+        }),
       ]);
-      return { ar, payments, activities, firmSummary: firmSummaryRows?.[0] ?? null };
+      return { ar, payments, activities };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -76,8 +93,12 @@ function useInsightsData() {
 
 export default function ExecutiveInsights() {
   const [monthVal, setMonthVal] = useState(format(new Date(), "yyyy-MM"));
-  const months = monthOptions(6);
+  const months = monthOptions(MONTH_OPTIONS);
   const { data, isLoading } = useInsightsData();
+  // VP-certified firm-wide snapshot (single row) — authoritative month new-AR source. Shared
+  // query key with AdminDashboard, so it is fetched once, and the panel renders without waiting
+  // for it (falls back to the row-sum until it arrives).
+  const { data: firmSummary } = useFirmFinancialSummary();
   // Certified per-collector cash (v_activity_collected_by_collector_weekly) — replaces the raw
   // SUM(collection_activities.collected_amount) in the collector table below.
   const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
@@ -190,7 +211,6 @@ export default function ExecutiveInsights() {
     // (v_firm_financial_summary.ar_additions). ar_dashboard.start_date comes from the frozen
     // aging file and is structurally ~$0, so it undercounts real new AR. Past months have no
     // month-keyed certified source, so they fall back to the start_date calc (unchanged).
-    const firmSummary = (data as any).firmSummary;
     // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
     // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor, incl-"Paid" basis). Fall back to the row-sum
     // only if the certified row is unavailable, so the AR tile never renders empty.
@@ -305,7 +325,7 @@ export default function ExecutiveInsights() {
       bucketMax,
       recoveredFromDelinquent,
     };
-  }, [data, monthVal]);
+  }, [data, monthVal, firmSummary]);
 
   // Collector-table "Collected" repointed to the certified per-collector figure for the selected month
   // (de-duplicated, credited to the human who logged the payment; System-Auto holds pure auto-pay).
