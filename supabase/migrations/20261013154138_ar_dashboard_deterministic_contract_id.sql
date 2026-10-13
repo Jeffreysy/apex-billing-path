@@ -1,3 +1,6 @@
+-- REPO NOTE 2026-10-13 (lexcollect-app-agent, per VP rule in 20261013163519): this file now rebuilds the view
+-- WITH (security_invoker = true). The text applied to the DB as 20261013154138 (sha 47af8006...) omitted it, which reset
+-- reloptions; 20261013163519_ar_dashboard_security_invoker_restore.sql restored it in the DB (cert 640ed64c). DB = correct.
 -- VP fix (2026-10-13, found certifying the header client search): ar_dashboard emitted
 --   COALESCE(bc.contract_id, gen_random_uuid()) AS contract_id
 -- so the 975 AR rows (of 3,924; $4,603,094.71) with no matching contracts row got a NEW random id on every query.
@@ -17,7 +20,7 @@ begin
   if v_new = v_def then
     raise exception 'contract_id expression not found verbatim in ar_dashboard';
   end if;
-  execute 'create or replace view public.ar_dashboard as ' || v_new;
+  execute 'create or replace view public.ar_dashboard with (security_invoker = true) as ' || v_new;
 end $$;
 
 comment on column public.ar_dashboard.contract_id is
