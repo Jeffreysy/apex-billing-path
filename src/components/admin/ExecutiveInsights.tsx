@@ -1103,16 +1103,27 @@ function ArAtRiskKpi() {
   }
   const share = r.ar_total > 0 ? (r.ar_at_risk_60 / r.ar_total) * 100 : 0;
   const refreshed = r.refreshed_at ? new Date(r.refreshed_at) : null;
+  // The previous tile used ar_dashboard days_past_due > 60 (contract grain). Kept in the tooltip so the
+  // basis change (Jeff 2026-10-13) is visible, not silent.
+  const tip =
+    "Invoice clock: open invoices more than 60 days past their effective due date, counted from the last payment. " +
+    (r.legacy_contract_dpd_at_risk_60 != null
+      ? `Previous basis (contract days past due > 60): ${fmtMoney(r.legacy_contract_dpd_at_risk_60)}.`
+      : "");
   return (
     <HeroKpi
       label={label}
-      value={fmtMoney(r.ar_at_risk_60)}
+      value={<span title={tip}>{fmtMoney(r.ar_at_risk_60)}</span>}
       accent="warn"
       sublabel={
-        <span className="flex flex-col gap-0.5">
-          <span>60+ days past due · {share.toFixed(1)}% of AR</span>
+        <span className="flex flex-col gap-0.5" title={tip}>
+          <span>60+ days · {share.toFixed(1)}% of AR</span>
           <span className="text-[10px] text-muted-foreground/70">
-            {r.contracts_at_risk_60.toLocaleString()} contracts · contract days-past-due basis{refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
+            {r.invoices_at_risk_60.toLocaleString()} invoices · {r.clients_at_risk_60.toLocaleString()} clients
+            {refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
+          </span>
+          <span className="text-[10px] text-muted-foreground/70">
+            basis: invoice clock (days since last payment / effective due date)
           </span>
         </span>
       }

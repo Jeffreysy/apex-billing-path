@@ -75,8 +75,9 @@ export const caseMix = [
 // --- v_firm_financial_summary (certified, single row; only the fields the hero reads) ------
 export const firmSummary = { as_of: "2026-10-12", ar_total: 17502885.52 };
 
-// --- v_exec_ar_at_risk (one row; CONTRACT grain; legacy definition days_past_due > 60) ------
+// --- v_exec_ar_at_risk (one row; INVOICE-CLOCK basis, Jeff 2026-10-13: v_ar_invoice_clock effective_aging_days > 60) --
 export const arAtRisk = {
-  ar_at_risk_60: 8985310.81, ar_total: 17502885.52, contracts_at_risk_60: 2404, contracts: 3924,
-  snapshot_date: "2026-10-12", refreshed_at: null,
+  ar_at_risk_60: 5847117.13, ar_total: 17502885.52, invoices_at_risk_60: 1510, clients_at_risk_60: 1349,
+  unlinked_invoices_at_risk_60: 12, invoices: 3924, snapshot_date: "2026-10-12", basis: "invoice_clock",
+  legacy_contract_dpd_at_risk_60: 8985310.81, refreshed_at: null,
 };

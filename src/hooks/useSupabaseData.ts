@@ -329,7 +329,9 @@ export function useMergedClients() {
       // Keep ALL ar_dashboard rows — do NOT drop delinquency_status = 'Paid'. The 08-04 client-ar + VP
       // ruling LOCKED that those "Paid"-but-open rows are REAL AR (~$104K; "Paid" is a stale contracts
       // label bled via the unreliable invoice_number join). Matches ExecutiveInsights + the certified book.
-      const rows = await fetchAllRows<any>("ar_dashboard");
+      // ORDER BY the unique contract_id: stable offset paging AND a fast plan (unsorted pages took
+      // ~6.5 s and timed out under load; sorted ~0.5 s each). 2026-10-13.
+      const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
 
       return rows.map((row): Client => {
         const totalOwed = Number(row.total_contract_value) || 0;
@@ -1686,25 +1688,33 @@ export function useExecCaseMixMonthly() {
   });
 }
 
-/** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. ar_at_risk_60 = SUM(ar_dashboard.remaining_balance)
- *  where days_past_due > 60 (CONTRACT grain; the legacy tile's definition, unchanged); ar_total ties to
- *  v_firm_financial_summary.ar_total. */
+/** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. INVOICE-CLOCK basis (Jeff 2026-10-13):
+ *  ar_at_risk_60 = SUM(v_ar_invoice_clock.amount_due) where effective_aging_days > 60 on the active AR
+ *  snapshot. invoices_at_risk_60 = invoice grain; clients_at_risk_60 = client grain (distinct client_id);
+ *  ar_total ties to v_firm_financial_summary.ar_total. legacy_contract_dpd_at_risk_60 = the previous
+ *  basis (ar_dashboard days_past_due > 60), shown only in the tooltip so the switch is visible. */
 export interface ExecArAtRisk {
   ar_at_risk_60: number;
   ar_total: number;
-  contracts_at_risk_60: number;
-  contracts: number;
+  invoices_at_risk_60: number;
+  clients_at_risk_60: number;
+  unlinked_invoices_at_risk_60: number;
+  invoices: number;
   snapshot_date: string | null;
+  basis: string | null;
+  legacy_contract_dpd_at_risk_60: number | null;
   refreshed_at: string | null;
 }
 
 export function useExecArAtRisk() {
   return useQuery<ExecArAtRisk | null>({
-    queryKey: ["exec-ar-at-risk"],
+    queryKey: ["exec-ar-at-risk-clock"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_ar_at_risk")
-        .select("ar_at_risk_60, ar_total, contracts_at_risk_60, contracts, snapshot_date, refreshed_at")
+        .select(
+          "ar_at_risk_60, ar_total, invoices_at_risk_60, clients_at_risk_60, unlinked_invoices_at_risk_60, invoices, snapshot_date, basis, legacy_contract_dpd_at_risk_60, refreshed_at",
+        )
         .limit(1);
       if (error) throw error;
       const r = (data ?? [])[0];
@@ -1713,10 +1723,55 @@ export function useExecArAtRisk() {
         ...r,
         ar_at_risk_60: Number(r.ar_at_risk_60) || 0,
         ar_total: Number(r.ar_total) || 0,
-        contracts_at_risk_60: Number(r.contracts_at_risk_60) || 0,
-        contracts: Number(r.contracts) || 0,
+        invoices_at_risk_60: Number(r.invoices_at_risk_60) || 0,
+        clients_at_risk_60: Number(r.clients_at_risk_60) || 0,
+        unlinked_invoices_at_risk_60: Number(r.unlinked_invoices_at_risk_60) || 0,
+        invoices: Number(r.invoices) || 0,
+        legacy_contract_dpd_at_risk_60: numOrNull(r.legacy_contract_dpd_at_risk_60),
       };
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// HEADER CLIENT SEARCH (2026-10-13)
+// ========================
+/** One header-search hit (CONTRACT grain — the AR book ClientLookup can open). `contractId` is the
+ *  ClientLookup deep-link key (?clientId=<contract_id>); `clientId` is the canonical client. */
+export interface ClientSearchHit {
+  contractId: string;
+  clientId: string | null;
+  name: string;
+  caseNumber: string;
+  invoiceNumber: string;
+  caseType: string;
+  status: Client["status"];
+  matchField: "name" | "case_number" | "invoice_number" | "email";
+}
+
+/** Server-side header search (public.search_ar_clients: active users, >= 2 chars, max 20 rows).
+ *  Replaces pulling every ar_dashboard row into every page. Pass an already-debounced term. */
+export function useClientSearch(term: string) {
+  const q = term.trim();
+  return useQuery<ClientSearchHit[]>({
+    queryKey: ["client-search", q.toLowerCase()],
+    enabled: q.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("search_ar_clients", { p_term: q, p_limit: 20 });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        contractId: r.contract_id,
+        clientId: r.client_id ?? null,
+        name: r.client_name || "Unknown",
+        caseNumber: r.case_number || "",
+        invoiceNumber: r.invoice_number || "",
+        caseType: r.practice_area || "",
+        status: mapStatus(r.contract_status, r.delinquency_status),
+        matchField: r.match_field,
+      }));
+    },
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 }

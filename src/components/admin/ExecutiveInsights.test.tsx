@@ -100,8 +100,11 @@ describe("Executive Insights hero band", () => {
     const { hero, caseMixCard, text } = await renderAt("2026-10-13T15:00:00");
     const h = text(hero);
     expect(h).toContain("Total AR$17.50M");
-    expect(h).toContain("AR at Risk$8.99M");
-    expect(h).toContain("60+ days past due · 51.3% of AR");
+    expect(h).toContain("AR at Risk$5.85M");
+    expect(h).toContain("60+ days · 33.4% of AR");
+    expect(h).toContain("1,510 invoices · 1,349 clients");
+    expect(h).toContain("basis: invoice clock (days since last payment / effective due date)");
+    expect(screen.getByText("$5.85M")).toHaveAttribute("title", expect.stringContaining("Previous basis (contract days past due > 60): $8.99M"));
     expect(h).toContain("$257.7k");
     expect(h).toMatch(/114\s*worse/);
     expect(text(caseMixCard)).toContain("$52.4k");
