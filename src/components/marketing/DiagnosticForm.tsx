@@ -179,6 +179,8 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
         </button>
         <p className="form-note" style={{ marginTop: "0.9rem" }}>
           We'll only use your details to respond to this request.
+          <br />
+          Questions before booking? Email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
       </div>
 

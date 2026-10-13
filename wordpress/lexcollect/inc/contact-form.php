@@ -3,7 +3,7 @@
  * Built-in contact form, placed with the shortcode [lexcollect_contact].
  *
  * Each submission is saved under "Inquiries" in wp-admin and emailed to the
- * site admin address, so a lead is never lost if email delivery fails.
+ * firm inbox (LEXCOLLECT_CONTACT_EMAIL), so a lead is never lost if email delivery fails.
  * Change the recipient with the lexcollect_contact_recipient filter.
  *
  * @package LexCollect
@@ -71,7 +71,8 @@ function lexcollect_contact_form( $atts = array() ) {
 	$messages = array(
 		'ok'      => array( '', __( 'Thanks, your request is in. We reply within one business day.', 'lexcollect' ) ),
 		'invalid' => array( 'form-status--error', __( 'Please add your name, firm, a valid email, what your firm does and its size, then send again.', 'lexcollect' ) ),
-		'limit'   => array( 'is-error', __( 'We received several requests from your network in the last hour. Please email us instead.', 'lexcollect' ) ),
+		/* translators: %s: the firm's email address */
+		'limit'   => array( 'is-error', sprintf( __( 'We received several requests from your network in the last hour. Please email us instead at %s.', 'lexcollect' ), LEXCOLLECT_CONTACT_EMAIL ) ),
 	);
 	$opts     = lexcollect_contact_options();
 
@@ -112,7 +113,7 @@ function lexcollect_contact_form( $atts = array() ) {
 		<input type="hidden" name="lc_return" value="<?php echo esc_url( get_permalink() ); ?>">
 		<div>
 			<button type="submit" class="btn btn--primary"><?php esc_html_e( 'Request my call', 'lexcollect' ); ?> <span class="arrow" aria-hidden="true">&rarr;</span></button>
-			<p class="form-note" style="margin-top:0.9rem"><?php esc_html_e( "We'll only use your details to respond to this request.", 'lexcollect' ); ?></p>
+			<p class="form-note" style="margin-top:0.9rem"><?php esc_html_e( "We'll only use your details to respond to this request.", 'lexcollect' ); ?><br><?php esc_html_e( 'Questions before booking? Email', 'lexcollect' ); ?> <a href="mailto:<?php echo esc_attr( LEXCOLLECT_CONTACT_EMAIL ); ?>"><?php echo esc_html( LEXCOLLECT_CONTACT_EMAIL ); ?></a>.</p>
 		</div>
 	</form>
 	<?php
@@ -191,7 +192,7 @@ function lexcollect_handle_contact() {
 		)
 	);
 
-	$to = apply_filters( 'lexcollect_contact_recipient', get_option( 'admin_email' ) );
+	$to = apply_filters( 'lexcollect_contact_recipient', LEXCOLLECT_CONTACT_EMAIL );
 	wp_mail(
 		$to,
 		/* translators: 1: firm name, 2: person's name */

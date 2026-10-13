@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Arrow, BOOK_CALL_LABEL, BookCallLink, BrandMark, FaqList, ProofStrip, SiteShell, usePageMeta, type ProofItem } from "@/components/marketing/SiteChrome";
 import DiagnosticForm from "@/components/marketing/DiagnosticForm";
+import LogoStrip from "@/components/marketing/LogoStrip";
 import { AccountCard, type AccountState, MockConnect, MockRecover, MockRun, MockSee, usd } from "@/components/marketing/Mocks";
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
@@ -165,15 +166,7 @@ const Hero = () => (
           <HeroDash />
         </div>
       </div>
-      <div className="hm-works">
-        <span>Works across</span>
-        <ul>
-          {INTEGRATIONS.map((i) => (
-            <li key={i}>{i}</li>
-          ))}
-          <li>Your bank</li>
-        </ul>
-      </div>
+      <LogoStrip />
     </div>
   </section>
 );

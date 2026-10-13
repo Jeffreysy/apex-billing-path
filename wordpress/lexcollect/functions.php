@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'LEXCOLLECT_VERSION', '2.2.2' );
+define( 'LEXCOLLECT_VERSION', '2.3.0' );
 
 /**
  * Site-wide links. Edit these two lines after installing the theme.
@@ -17,12 +17,17 @@ define( 'LEXCOLLECT_VERSION', '2.2.2' );
  * LEXCOLLECT_BOOKING_URL: the Google Calendar appointment (booking) page.
  *   While it is empty, every "Book a call" button goes to the Contact page.
  * LEXCOLLECT_APP_LOGIN_URL: the LexCollect workspace sign-in page for clients.
+ * LEXCOLLECT_CONTACT_EMAIL: the firm's inbox. Shown on the call form, and call requests are
+ *   emailed to it (override with the lexcollect_contact_recipient filter).
  */
 if ( ! defined( 'LEXCOLLECT_BOOKING_URL' ) ) {
 	define( 'LEXCOLLECT_BOOKING_URL', '' );
 }
 if ( ! defined( 'LEXCOLLECT_APP_LOGIN_URL' ) ) {
 	define( 'LEXCOLLECT_APP_LOGIN_URL', 'https://app.lexcollect.com/login' );
+}
+if ( ! defined( 'LEXCOLLECT_CONTACT_EMAIL' ) ) {
+	define( 'LEXCOLLECT_CONTACT_EMAIL', 'jeff@lex-collect.com' );
 }
 
 /**

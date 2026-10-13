@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// TODO: replace with the firm's real inbox before launch. Shown in the footer
-// and on the contact page.
-export const CONTACT_EMAIL = "hello@yourdomain.com";
+// The firm's inbox. Shown in the footer, beside and inside the call form, and
+// in the form's success and error messages.
+export const CONTACT_EMAIL = "jeff@lex-collect.com";
 
 // TODO: paste the Google Calendar appointment (booking) page URL here. While it
 // is empty, every "Book a call" button goes to the contact page instead.
@@ -20,6 +20,9 @@ export const MARKETING_ROUTES = {
 
 /** Systems LexCollect reads from or writes to today. */
 export const INTEGRATIONS = ["MyCase", "Filevine", "LawPay", "HubSpot", "QuickBooks"] as const;
+
+/** The home page's logo strip: the systems above, plus the tools LexCollect runs automations and outreach through. */
+export const LOGO_STRIP = [...INTEGRATIONS, "Zapier", "Mailchimp", "Aircall"] as const;
 
 export const BLOG_POST_SLUG = "where-firms-lose-money-between-systems";
 export const blogPostPath = (slug: string) => `${MARKETING_ROUTES.blog}/${slug}`;
