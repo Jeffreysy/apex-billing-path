@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
+import { fetchAllRows, usePromiseTracker, useFeedFreshness } from "@/hooks/useSupabaseData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,184 +34,119 @@ function downloadCsv(filename: string, rows: Record<string, any>[]) {
 
 // ---------- PTP Kept Rate ----------
 function PTPSection() {
-  // Use payment_commitments if populated, else derive from collection_activities.next_payment_expected
-  const { data: commitments = [] } = useQuery({
-    queryKey: ["ptp-commitments"],
-    queryFn: async () => fetchAllRows<any>("payment_commitments"),
-    staleTime: 5 * 60 * 1000,
-  });
+  // 2026-10-13 (Jeff: "yes switch it to the tracker"): the tab reads the CERTIFIED promise tracker
+  // (v_promise_to_pay_tracker) instead of deriving promises itself. The tracker lists OPEN promises only: a client
+  // who pays after promising drops off, so kept / broken rates are not shown here.
+  const { data: rows = [], isLoading, isError } = usePromiseTracker();
+  const { data: fresh } = useFeedFreshness();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ["ptp-activities"],
-    queryFn: async () => fetchAllRows<any>("collection_activities"),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: payments = [] } = useQuery({
-    queryKey: ["ptp-payments"],
-    queryFn: async () => fetchAllRows<any>("payments_clean", { orderBy: "payment_date", ascending: false }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Derive promises: prefer payment_commitments table; else build from activities
-  const promises = useMemo(() => {
-    if (commitments.length > 0) {
-      return commitments.map((c: any) => ({
-        id: c.id,
-        client_id: c.client_id,
-        client_name: c.client_name || "—",
-        collector: c.collector,
-        promised_date: c.promised_date,
-        promised_amount: Number(c.promised_amount) || 0,
-        source: "commitment" as const,
-      }));
+  const counts = useMemo(() => {
+    const c = { open: rows.length, dueToday: 0, overdue: 0, dueNow: 0, needsDate: 0, ar: 0 };
+    for (const r of rows) {
+      if (r.daysUntilDue === 0) c.dueToday += 1;
+      if (r.status === "OVERDUE") c.overdue += 1;
+      if (r.status === "DUE_NOW") c.dueNow += 1;
+      if (r.status === "NEEDS_DATE") c.needsDate += 1;
+      c.ar += r.liveAr || 0;
     }
-    // Derive from activities — only outbound calls with a parseable next_payment_expected date
-    return activities
-      .filter((a: any) => {
-        if (a.activity_type !== "outbound_call") return false;
-        const npe = a.next_payment_expected;
-        if (!npe) return false;
-        // Accept ISO date strings only
-        return /^\d{4}-\d{2}-\d{2}/.test(String(npe));
-      })
-      .map((a: any) => ({
-        id: a.id,
-        client_id: a.client_id,
-        client_name: a.client_name,
-        collector: a.collector,
-        promised_date: String(a.next_payment_expected).slice(0, 10),
-        promised_amount: 0, // unknown when derived
-        source: "derived" as const,
-      }));
-  }, [commitments, activities]);
+    return c;
+  }, [rows]);
 
-  // Group payments by client for kept-check
-  const paymentsByClient = useMemo(() => {
-    const map: Record<string, { date: string; amount: number }[]> = {};
-    for (const p of payments) {
-      if (!p.client_id) continue;
-      if (!map[p.client_id]) map[p.client_id] = [];
-      map[p.client_id].push({ date: p.payment_date, amount: Number(p.amount) || 0 });
+  const byCollector = useMemo(() => {
+    const map: Record<string, { open: number; overdue: number; dueNow: number; needsDate: number; ar: number }> = {};
+    for (const r of rows) {
+      const k = r.collector || "Unassigned";
+      if (!map[k]) map[k] = { open: 0, overdue: 0, dueNow: 0, needsDate: 0, ar: 0 };
+      map[k].open += 1;
+      if (r.status === "OVERDUE") map[k].overdue += 1;
+      if (r.status === "DUE_NOW") map[k].dueNow += 1;
+      if (r.status === "NEEDS_DATE") map[k].needsDate += 1;
+      map[k].ar += r.liveAr || 0;
     }
-    return map;
-  }, [payments]);
+    return Object.entries(map).map(([collector, v]) => ({ collector, ...v })).sort((a, b) => b.open - a.open);
+  }, [rows]);
 
   const today = new Date().toISOString().slice(0, 10);
-
-  const enriched = useMemo(() => {
-    return promises.map(p => {
-      const clientPayments = paymentsByClient[p.client_id] || [];
-      // Kept = any payment on the same day or up to 14 days before promised date and not yet matched is too lax;
-      // Strict rule: a payment dated on/before promised_date AND on/after promise creation horizon (we don't have promise date — use 30d before)
-      const promisedD = p.promised_date;
-      const horizon = format(subMonths(parseISO(promisedD), 1), "yyyy-MM-dd");
-      const matchedPayment = clientPayments.find(cp => cp.date >= horizon && cp.date <= promisedD);
-      let status: "kept" | "broken" | "pending";
-      if (matchedPayment) status = "kept";
-      else if (promisedD > today) status = "pending";
-      else status = "broken";
-      return { ...p, status, matched_amount: matchedPayment?.amount || 0, matched_date: matchedPayment?.date || null };
-    });
-  }, [promises, paymentsByClient, today]);
-
-  // KPIs (last 90 days for relevance)
-  const cutoff = format(subMonths(new Date(), 3), "yyyy-MM-dd");
-  const recent = enriched.filter(e => e.promised_date >= cutoff);
-  const kept = recent.filter(e => e.status === "kept").length;
-  const broken = recent.filter(e => e.status === "broken").length;
-  const pending = recent.filter(e => e.status === "pending").length;
-  const resolved = kept + broken;
-  const keptRate = resolved > 0 ? kept / resolved : 0;
-
-  // By collector
-  const byCollector = useMemo(() => {
-    const map: Record<string, { kept: number; broken: number; pending: number }> = {};
-    for (const e of recent) {
-      const k = e.collector || "Unassigned";
-      if (!map[k]) map[k] = { kept: 0, broken: 0, pending: 0 };
-      map[k][e.status] += 1;
-    }
-    return Object.entries(map)
-      .map(([collector, v]) => ({
-        collector,
-        ...v,
-        rate: v.kept + v.broken > 0 ? v.kept / (v.kept + v.broken) : 0,
-      }))
-      .sort((a, b) => b.rate - a.rate);
-  }, [recent]);
-
-  // Promises due today
-  const dueToday = enriched
-    .filter(e => e.promised_date === today && e.status === "pending")
-    .sort((a, b) => (a.collector || "").localeCompare(b.collector || ""));
+  const dueToday = rows.filter((r) => r.daysUntilDue === 0);
+  const statusVariant = (s: string): "default" | "secondary" | "destructive" | "outline" =>
+    s === "OVERDUE" ? "destructive" : s === "DUE_NOW" ? "default" : s === "NEEDS_DATE" ? "outline" : "secondary";
+  const statusLabel: Record<string, string> = {
+    NEEDS_DATE: "Needs date", OVERDUE: "Overdue", DUE_NOW: "Due ≤3d", DUE_SOON: "Due ≤7d", UPCOMING: "Upcoming",
+  };
+  const activityAsOf = fresh?.activity?.asOf ?? null;
 
   return (
     <div className="space-y-4">
-      {commitments.length === 0 && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-          No formal payment commitments logged yet. Showing promises derived from <code>collection_activities.next_payment_expected</code>.
-          Encourage collectors to log promises through the Payment Commitments page for accurate tracking.
+      <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+        <p>
+          <span className="font-semibold text-foreground">Source: certified promise tracker</span> (<code>v_promise_to_pay_tracker</code>).
+          Promises are outbound collector calls with an <em>agreement</em> outcome in the <strong>last 30 days</strong>, one row per
+          client <strong>name</strong> (the promise is the name the collector typed; the AR figure is matched by client ID). A client who
+          pays after promising leaves the list, so this tab shows <strong>open</strong> promises only. The promised date comes from the
+          call note when it is a date; otherwise the note is shown as a window (“Needs date”).
+        </p>
+        {activityAsOf && (
+          <p className={fresh?.activity && (fresh.activity.ageDays ?? 0) > 3 ? "text-amber-700 dark:text-amber-400" : ""}>
+            Collector activity feed: latest logged activity {activityAsOf}
+            {fresh?.activity?.ageDays != null ? ` (${Math.round(fresh.activity.ageDays)} days ago)` : ""} — promises made after that date are not in the feed yet.
+          </p>
+        )}
+      </div>
+
+      {isError ? (
+        <p className="text-sm text-destructive">Could not load the promise tracker.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Open promises (30d)</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{isLoading ? "…" : counts.open}</div><p className="text-xs text-muted-foreground">clients (name-keyed)</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Due today</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-amber-600 flex items-center gap-1"><Clock className="h-5 w-5" />{isLoading ? "…" : counts.dueToday}</div></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Overdue</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold text-destructive flex items-center gap-1"><XCircle className="h-5 w-5" />{isLoading ? "…" : counts.overdue}</div></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Needs a date</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold flex items-center gap-1"><CheckCircle2 className="h-5 w-5 text-muted-foreground" />{isLoading ? "…" : counts.needsDate}</div><p className="text-xs text-muted-foreground">window only in the note</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Open AR on these clients</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-bold">{isLoading ? "…" : fmt(counts.ar)}</div><p className="text-xs text-muted-foreground">linked by client ID</p></CardContent>
+          </Card>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">PTP Kept Rate (90d)</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pct(keptRate)}</div>
-            <p className="text-xs text-muted-foreground">{kept} kept / {resolved} resolved</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Kept</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 flex items-center gap-1"><CheckCircle2 className="h-5 w-5" />{kept}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Broken</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive flex items-center gap-1"><XCircle className="h-5 w-5" />{broken}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Pending</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600 flex items-center gap-1"><Clock className="h-5 w-5" />{pending}</div>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle className="text-sm">Kept Rate by Collector (90d)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Open promises by collector</CardTitle></CardHeader>
           <CardContent>
             {byCollector.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">No promise data in the last 90 days.</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">{isLoading ? "Loading…" : "No open promises in the last 30 days."}</p>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Collector</TableHead>
-                    <TableHead className="text-right">Kept</TableHead>
-                    <TableHead className="text-right">Broken</TableHead>
-                    <TableHead className="text-right">Pending</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Open</TableHead>
+                    <TableHead className="text-right">Overdue</TableHead>
+                    <TableHead className="text-right">Due ≤3d</TableHead>
+                    <TableHead className="text-right">Needs date</TableHead>
+                    <TableHead className="text-right">AR</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {byCollector.map(c => (
+                  {byCollector.map((c) => (
                     <TableRow key={c.collector}>
                       <TableCell className="font-medium">{c.collector}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{c.kept}</TableCell>
-                      <TableCell className="text-right text-destructive">{c.broken}</TableCell>
-                      <TableCell className="text-right text-amber-600">{c.pending}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        <Badge variant={c.rate >= 0.6 ? "default" : c.rate >= 0.4 ? "secondary" : "destructive"}>
-                          {pct(c.rate)}
-                        </Badge>
-                      </TableCell>
+                      <TableCell className="text-right">{c.open}</TableCell>
+                      <TableCell className="text-right text-destructive">{c.overdue}</TableCell>
+                      <TableCell className="text-right text-amber-600">{c.dueNow}</TableCell>
+                      <TableCell className="text-right">{c.needsDate}</TableCell>
+                      <TableCell className="text-right font-mono">{fmt(c.ar)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -233,23 +168,17 @@ function PTPSection() {
           </CardHeader>
           <CardContent>
             {dueToday.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">No promises due today. 🎉</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">No promises due today.</p>
             ) : (
               <div className="max-h-[300px] overflow-y-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Collector</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow><TableHead>Client</TableHead><TableHead>Collector</TableHead><TableHead className="text-right">AR</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {dueToday.map(p => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium text-sm">{p.client_name}</TableCell>
-                        <TableCell className="text-sm">{p.collector}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{p.promised_amount > 0 ? fmt(p.promised_amount) : "—"}</TableCell>
+                    {dueToday.map((p, i) => (
+                      <TableRow key={`${p.clientName}-${i}`}>
+                        <TableCell className="font-medium text-sm">{p.clientName}</TableCell>
+                        <TableCell className="text-sm">{p.collector || "—"}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{p.liveAr != null ? fmt(p.liveAr) : "—"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -259,20 +188,79 @@ function PTPSection() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">All open promises ({rows.length})</CardTitle>
+            {rows.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => downloadCsv(`open-promises-${today}.csv`, rows as any)}>
+                <Download className="mr-1 h-3 w-3" />CSV
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">{isLoading ? "Loading…" : "No open promises in the last 30 days."}</p>
+          ) : (
+            <div className="max-h-[420px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Collector</TableHead>
+                    <TableHead>Promised on</TableHead>
+                    <TableHead>Due / window</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Open AR</TableHead>
+                    <TableHead>Last payment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((p, i) => (
+                    <TableRow key={`${p.clientName}-${i}`}>
+                      <TableCell className="font-medium text-sm">{p.clientName}</TableCell>
+                      <TableCell className="text-sm">{p.collector || "—"}</TableCell>
+                      <TableCell className="text-sm">{p.promiseDate || "—"}</TableCell>
+                      <TableCell className="text-sm">{p.ptpDate || p.windowHint || "—"}</TableCell>
+                      <TableCell><Badge variant={statusVariant(p.status)} className="text-xs">{statusLabel[p.status] ?? p.status}</Badge></TableCell>
+                      <TableCell className="text-right font-mono text-sm" title={p.arLinkStatus ?? undefined}>
+                        {p.liveAr != null ? fmt(p.liveAr) : p.arLinkStatus === "client_id_not_in_ar_book" ? "not in AR book" : p.arLinkStatus === "no_client_id_on_activity" ? "no client link" : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">{p.lastPaymentDate ? `${p.lastPaymentDate}${p.lastPaymentAmount != null ? ` · ${fmt(p.lastPaymentAmount)}` : ""}` : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 // ---------- AR Roll-Forward ----------
 function ARRollForwardSection() {
+  // Only the columns the roll-forward reads, sorted on a unique key (stable paging, fast plan). Payments are
+  // limited to the 6 months the table shows instead of paging all of payments_clean. 2026-10-13.
   const { data: contracts = [] } = useQuery({
-    queryKey: ["arrf-contracts"],
-    queryFn: async () => fetchAllRows<any>("ar_dashboard"),
+    queryKey: ["arrf-contracts", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("ar_dashboard", { columns: "contract_id, start_date, total_contract_value", orderBy: "contract_id" }),
     staleTime: 5 * 60 * 1000,
   });
   const { data: payments = [] } = useQuery({
-    queryKey: ["arrf-payments"],
-    queryFn: async () => fetchAllRows<any>("payments_clean"),
+    queryKey: ["arrf-payments", "v2"],
+    queryFn: async () => {
+      const from = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+      return fetchAllRows<any>("payments_clean", {
+        columns: "id, payment_date, amount",
+        orderBy: "id",
+        filter: (q) => q.gte("payment_date", from),
+      });
+    },
     staleTime: 5 * 60 * 1000,
   });
 
@@ -295,11 +283,9 @@ function ARRollForwardSection() {
     // For each month: New AR added (contracts created that month, by value),
     // Collections (payments that month), Net Movement
     const rows = months.map(m => {
-      const newContracts = contracts.filter((c: any) => {
-        if (!c.start_date) return false;
-        const d = new Date(c.start_date);
-        return d >= m.start && d <= m.end;
-      });
+      // Calendar-month test on the DATE string: new Date("yyyy-mm-dd") is UTC midnight (the previous evening
+      // in US time zones), which dropped every contract starting on the 1st into the prior month.
+      const newContracts = contracts.filter((c: any) => !!c.start_date && String(c.start_date).slice(0, 7) === m.key);
       const newAR = newContracts.reduce((s: number, c: any) => s + (Number(c.total_contract_value) || 0), 0);
 
       const monthPayments = payments.filter((p: any) => {
@@ -413,16 +399,24 @@ function ARRollForwardSection() {
 
 // ---------- Stale Queue ----------
 function StaleQueueSection() {
+  // Only the columns the stale queue reads, sorted on unique keys. The unsorted select=* pull of ar_dashboard
+  // timed out under load, which left this section showing "0 stale accounts / $0". 2026-10-13.
   const { data: clients = [] } = useQuery({
-    queryKey: ["stale-clients"],
-    queryFn: async () => fetchAllRows<any>("ar_dashboard"),
+    queryKey: ["stale-clients", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("ar_dashboard", {
+        columns:
+          "contract_id, client_id, client_name, collector, phone, email, remaining_balance, amount_collected, delinquency_status, days_past_due, next_due_date, start_date",
+        orderBy: "contract_id",
+      }),
     staleTime: 5 * 60 * 1000,
   });
 
   // Need clients table for last_transaction_date and contact info
   const { data: clientDetails = [] } = useQuery({
-    queryKey: ["stale-client-details"],
-    queryFn: async () => fetchAllRows<any>("clients"),
+    queryKey: ["stale-client-details", "v2"],
+    queryFn: async () =>
+      fetchAllRows<any>("clients", { columns: "id, last_transaction_date, phone, email, case_stage", orderBy: "id" }),
     staleTime: 5 * 60 * 1000,
   });
 

@@ -24,6 +24,8 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useExecClientBucketDrift: () => ok(f.drift),
     useExecCaseMixMonthly: () => ok(f.caseMix),
     useExecArAtRisk: () => ok(f.arAtRisk),
+    useExecCollectorActivityMonthly: (month: string) => ok(month === "2026-09" ? f.collectorActivitySep : []),
+    useExecFailedActivities: () => ok([]),
   };
 });
 
@@ -93,6 +95,13 @@ describe("Executive Insights hero band", () => {
     expect(c).toContain("T-Visa Principal$904.1k");
     expect(c).toContain("Total · 185 cases$1.41M");
     expect(c).not.toContain("partial month");
+    // Collector table comes from the server-side monthly aggregate (calendar month), System-Auto flagged.
+    await screen.findByText("Collector Time & Activity");
+    const act = text(document.getElementById("activity") as HTMLElement);
+    expect(act).toContain("Emilio Suarez186.93349");
+    expect(act).toContain("System-Autosystem0.015241524");
+    const failed = text(document.getElementById("failed") as HTMLElement);
+    expect(failed).toContain("Total Issues3");
   });
 
   it("the hero band and Case Mix render while the legacy browser-side pull is still pending", async () => {

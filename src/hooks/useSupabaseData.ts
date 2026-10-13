@@ -210,12 +210,17 @@ export function useLegalKPI(year?: number) {
   });
 }
 
-/** 2. AR Dashboard view — for AR Portfolio tab */
+/** 2. AR Dashboard view — for AR Portfolio tab. Only the columns ARPortfolioTab reads, ORDER BY the
+ *  unique contract_id: unsorted select=* pages got a slow plan (6.4–8.2 s, half timed out at 8 s, so the
+ *  tab never loaded) and unsorted offset paging can skip/duplicate rows. 2026-10-13. */
+export const AR_PORTFOLIO_COLUMNS =
+  "contract_id, client_name, case_number, practice_area, contract_status, total_contract_value, amount_collected, remaining_balance, collection_pct, days_past_due, installments_remaining, next_due_date";
+
 export function useARDashboard() {
   return useQuery({
-    queryKey: ["ar-dashboard"],
+    queryKey: ["ar-dashboard", "portfolio-cols"],
     queryFn: async () => {
-      return fetchAllRows<any>("ar_dashboard");
+      return fetchAllRows<any>("ar_dashboard", { columns: AR_PORTFOLIO_COLUMNS, orderBy: "contract_id" });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -322,6 +327,46 @@ export function useFilevineCaseReconciliationCandidates(limit = 50) {
 // TABLE-BASED HOOKS (kept for components that still need them)
 // ========================
 
+/** ar_dashboard row (CONTRACT grain) -> Client. Shared by the full list (useMergedClients) and the single-
+ *  contract fetch the Client Lookup profile uses (useArDashboardContract), so both map identically. */
+export function mapArDashboardRow(row: any): Client {
+  const totalOwed = Number(row.total_contract_value) || 0;
+  const totalPaid = Number(row.amount_collected) || 0;
+  const downPayment = Number(row.down_payment) || 0;
+  const monthlyPayment = Number(row.monthly_installment) || 0;
+  const installmentMonths = row.total_installments || 18;
+  const daysAging = row.days_past_due || 0;
+
+  return {
+    id: row.contract_id,
+    name: row.client_name || "Unknown",
+    email: row.email || "",
+    phone: row.phone || "",
+    contractStart: row.start_date || "",
+    contractEnd: "",
+    totalOwed,
+    totalPaid,
+    monthlyPayment,
+    downPayment,
+    installmentMonths,
+    status: mapStatus(row.contract_status, row.delinquency_status),
+    assignedCollector: row.collector || "Unassigned",
+    lastContact: "",
+    nextPaymentDue: row.next_due_date || "",
+    caseNumber: row.case_number || "",
+    caseType: row.practice_area || "",
+    caseStage: mapCaseStage(row.case_stage),
+    daysAging,
+    // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
+    // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
+    clientId: row.client_id || undefined,
+    retainerDate: row.start_date || "",
+    downPaymentPaid: row.down_payment_paid || false,
+    filevineId: undefined,
+    mycaseId: undefined,
+  };
+}
+
 export function useMergedClients() {
   return useQuery({
     queryKey: ["merged-clients"],
@@ -333,43 +378,7 @@ export function useMergedClients() {
       // ~6.5 s and timed out under load; sorted ~0.5 s each). 2026-10-13.
       const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
 
-      return rows.map((row): Client => {
-        const totalOwed = Number(row.total_contract_value) || 0;
-        const totalPaid = Number(row.amount_collected) || 0;
-        const downPayment = Number(row.down_payment) || 0;
-        const monthlyPayment = Number(row.monthly_installment) || 0;
-        const installmentMonths = row.total_installments || 18;
-        const daysAging = row.days_past_due || 0;
-
-        return {
-          id: row.contract_id,
-          name: row.client_name || "Unknown",
-          email: row.email || "",
-          phone: row.phone || "",
-          contractStart: row.start_date || "",
-          contractEnd: "",
-          totalOwed,
-          totalPaid,
-          monthlyPayment,
-          downPayment,
-          installmentMonths,
-          status: mapStatus(row.contract_status, row.delinquency_status),
-          assignedCollector: row.collector || "Unassigned",
-          lastContact: "",
-          nextPaymentDue: row.next_due_date || "",
-          caseNumber: row.case_number || "",
-          caseType: row.practice_area || "",
-          caseStage: mapCaseStage(row.case_stage),
-          daysAging,
-          // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
-          // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
-          clientId: row.client_id || undefined,
-          retainerDate: row.start_date || "",
-          downPaymentPaid: row.down_payment_paid || false,
-          filevineId: undefined,
-          mycaseId: undefined,
-        };
-      });
+      return rows.map(mapArDashboardRow);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -1734,44 +1743,401 @@ export function useExecArAtRisk() {
   });
 }
 
+
+
 // ========================
-// HEADER CLIENT SEARCH (2026-10-13)
+// EXECUTIVE INSIGHTS — COLLECTOR ACTIVITY (2026-10-13)
 // ========================
-/** One header-search hit (CONTRACT grain — the AR book ClientLookup can open). `contractId` is the
- *  ClientLookup deep-link key (?clientId=<contract_id>); `clientId` is the canonical client. */
-export interface ClientSearchHit {
-  contractId: string;
-  clientId: string | null;
-  name: string;
-  caseNumber: string;
-  invoiceNumber: string;
-  caseType: string;
-  status: Client["status"];
-  matchField: "name" | "case_number" | "invoice_number" | "email";
+/** v_exec_collector_activity_monthly — GRAIN: one row per (calendar month, collector); ACTIVITY-grain counts
+ *  (non-junk). Replaces paging every collection_activities row for 6 months into the browser. Month is the
+ *  calendar month of activity_date (the old browser code counted every activity dated the 1st in the previous
+ *  month). is_system_actor = System-* (autopay/system postings, not human collector work). VP cert 6b600cd2. */
+export interface ExecCollectorActivityRow {
+  month: string;
+  collector: string;
+  activities: number;
+  minutes: number;
+  payments: number;
+  commission: number;
+  failed: number;
+  is_system_actor: boolean;
 }
 
-/** Server-side header search (public.search_ar_clients: active users, >= 2 chars, max 20 rows).
- *  Replaces pulling every ar_dashboard row into every page. Pass an already-debounced term. */
-export function useClientSearch(term: string) {
-  const q = term.trim();
-  return useQuery<ClientSearchHit[]>({
-    queryKey: ["client-search", q.toLowerCase()],
-    enabled: q.length >= 2,
+export function useExecCollectorActivityMonthly(month: string) {
+  return useQuery<ExecCollectorActivityRow[]>({
+    queryKey: ["exec-collector-activity-monthly", month],
+    enabled: !!month,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("search_ar_clients", { p_term: q, p_limit: 20 });
+      const { data, error } = await (supabase as any)
+        .from("v_exec_collector_activity_monthly")
+        .select("month, collector, activities, minutes, payments, commission, failed, is_system_actor")
+        .eq("month", `${month}-01`);
       if (error) throw error;
       return ((data ?? []) as any[]).map((r) => ({
-        contractId: r.contract_id,
-        clientId: r.client_id ?? null,
-        name: r.client_name || "Unknown",
-        caseNumber: r.case_number || "",
-        invoiceNumber: r.invoice_number || "",
-        caseType: r.practice_area || "",
-        status: mapStatus(r.contract_status, r.delinquency_status),
-        matchField: r.match_field,
+        ...r,
+        activities: Number(r.activities) || 0,
+        minutes: Number(r.minutes) || 0,
+        payments: Number(r.payments) || 0,
+        commission: Number(r.commission) || 0,
+        failed: Number(r.failed) || 0,
+        is_system_actor: Boolean(r.is_system_actor),
       }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** The 10 most recent FAILED-outcome activities in a month (same outcome rule as the view's `failed`:
+ *  failed / refund / disputed / disconnected / no collection; non-junk), fetched server-side. */
+export const FAILED_OUTCOME_PATTERNS = ["failed", "refund", "disputed", "disconnected", "no collection"] as const;
+
+export function useExecFailedActivities(month: string) {
+  return useQuery<any[]>({
+    queryKey: ["exec-failed-activities", month],
+    enabled: !!month,
+    queryFn: async () => {
+      const [y, m] = month.split("-").map(Number);
+      const from = format(new Date(y, m - 1, 1), "yyyy-MM-dd");
+      const to = format(new Date(y, m, 1), "yyyy-MM-dd");
+      const { data, error } = await (supabase as any)
+        .from("collection_activities")
+        .select("id, activity_date, client_name, collector, outcome, collected_amount")
+        .gte("activity_date", from)
+        .lt("activity_date", to)
+        .not("is_junk", "is", true)
+        .or(FAILED_OUTCOME_PATTERNS.map((p) => `outcome.ilike.*${p}*`).join(","))
+        .order("activity_date", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// CLIENT LOOKUP + PROMISE-TO-PAY — targeted fetches (2026-10-13)
+// ========================
+// The Client Lookup page used to preload the whole AR book, every payment (23 pages), every immigration
+// case (12) and every milestone before it could show one client; the Promise-to-Pay tab paged every
+// collection_activities row (45) and every payment (23) to find a handful of promises. These hooks fetch
+// only what the screen shows, with the SAME matching rules as before.
+
+/** Escape LIKE/ILIKE wildcards so a name is matched literally. */
+const likeLiteral = (s: string) => s.replace(/[\%_]/g, (m) => "\\" + m);
+
+/** One ar_dashboard contract (the Client Lookup profile), mapped exactly like useMergedClients. */
+export function useArDashboardContract(contractId: string | null) {
+  return useQuery<Client | null>({
+    queryKey: ["ar-dashboard-contract", contractId],
+    enabled: !!contractId,
+    queryFn: async () => {
+      // .order("contract_id") is load-bearing: without it the planner picks a slow plan for this view
+      // (5-6.6 s for ONE row); with it ~0.3 s. Measured 2026-10-13.
+      const { data, error } = await (supabase as any)
+        .from("ar_dashboard")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("contract_id");
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return row ? mapArDashboardRow(row) : null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+
+/** One client's immigration cases, same rule as before: case_number equals the client's case number, OR the
+ *  case has no client_id and its notes name ("Filevine: <name>") equals the client name. */
+export function useClientImmigrationCases(caseNumber: string | null | undefined, clientName: string | null | undefined) {
+  const cn = (caseNumber || "").trim();
+  const name = (clientName || "").trim();
+  return useQuery<any[]>({
+    queryKey: ["client-immigration-cases", cn, name.toLowerCase()],
+    enabled: !!cn || !!name,
+    queryFn: async () => {
+      const reqs: Promise<any>[] = [];
+      if (cn) reqs.push((supabase as any).from("immigration_cases").select("*").eq("case_number", cn));
+      if (name) reqs.push((supabase as any).from("immigration_cases").select("*").is("client_id", null).ilike("notes", `%${likeLiteral(name)}%`));
+      const results = await Promise.all(reqs);
+      const lname = name.toLowerCase();
+      const seen = new Set<string>();
+      const out: any[] = [];
+      results.forEach((r, i) => {
+        if (r.error) throw r.error;
+        const byName = cn ? i === 1 : true;
+        for (const ic of r.data ?? []) {
+          if (seen.has(ic.id)) continue;
+          if (byName && extractClientNameFromNotes(ic.notes).toLowerCase().trim() !== lname) continue;
+          seen.add(ic.id);
+          out.push(ic);
+        }
+      });
+      return out;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Milestones for a set of immigration cases (newest first). */
+export function useCaseMilestonesFor(caseIds: string[]) {
+  const ids = [...caseIds].sort();
+  return useQuery<any[]>({
+    queryKey: ["case-milestones-for", ids.join(",")],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("case_milestones").select("*").in("immigration_case_id", ids);
+      if (error) throw error;
+      return (data ?? []).sort((a: any, b: any) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+
+
+// ========================
+// CLIENT MASTER SEARCH + PROFILE SOURCES (2026-10-13)
+// ========================
+// Jeff: "can I use the search bar to look up clients now? please be sure that the front end is feeding from the
+// supabase tables that carries all client info". Search covers the CLIENT MASTER (every canonical client + every
+// open AR contract with no client), not only the open AR book; the profile reads the certified cash ledger and shows
+// each feed's freshness.
+
+export type ClientMasterStatus =
+  | "open_ar" | "open_ar_unlinked" | "paid_off" | "closed" | "consult_only" | "no_open_ar" | "excluded";
+
+export const CLIENT_STATUS_LABEL: Record<ClientMasterStatus, string> = {
+  open_ar: "Open AR",
+  open_ar_unlinked: "Open AR · no client link",
+  paid_off: "Has paid · no open AR",
+  closed: "Closed",
+  consult_only: "Consult only",
+  no_open_ar: "No open AR",
+  excluded: "Excluded (test)",
+};
+
+/** One search hit / client card from mv_client_master_search (CLIENT grain; unlinked AR contracts are their own rows). */
+export interface ClientMasterRow {
+  rowKey: string;
+  clientId: string | null;
+  name: string;
+  email: string;
+  phone: string;
+  caseNumber: string;
+  qualityStatus: string | null;
+  collector: string | null;
+  openAr: number;
+  openContracts: number;
+  bestContractId: string | null;
+  ledgerPayments: number;
+  lastPaymentDate: string | null;
+  mycaseCases: number;
+  latestCaseStage: string | null;
+  status: ClientMasterStatus;
+  offDial: boolean;
+  /** "dnc_decline" (client-keyed do-not-call) or "queue_exclusion_name_key" (name match; display only). */
+  offDialSource: string | null;
+  matchField?: string;
+  refreshedAt?: string | null;
+}
+
+const toClientMasterRow = (r: any): ClientMasterRow => ({
+  rowKey: r.row_key,
+  clientId: r.client_id ?? null,
+  name: r.display_name || "Unknown",
+  email: r.email || "",
+  phone: r.phone || "",
+  caseNumber: r.case_number || "",
+  qualityStatus: r.quality_status ?? null,
+  collector: r.collector ?? null,
+  openAr: Number(r.open_ar) || 0,
+  openContracts: Number(r.open_contracts) || 0,
+  bestContractId: r.best_contract_id ?? null,
+  ledgerPayments: Number(r.ledger_payments) || 0,
+  lastPaymentDate: r.last_payment_date ?? null,
+  mycaseCases: Number(r.mycase_cases) || 0,
+  latestCaseStage: r.latest_case_stage ?? null,
+  status: (r.status_key || "no_open_ar") as ClientMasterStatus,
+  offDial: Boolean(r.off_dial),
+  offDialSource: r.off_dial_source ?? null,
+  matchField: r.match_field,
+  refreshedAt: r.refreshed_at ?? null,
+});
+
+/** Server-side client-master search (public.search_clients: active users, >= 2 chars, max 20). Pass a debounced term. */
+export function useClientMasterSearch(term: string) {
+  const q = term.trim();
+  return useQuery<ClientMasterRow[]>({
+    queryKey: ["client-master-search", q.toLowerCase()],
+    enabled: q.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("search_clients", { p_term: q, p_limit: 20 });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map(toClientMasterRow);
     },
     staleTime: 60 * 1000,
     placeholderData: (prev) => prev,
+  });
+}
+
+/** One client card (status badge, open AR, best open contract) by canonical or merged-duplicate client id. */
+export function useClientMasterCard(clientId: string | null | undefined) {
+  return useQuery<ClientMasterRow | null>({
+    queryKey: ["client-master-card", clientId ?? null],
+    enabled: !!clientId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("client_master_card", { p_client_id: clientId });
+      if (error) throw error;
+      const r = (data ?? [])[0];
+      return r ? toClientMasterRow(r) : null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Payments from the CERTIFIED cash ledger (v_financial_ledger_canonical: MyCase Completed + Offline, plain history +
+ *  rich feed; ties to bank/QBO) by client_id, plus ledger rows with no client_id on the client's own MyCase invoice
+ *  numbers. Newest first. Replaces payments_clean (LawPay-matched contract payments only). */
+export interface LedgerPayment {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+  method: string;
+  invoiceNumber: string | null;
+  enteredBy: string | null;
+}
+
+export function useClientLedger(clientId: string | null | undefined, invoiceNumbers: string[] = []) {
+  const invs = [...new Set(invoiceNumbers.filter(Boolean))].sort();
+  return useQuery<LedgerPayment[]>({
+    queryKey: ["client-ledger", clientId ?? null, invs.join(",")],
+    enabled: !!clientId || invs.length > 0,
+    queryFn: async () => {
+      const cols = "txn_id, payment_date, amount, status, method, invoice_number, entered_by, client_id";
+      const reqs: Promise<any>[] = [];
+      if (clientId) reqs.push((supabase as any).from("v_financial_ledger_canonical").select(cols).eq("client_id", clientId));
+      if (invs.length > 0) reqs.push((supabase as any).from("v_financial_ledger_canonical").select(cols).is("client_id", null).in("invoice_number", invs));
+      const results = await Promise.all(reqs);
+      const seen = new Set<string>();
+      const out: LedgerPayment[] = [];
+      for (const r of results) {
+        if (r.error) throw r.error;
+        for (const t of r.data ?? []) {
+          const id = String(t.txn_id);
+          if (seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            id,
+            date: t.payment_date,
+            amount: Number(t.amount) || 0,
+            status: t.status || "",
+            method: t.method || "",
+            invoiceNumber: t.invoice_number ?? null,
+            enteredBy: t.entered_by ?? null,
+          });
+        }
+      }
+      return out.sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.id.localeCompare(a.id));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Feed freshness for "data as of" labels: v_feed_freshness (one row per source feed, certified), the active AR
+ *  snapshot date, and the collector-activity feed's latest date. */
+export interface FeedFreshness {
+  feed: string;
+  sourceTable: string;
+  asOf: string | null;
+  ageDays: number | null;
+  status: string;
+  isRed: boolean;
+}
+
+export function useFeedFreshness() {
+  return useQuery({
+    queryKey: ["feed-freshness"],
+    queryFn: async () => {
+      const [ff, ar, act] = await Promise.all([
+        (supabase as any).from("v_feed_freshness").select("feed, source_table, max_as_of, age_days, status, is_red"),
+        (supabase as any).from("v_ar_active_snapshot").select("snapshot_date").limit(1),
+        (supabase as any).from("v_activity_feed_health").select("latest_activity_date, feed_age_days, feed_status").limit(1),
+      ]);
+      const feeds: Record<string, FeedFreshness> = {};
+      for (const r of ff.data ?? []) {
+        feeds[r.feed] = {
+          feed: r.feed,
+          sourceTable: r.source_table,
+          asOf: r.max_as_of ?? null,
+          ageDays: r.age_days == null ? null : Number(r.age_days),
+          status: r.status || "",
+          isRed: Boolean(r.is_red),
+        };
+      }
+      const a = (act.data ?? [])[0];
+      return {
+        feeds,
+        arSnapshotDate: ((ar.data ?? [])[0]?.snapshot_date as string | undefined) ?? null,
+        activity: a
+          ? { asOf: (a.latest_activity_date as string | null) ?? null, ageDays: a.feed_age_days == null ? null : Number(a.feed_age_days), status: String(a.feed_status || "") }
+          : null,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Certified promise tracker (v_promise_to_pay_tracker): OPEN promises from outbound calls with an "agreement" outcome
+ *  in the last 30 days, one row per client NAME (the promise is a collector-typed name; AR is matched by client_id),
+ *  dropped once the client pays after promising. Explicit columns (never select * on client views). */
+export interface PromiseTrackerRow {
+  collector: string | null;
+  clientName: string;
+  ptpDate: string | null;
+  promiseDate: string | null;
+  windowHint: string | null;
+  status: string;
+  daysUntilDue: number | null;
+  liveAr: number | null;
+  agingBucket: string | null;
+  arLinkStatus: string | null;
+  lastPaymentDate: string | null;
+  lastPaymentAmount: number | null;
+  lastCallDate: string | null;
+  lastCallBy: string | null;
+  clientId: string | null;
+}
+
+export function usePromiseTracker() {
+  return useQuery<PromiseTrackerRow[]>({
+    queryKey: ["promise-tracker"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_promise_to_pay_tracker")
+        .select("promised_to_collector, client_name, ptp_date, promise_date, window_hint, ptp_status, days_until_due, live_ar, aging_bucket, ar_link_status, last_payment_date, last_payment_amount, last_call_date, last_call_by, client_id");
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        collector: r.promised_to_collector ?? null,
+        clientName: r.client_name || "—",
+        ptpDate: r.ptp_date ?? null,
+        promiseDate: r.promise_date ?? null,
+        windowHint: r.window_hint ?? null,
+        status: r.ptp_status,
+        daysUntilDue: r.days_until_due == null ? null : Number(r.days_until_due),
+        liveAr: r.live_ar == null ? null : Number(r.live_ar),
+        agingBucket: r.aging_bucket ?? null,
+        arLinkStatus: r.ar_link_status ?? null,
+        lastPaymentDate: r.last_payment_date ?? null,
+        lastPaymentAmount: r.last_payment_amount == null ? null : Number(r.last_payment_amount),
+        lastCallDate: r.last_call_date ?? null,
+        lastCallBy: r.last_call_by ?? null,
+        clientId: r.client_id ?? null,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
