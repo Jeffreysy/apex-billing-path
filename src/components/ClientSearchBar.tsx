@@ -1,23 +1,19 @@
-import { useState, useMemo } from "react";
-import { useMergedClients } from "@/hooks/useSupabaseData";
+import { useState } from "react";
+import { useClientSearch } from "@/hooks/useSupabaseData";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+/** Header search. Queries the server once typing pauses instead of downloading every client on
+ *  every page, and deep-links with ?contractId= (Client.id is the contract_id), which /clients reads. */
 const ClientSearchBar = () => {
-  const { data: clients = [] } = useMergedClients();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return [];
-    const q = search.toLowerCase();
-    return clients.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.filevineId && c.filevineId.toLowerCase().includes(q)) || (c.mycaseId && String(c.mycaseId).includes(q))
-    ).slice(0, 8);
-  }, [search, clients]);
+  const debounced = useDebouncedValue(search, 250);
+  const { data: filtered = [] } = useClientSearch(debounced, 8);
 
   const statusVariant: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
     active: "default", delinquent: "destructive", completed: "secondary", new: "outline",
@@ -34,12 +30,12 @@ const ClientSearchBar = () => {
         onBlur={() => setTimeout(() => setOpen(false), 200)}
         className="h-9 pl-9 text-sm"
       />
-      {open && filtered.length > 0 && (
+      {open && search.trim() && filtered.length > 0 && (
         <div className="absolute left-0 right-0 top-10 z-50 max-h-64 overflow-y-auto rounded-lg border bg-card shadow-lg">
           {filtered.map((c) => (
             <button
               key={c.id}
-              onMouseDown={() => { navigate(`/clients?id=${c.id}`); setSearch(""); setOpen(false); }}
+              onMouseDown={() => { navigate(`/clients?contractId=${encodeURIComponent(c.id)}`); setSearch(""); setOpen(false); }}
               className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
             >
               <div>

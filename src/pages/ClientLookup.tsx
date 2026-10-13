@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useClientActivityHistory, useImmigrationCases, useCaseMilestones, useMyCaseClient360, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
+import { useClientSearch, useClientLookup, useClientPayments, useClientActivityHistory, useClientImmigrationCases, useClientCaseMilestones, useMyCaseClient360 } from "@/hooks/useSupabaseData";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,93 +14,45 @@ import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentD
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
 const ClientLookup = () => {
-  const { data: clients = [], isLoading: cl } = useMergedClients();
-  const { data: collectors = [] } = useCollectors();
-  const { data: payments = [] } = usePaymentsData();
-  const { data: immigrationCases = [] } = useImmigrationCases();
-  const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // `selectedClientId` is the contract_id (Client.id === ar_dashboard.contract_id). The MyCase/LawPay/AR
-  // world joins on the canonical client_id — so resolve the client first and drive the 360 + history off
-  // `clientId`, never the contract_id (the old bug that left the entire MyCase 360 block silently empty).
-  const selectedClient = useMemo(() => clients.find(c => c.id === selectedClientId) || null, [selectedClientId, clients]);
+  // The URL is the single source of truth for which client is open. Every link into this page is
+  // honoured: ?contractId= / ?id= (contract_id, which is Client.id), ?clientId= (canonical clients.id,
+  // what CollectorDashboard passes), or ?name=. Picking a client from the dropdown writes ?contractId=.
+  const lookupKey = useMemo(() => ({
+    contractId: searchParams.get("contractId") || searchParams.get("id"),
+    clientId: searchParams.get("clientId"),
+    name: searchParams.get("name"),
+  }), [searchParams]);
+  const hasLookupKey = !!(lookupKey.contractId || lookupKey.clientId || lookupKey.name);
+  const { data: selectedClient = null, isLoading: clientLoading, error: clientError } = useClientLookup(lookupKey);
+
+  const selectClient = (contractId: string) => {
+    const next = new URLSearchParams();
+    next.set("contractId", contractId);
+    setSearchParams(next, { replace: true });
+    setSearch("");
+  };
+
+  // Server-side search, debounced so a query only fires once typing pauses.
+  const debouncedSearch = useDebouncedValue(search, 250);
+  const { data: filteredClients = [], isFetching: searching, error: searchError } = useClientSearch(debouncedSearch, 20);
+  const searchActive = debouncedSearch.trim().length >= 2;
+
+  // Canonical client_id drives the MyCase 360 + call history; the contract_id in `id` must never be
+  // used for those joins (that was the bug that left the MyCase block silently empty).
   const { data: myCase } = useMyCaseClient360(selectedClient?.clientId ?? null);
   const { data: clientCalls = [] } = useClientActivityHistory(selectedClient?.clientId ?? null, selectedClient?.name ?? null);
+  const { data: clientPayments = [] } = useClientPayments(selectedClient?.clientId, selectedClient?.name);
+  const { data: clientCasesById = [] } = useClientImmigrationCases(selectedClient);
+  const caseIds = useMemo(() => clientCasesById.map((c) => c.id), [clientCasesById]);
+  const { data: clientMilestones = [] } = useClientCaseMilestones(caseIds);
 
-  // Deep-link support: ?clientId=... or ?contractId=... selects a client on load
-  useEffect(() => {
-    if (clients.length === 0) return;
-    const cid = searchParams.get("clientId");
-    const contractId = searchParams.get("contractId");
-    const name = searchParams.get("name");
-    let match: any = null;
-    if (cid) match = clients.find(c => c.id === cid);
-    if (!match && contractId) match = clients.find(c => (c as any).contractId === contractId);
-    if (!match && name) match = clients.find(c => c.name.toLowerCase() === name.toLowerCase());
-    if (match) setSelectedClientId(match.id);
-  }, [clients, searchParams]);
-
-  // Keep URL in sync when user picks a client manually
-  useEffect(() => {
-    if (!selectedClientId) return;
-    if (searchParams.get("clientId") === selectedClientId) return;
-    const next = new URLSearchParams(searchParams);
-    next.set("clientId", selectedClientId);
-    setSearchParams(next, { replace: true });
-  }, [selectedClientId]);
-
-  const filteredClients = useMemo(() => {
-    if (!search.trim()) return [];
-    const q = search.toLowerCase();
-    return clients.filter(c => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
-  }, [search, clients]);
-
-  // Payments key on client_id when both sides carry one; fall back to exact-name only when the id is absent.
-  const clientPayments = useMemo(
-    () => selectedClient ? payments.filter(p =>
-      (selectedClient.clientId && p.clientId)
-        ? p.clientId === selectedClient.clientId
-        : p.clientName.toLowerCase() === selectedClient.name.toLowerCase()
-    ).sort((a, b) => b.date.localeCompare(a.date)) : [],
-    [selectedClient, payments]
-  );
-
-  // clientCalls now comes from useClientActivityHistory (client_id-first, full history) — no month cap.
-
-  const assignedCollector = useMemo(
-    () => selectedClient ? collectors.find(c => c.name === selectedClient.assignedCollector) : null,
-    [selectedClient, collectors]
-  );
-
-  // Immigration cases for selected client - match by client_id OR by name from notes field
-  const clientCasesById = useMemo(() => {
-    if (!selectedClient) return [];
-    const clientName = selectedClient.name.toLowerCase().trim();
-    return immigrationCases.filter(ic => {
-      // Match by case_number
-      if (ic.case_number === selectedClient.caseNumber) return true;
-      // Match by client_id if available (through clients table linkage)
-      if (ic.client_id) return false; // already handled above if case_number matched
-      // Match by extracting name from notes field (remove "Filevine: " prefix)
-      const notesName = extractClientNameFromNotes(ic.notes).toLowerCase().trim();
-      return notesName === clientName;
-    });
-  }, [selectedClient, immigrationCases]);
-
-  // Get milestones for this client's cases
-  const clientMilestones = useMemo(() => {
-    const caseIds = new Set(clientCasesById.map(c => c.id));
-    return caseMilestones
-      .filter(m => caseIds.has(m.immigration_case_id))
-      .sort((a, b) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
-  }, [clientCasesById, caseMilestones]);
-
-  if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  // Close the dropdown when the user navigates away from the search box via a deep link.
+  useEffect(() => { if (hasLookupKey) setSearch(""); }, [hasLookupKey, lookupKey.contractId, lookupKey.clientId, lookupKey.name]);
 
   const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
     active: { variant: "default", icon: CheckCircle },
@@ -142,12 +95,12 @@ const ClientLookup = () => {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Search clients by name, case number, or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-12 pl-11 text-base" />
-        {filteredClients.length > 0 && (
+        {search.trim() && filteredClients.length > 0 && (
           <div className="absolute left-0 right-0 top-14 z-50 max-h-72 overflow-y-auto rounded-lg border bg-card shadow-lg">
-            {filteredClients.slice(0, 20).map(c => {
+            {filteredClients.map(c => {
               const cfg = statusConfig[c.status];
               return (
-                <button key={c.id} onClick={() => { setSelectedClientId(c.id); setSearch(""); }} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
+                <button key={c.id} onClick={() => selectClient(c.id)} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
                   <div><p className="font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.caseNumber} · {c.caseType}</p></div>
                   <Badge variant={cfg.variant} className="text-xs capitalize">{c.status}</Badge>
                 </button>
@@ -156,9 +109,20 @@ const ClientLookup = () => {
           </div>
         )}
         {search.trim() && filteredClients.length === 0 && (
-          <div className="absolute left-0 right-0 top-14 z-50 rounded-lg border bg-card p-4 text-center text-sm text-muted-foreground shadow-lg">No clients found matching "{search}"</div>
+          <div className="absolute left-0 right-0 top-14 z-50 rounded-lg border bg-card p-4 text-center text-sm text-muted-foreground shadow-lg">
+            {searchError ? <span className="text-destructive">Search failed: {(searchError as Error).message}</span>
+              : !searchActive ? "Keep typing — at least 2 characters to search"
+              : searching ? "Searching..."
+              : <>No clients found matching "{debouncedSearch}"</>}
+          </div>
         )}
       </div>
+
+      {clientError && (
+        <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          Could not load this client: {(clientError as Error).message}
+        </div>
+      )}
 
       {selectedClient ? (
         <div className="space-y-6">
@@ -268,7 +232,7 @@ const ClientLookup = () => {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Case Number</span><span className="font-mono font-semibold">{selectedClient.caseNumber}</span></div><Separator />
                 <div className="flex justify-between"><span className="text-muted-foreground">Case Type</span><span className="font-medium">{selectedClient.caseType}</span></div><Separator />
-                <div className="flex justify-between"><span className="text-muted-foreground">Assigned Collector</span><span className="font-medium">{assignedCollector?.name ?? selectedClient.assignedCollector ?? "—"}</span></div><Separator />
+                <div className="flex justify-between"><span className="text-muted-foreground">Assigned Collector</span><span className="font-medium">{selectedClient.assignedCollector || "—"}</span></div><Separator />
                 <div className="flex justify-between"><span className="text-muted-foreground">Contract Period</span><span>{selectedClient.contractStart} → {selectedClient.contractEnd || "Ongoing"}</span></div>
               </CardContent>
             </Card>
@@ -428,11 +392,17 @@ const ClientLookup = () => {
             </div>
           )}
         </div>
+      ) : hasLookupKey && clientLoading ? (
+        <div className="p-8 text-center text-muted-foreground">Loading client...</div>
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted"><Search className="h-7 w-7 text-muted-foreground" /></div>
-          <h3 className="text-lg font-semibold">Search for a Client</h3>
-          <p className="mt-1 max-w-md text-sm text-muted-foreground">Use the search bar above to find a client by name, case number, or email.</p>
+          <h3 className="text-lg font-semibold">{hasLookupKey && !clientError ? "Client not found" : "Search for a Client"}</h3>
+          <p className="mt-1 max-w-md text-sm text-muted-foreground">
+            {hasLookupKey && !clientError
+              ? "No open contract matches that link. Use the search bar above to find the client by name, case number, or email."
+              : "Use the search bar above to find a client by name, case number, or email."}
+          </p>
         </div>
       )}
 

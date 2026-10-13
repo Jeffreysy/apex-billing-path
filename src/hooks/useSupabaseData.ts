@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { Client, Payment, CallLog, Collector, CaseStage } from "@/data/mockData";
 import { format, subDays, addWeeks, addMonths, startOfWeek } from "date-fns";
 import { ESCALATION_STATUSES, isEscalationUnresolved } from "@/lib/escalations";
@@ -79,15 +80,19 @@ export function useCollectorRoster() {
 }
 
 // --- Paginated fetch helper ---
-export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string; ascending?: boolean }): Promise<T[]> {
+// Pages with .range(); Postgres gives NO stable row order without ORDER BY, so pages can overlap or
+// skip rows unless `orderBy` names a unique key (or a column plus a unique tiebreak, e.g.
+// ["payment_date", "id"]). Pass one for any table/view where completeness matters.
+export async function fetchAllRows<T>(table: any, options?: { filter?: (q: any) => any; orderBy?: string | string[]; ascending?: boolean }): Promise<T[]> {
   const allData: T[] = [];
   const pageSize = 1000;
   let from = 0;
   let hasMore = true;
+  const orderCols = options?.orderBy ? (Array.isArray(options.orderBy) ? options.orderBy : [options.orderBy]) : [];
   while (hasMore) {
     let query = supabase.from(table).select("*").range(from, from + pageSize - 1);
     if (options?.filter) query = options.filter(query);
-    if (options?.orderBy) query = query.order(options.orderBy, { ascending: options.ascending ?? true });
+    for (const col of orderCols) query = query.order(col, { ascending: options?.ascending ?? true });
     const { data, error } = await query;
     if (error) throw error;
     if (data && data.length > 0) {
@@ -177,7 +182,7 @@ export function useARDashboard() {
   return useQuery({
     queryKey: ["ar-dashboard"],
     queryFn: async () => {
-      return fetchAllRows<any>("ar_dashboard");
+      return fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -202,7 +207,7 @@ export function usePaymentsClean() {
     queryKey: ["payments-clean"],
     queryFn: async () => {
       return fetchAllRows<any>("payments_clean", {
-        orderBy: "payment_date",
+        orderBy: ["payment_date", "id"],
         ascending: false,
       });
     },
@@ -284,6 +289,64 @@ export function useFilevineCaseReconciliationCandidates(limit = 50) {
 // TABLE-BASED HOOKS (kept for components that still need them)
 // ========================
 
+/** One ar_dashboard row (grain = contract) → the app's Client shape. `id` is the contract_id; the
+ *  canonical clients.id rides in `clientId` for every MyCase / LawPay / activity join. */
+type ArDashboardRow = Database["public"]["Views"]["ar_dashboard"]["Row"];
+
+export function mapArRowToClient(row: ArDashboardRow): Client {
+  const totalOwed = Number(row.total_contract_value) || 0;
+  const totalPaid = Number(row.amount_collected) || 0;
+  const downPayment = Number(row.down_payment) || 0;
+  const monthlyPayment = Number(row.monthly_installment) || 0;
+  const installmentMonths = row.total_installments || 18;
+  const daysAging = row.days_past_due || 0;
+
+  return {
+    id: row.contract_id ?? "",
+    name: row.client_name || "Unknown",
+    email: row.email || "",
+    phone: row.phone || "",
+    contractStart: row.start_date || "",
+    contractEnd: "",
+    totalOwed,
+    totalPaid,
+    monthlyPayment,
+    downPayment,
+    installmentMonths,
+    status: mapStatus(row.contract_status, row.delinquency_status),
+    assignedCollector: row.collector || "Unassigned",
+    lastContact: "",
+    nextPaymentDue: row.next_due_date || "",
+    caseNumber: row.case_number || "",
+    caseType: row.practice_area || "",
+    caseStage: mapCaseStage(row.case_stage),
+    daysAging,
+    // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
+    // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
+    clientId: row.client_id || undefined,
+    retainerDate: row.start_date || "",
+    downPaymentPaid: row.down_payment_paid || false,
+    filevineId: undefined,
+    mycaseId: undefined,
+  };
+}
+
+type PaymentsCleanRow = Database["public"]["Views"]["payments_clean"]["Row"];
+
+function mapPaymentRow(p: PaymentsCleanRow): Payment {
+  return {
+    id: p.id ?? "",
+    clientId: p.client_id || "",
+    clientName: p.client_name || "Unknown",
+    amount: Number(p.amount) || 0,
+    date: p.payment_date ?? "",
+    method: mapPaymentMethod(p.payment_method),
+    collectorId: "",
+    collectorName: p.collector_name || "CRM",
+    status: "completed" as const,
+  };
+}
+
 export function useMergedClients() {
   return useQuery({
     queryKey: ["merged-clients"],
@@ -291,47 +354,144 @@ export function useMergedClients() {
       // Keep ALL ar_dashboard rows — do NOT drop delinquency_status = 'Paid'. The 08-04 client-ar + VP
       // ruling LOCKED that those "Paid"-but-open rows are REAL AR (~$104K; "Paid" is a stale contracts
       // label bled via the unreliable invoice_number join). Matches ExecutiveInsights + the certified book.
-      const rows = await fetchAllRows<any>("ar_dashboard");
-
-      return rows.map((row): Client => {
-        const totalOwed = Number(row.total_contract_value) || 0;
-        const totalPaid = Number(row.amount_collected) || 0;
-        const downPayment = Number(row.down_payment) || 0;
-        const monthlyPayment = Number(row.monthly_installment) || 0;
-        const installmentMonths = row.total_installments || 18;
-        const daysAging = row.days_past_due || 0;
-
-        return {
-          id: row.contract_id,
-          name: row.client_name || "Unknown",
-          email: row.email || "",
-          phone: row.phone || "",
-          contractStart: row.start_date || "",
-          contractEnd: "",
-          totalOwed,
-          totalPaid,
-          monthlyPayment,
-          downPayment,
-          installmentMonths,
-          status: mapStatus(row.contract_status, row.delinquency_status),
-          assignedCollector: row.collector || "Unassigned",
-          lastContact: "",
-          nextPaymentDue: row.next_due_date || "",
-          caseNumber: row.case_number || "",
-          caseType: row.practice_area || "",
-          caseStage: mapCaseStage(row.case_stage),
-          daysAging,
-          // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
-          // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
-          clientId: row.client_id || undefined,
-          retainerDate: row.start_date || "",
-          downPaymentPaid: row.down_payment_paid || false,
-          filevineId: undefined,
-          mycaseId: undefined,
-        };
-      });
+      // contract_id is the view's row grain, so ordering on it keeps the .range() pages disjoint.
+      const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
+      return rows.map(mapArRowToClient);
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// CLIENT LOOKUP (server-side, per-client)
+// ========================
+
+/** PostgREST `or()` filters are comma/paren delimited and `%`/`_` are LIKE wildcards; keep the search
+ *  term to characters that cannot break the filter or widen the match. */
+export function sanitizeSearchTerm(raw: string): string {
+  return raw.replace(/[%_,()\\"']/g, " ").replace(/\s+/g, " ").trim();
+}
+
+const CLIENT_SEARCH_MIN_CHARS = 2;
+
+/** Server-side client search over ar_dashboard (name, case number, email), capped at `limit` rows.
+ *  Replaces downloading the whole view and filtering in the browser. */
+export function useClientSearch(term: string, limit = 20) {
+  const q = sanitizeSearchTerm(term);
+  return useQuery({
+    queryKey: ["client-search", q, limit],
+    enabled: q.length >= CLIENT_SEARCH_MIN_CHARS,
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const pattern = `%${q}%`;
+      const { data, error } = await supabase
+        .from("ar_dashboard")
+        .select("*")
+        .or(`client_name.ilike."${pattern}",case_number.ilike."${pattern}",email.ilike."${pattern}"`)
+        .order("client_name", { ascending: true })
+        .order("contract_id", { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []).map(mapArRowToClient);
+    },
+  });
+}
+
+export type ClientLookupKey = { contractId?: string | null; clientId?: string | null; name?: string | null };
+
+/** Resolve ONE client for the profile page. Accepts the contract_id (Client.id), the canonical
+ *  clients.id, or an exact name — in that priority — so every deep link into /clients resolves. */
+export function useClientLookup(key: ClientLookupKey) {
+  const contractId = key.contractId?.trim() || null;
+  const clientId = key.clientId?.trim() || null;
+  const name = key.name?.trim() || null;
+  return useQuery({
+    queryKey: ["client-lookup", contractId, clientId, name],
+    enabled: !!(contractId || clientId || name),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async (): Promise<Client | null> => {
+      const attempts: Array<() => PromiseLike<{ data: ArDashboardRow[] | null; error: { message: string } | null }>> = [];
+      if (contractId) attempts.push(() => supabase.from("ar_dashboard").select("*").eq("contract_id", contractId).limit(1));
+      if (clientId) {
+        attempts.push(() => supabase.from("ar_dashboard").select("*").eq("client_id", clientId).order("contract_id").limit(1));
+        // Older links (and this page's own URLs before the fix) put the contract_id under ?clientId=.
+        attempts.push(() => supabase.from("ar_dashboard").select("*").eq("contract_id", clientId).limit(1));
+      }
+      if (name) attempts.push(() => supabase.from("ar_dashboard").select("*").ilike("client_name", sanitizeSearchTerm(name)).order("contract_id").limit(1));
+      for (const run of attempts) {
+        const { data, error } = await run();
+        if (error) throw error;
+        if (data && data.length > 0) return mapArRowToClient(data[0]);
+      }
+      return null;
+    },
+  });
+}
+
+/** Payments for one client only (payments_clean filtered server-side). Keys on client_id when the
+ *  client has one; otherwise falls back to exact-name match, mirroring the old in-memory rule. */
+export function useClientPayments(clientId: string | null | undefined, clientName?: string | null) {
+  const cid = clientId || null;
+  const name = clientName?.trim() || null;
+  return useQuery({
+    queryKey: ["client-payments", cid, cid ? null : name],
+    enabled: !!(cid || name),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      let query = supabase.from("payments_clean").select("*");
+      query = cid ? query.eq("client_id", cid) : query.ilike("client_name", sanitizeSearchTerm(name!));
+      const { data, error } = await query.order("payment_date", { ascending: false }).order("id", { ascending: false }).limit(2000);
+      if (error) throw error;
+      return (data ?? []).map(mapPaymentRow);
+    },
+  });
+}
+
+/** Immigration cases for one client: by client_id, by case_number, or by the "Filevine: <name>" note
+ *  (legacy rows that were never linked). Server-side; replaces the whole-table download. */
+export function useClientImmigrationCases(client: Pick<Client, "clientId" | "caseNumber" | "name"> | null) {
+  const cid = client?.clientId || null;
+  const caseNumber = client?.caseNumber?.trim() || null;
+  const name = client?.name?.trim() || null;
+  return useQuery({
+    queryKey: ["client-immigration-cases", cid, caseNumber, name],
+    enabled: !!client && !!(cid || caseNumber || name),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const ors: string[] = [];
+      if (cid) ors.push(`client_id.eq.${cid}`);
+      if (caseNumber) ors.push(`case_number.eq."${sanitizeSearchTerm(caseNumber)}"`);
+      if (name) ors.push(`notes.ilike."Filevine: ${sanitizeSearchTerm(name)}"`, `notes.ilike."${sanitizeSearchTerm(name)}"`);
+      const { data, error } = await supabase
+        .from("immigration_cases")
+        .select("*")
+        .or(ors.join(","))
+        .order("open_date", { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/** Milestones for a known set of immigration cases (server-side IN filter). */
+export function useClientCaseMilestones(caseIds: string[]) {
+  const ids = Array.from(new Set(caseIds.filter(Boolean))).sort();
+  return useQuery({
+    queryKey: ["client-case-milestones", ids],
+    enabled: ids.length > 0,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("case_milestones")
+        .select("*")
+        .in("immigration_case_id", ids)
+        .order("milestone_date", { ascending: false, nullsFirst: false })
+        .limit(1000);
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 }
 
@@ -340,21 +500,10 @@ export function usePaymentsData() {
     queryKey: ["payments-data"],
     queryFn: async () => {
       const rows = await fetchAllRows<any>("payments_clean", {
-        orderBy: "payment_date",
+        orderBy: ["payment_date", "id"],
         ascending: false,
       });
-
-      return rows.map((p): Payment => ({
-        id: p.id,
-        clientId: p.client_id || "",
-        clientName: p.client_name || "Unknown",
-        amount: Number(p.amount) || 0,
-        date: p.payment_date,
-        method: mapPaymentMethod(p.payment_method),
-        collectorId: "",
-        collectorName: p.collector_name || "CRM",
-        status: "completed" as const,
-      }));
+      return rows.map(mapPaymentRow);
     },
     staleTime: 5 * 60 * 1000,
   });
