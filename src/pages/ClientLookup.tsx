@@ -290,7 +290,7 @@ const ClientLookup = () => {
                             <span>Attorney: {c.lead_attorney || "—"}</span>
                             <span>Billing: {c.billing_type || "—"}</span>
                             <span>Flat fee: {c.flat_fee != null ? `$${Number(c.flat_fee).toLocaleString()}` : "—"}</span>
-                            <span>Balance: {c.outstanding_balance != null ? `$${Number(c.outstanding_balance).toLocaleString()}` : "—"}</span>
+                            <span title="MyCase case-level outstanding figure. Not AR: it sums to ~$90M across cases vs the ~$17.5M AR book. The AR balance is the Open AR badge / Contract Breakdown.">MyCase case figure (not AR): {c.outstanding_balance != null ? `$${Number(c.outstanding_balance).toLocaleString()}` : "—"}</span>
                             <span>SOL: {c.sol_date || "—"}</span>
                             <span>Opened: {c.open_date || "—"}</span>
                             {c.is_closed && <span>Closed: {c.closed_date || "—"}</span>}
