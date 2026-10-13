@@ -71,3 +71,12 @@ export const caseMix = [
   month: month as string, reporting_family: fam as string, family_sort: 1, revenue_cases: n as number,
   contract_value: v as number, avg_per_case: (v as number) / (n as number), ...fresh,
 }));
+
+// --- v_firm_financial_summary (certified, single row; only the fields the hero reads) ------
+export const firmSummary = { as_of: "2026-10-12", ar_total: 17502885.52 };
+
+// --- v_exec_ar_at_risk (one row; CONTRACT grain; legacy definition days_past_due > 60) ------
+export const arAtRisk = {
+  ar_at_risk_60: 8985310.81, ar_total: 17502885.52, contracts_at_risk_60: 2404, contracts: 3924,
+  snapshot_date: "2026-10-12", refreshed_at: null,
+};

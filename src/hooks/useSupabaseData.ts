@@ -1547,9 +1547,10 @@ export function useARLiveTrend() {
 // ========================
 // EXECUTIVE INSIGHTS HERO BAND (2026-10-13)
 // ========================
-// One VP-certified view per tile (migration 20261013150000_exec_insights_hero_tiles.sql). All
-// aggregation is server-side; each hook returns null when the view is unreadable so the tile
-// renders an honest "unavailable" state instead of a fabricated $0.
+// One VP-certified view per tile, aggregated server-side. Drift, Case Mix and AR at Risk read
+// hourly caches (refresh_exec_insights_cache; refreshed_at shown on the tile) because the live
+// logic timed out under a full Admin page load. Each hook THROWS on error so its tile gets its
+// own error/retry state; a slow or failed tile never blanks the rest of the band.
 
 /** v_exec_collected_split_monthly — GRAIN: one row per month. Firm cash actually collected
  *  (canonical ledger), split clients vs non-clients (consult fees). nonclient/client are null
@@ -1574,7 +1575,7 @@ export interface ExecCollectedMonth {
 const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
 
 export function useExecCollectedSplitMonthly() {
-  return useQuery<ExecCollectedMonth[] | null>({
+  return useQuery<ExecCollectedMonth[]>({
     queryKey: ["exec-collected-split-monthly"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -1583,8 +1584,8 @@ export function useExecCollectedSplitMonthly() {
           "month, total_collected, completed_amount, offline_amount, payment_count, total_mtd_comparable, mtd_cutoff_day, nonclient_consult_cash, nonclient_consult_payments, client_collected, consult_source_status, ledger_through, consult_through, is_current_month",
         )
         .order("month");
-      if (error || !data) return null;
-      return (data as any[]).map((r) => ({
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
         ...r,
         total_collected: Number(r.total_collected) || 0,
         completed_amount: Number(r.completed_amount) || 0,
@@ -1601,14 +1602,16 @@ export function useExecCollectedSplitMonthly() {
   });
 }
 
-/** v_exec_client_bucket_drift — GRAIN: one row per (month, from_ord, to_ord). CLIENT-grain
- *  counts of clients whose worst MyCase aging bucket moved between the snapshot on/before the
- *  1st and the latest snapshot in the month. ord -1 = not on that snapshot's book. */
+/** v_exec_client_bucket_drift (hourly cache) — GRAIN: one row per (month, from_ord, to_ord).
+ *  CLIENT-grain counts of clients whose worst MyCase aging bucket moved between the snapshot
+ *  on/before the 1st (within 31 days) and the latest snapshot in the month. ord -1 = not on that
+ *  snapshot's book. */
 export type ExecDriftMovement = "worse" | "recovered" | "same" | "new" | "left";
 export interface ExecDriftCell {
   month: string;
   base_snapshot_date: string;
   end_snapshot_date: string;
+  window_days: number | null;
   from_ord: number;
   to_ord: number;
   from_bucket: string | null;
@@ -1617,21 +1620,23 @@ export interface ExecDriftCell {
   clients: number;
   base_balance: number;
   end_balance: number;
+  refreshed_at: string | null;
 }
 
 export function useExecClientBucketDrift() {
-  return useQuery<ExecDriftCell[] | null>({
+  return useQuery<ExecDriftCell[]>({
     queryKey: ["exec-client-bucket-drift"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_client_bucket_drift")
-        .select("month, base_snapshot_date, end_snapshot_date, from_ord, to_ord, from_bucket, to_bucket, movement, clients, base_balance, end_balance")
+        .select("month, base_snapshot_date, end_snapshot_date, window_days, from_ord, to_ord, from_bucket, to_bucket, movement, clients, base_balance, end_balance, refreshed_at")
         .order("month")
         .order("from_ord")
         .order("to_ord");
-      if (error || !data) return null;
-      return (data as any[]).map((r) => ({
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
         ...r,
+        window_days: numOrNull(r.window_days),
         from_ord: Number(r.from_ord),
         to_ord: Number(r.to_ord),
         clients: Number(r.clients) || 0,
@@ -1643,9 +1648,10 @@ export function useExecClientBucketDrift() {
   });
 }
 
-/** v_exec_case_mix_monthly — GRAIN: one row per (month, reporting_family). Revenue cases opened
- *  in the month (invoiced > 0) and the contract value they bring. cases_loaded_through /
- *  invoices_synced_at = MyCase feed freshness (a month past it is partial, not a collapse). */
+/** v_exec_case_mix_monthly (hourly cache) — GRAIN: one row per (month, reporting_family).
+ *  Revenue cases opened in the month (invoiced > 0) and the contract value they bring.
+ *  cases_loaded_through / invoices_synced_at = MyCase feed freshness (a month past it is
+ *  partial, not a collapse); refreshed_at = cache build time. */
 export interface ExecCaseMixRow {
   month: string;
   reporting_family: string;
@@ -1655,25 +1661,61 @@ export interface ExecCaseMixRow {
   avg_per_case: number;
   cases_loaded_through: string | null;
   invoices_synced_at: string | null;
+  refreshed_at: string | null;
 }
 
 export function useExecCaseMixMonthly() {
-  return useQuery<ExecCaseMixRow[] | null>({
+  return useQuery<ExecCaseMixRow[]>({
     queryKey: ["exec-case-mix-monthly"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_case_mix_monthly")
-        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at")
+        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at")
         .order("month")
         .order("contract_value", { ascending: false });
-      if (error || !data) return null;
-      return (data as any[]).map((r) => ({
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
         ...r,
         family_sort: Number(r.family_sort) || 0,
         revenue_cases: Number(r.revenue_cases) || 0,
         contract_value: Number(r.contract_value) || 0,
         avg_per_case: Number(r.avg_per_case) || 0,
       }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. ar_at_risk_60 = SUM(ar_dashboard.remaining_balance)
+ *  where days_past_due > 60 (CONTRACT grain; the legacy tile's definition, unchanged); ar_total ties to
+ *  v_firm_financial_summary.ar_total. */
+export interface ExecArAtRisk {
+  ar_at_risk_60: number;
+  ar_total: number;
+  contracts_at_risk_60: number;
+  contracts: number;
+  snapshot_date: string | null;
+  refreshed_at: string | null;
+}
+
+export function useExecArAtRisk() {
+  return useQuery<ExecArAtRisk | null>({
+    queryKey: ["exec-ar-at-risk"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_ar_at_risk")
+        .select("ar_at_risk_60, ar_total, contracts_at_risk_60, contracts, snapshot_date, refreshed_at")
+        .limit(1);
+      if (error) throw error;
+      const r = (data ?? [])[0];
+      if (!r) return null;
+      return {
+        ...r,
+        ar_at_risk_60: Number(r.ar_at_risk_60) || 0,
+        ar_total: Number(r.ar_total) || 0,
+        contracts_at_risk_60: Number(r.contracts_at_risk_60) || 0,
+        contracts: Number(r.contracts) || 0,
+      };
     },
     staleTime: 5 * 60 * 1000,
   });

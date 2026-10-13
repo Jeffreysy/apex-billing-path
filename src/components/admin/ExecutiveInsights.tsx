@@ -3,14 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import {
-  useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly,
+  useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
+  useFirmFinancialSummary as useCertifiedFirmSummary,
   type ExecCollectedMonth, type ExecDriftCell, type ExecCaseMixRow,
 } from "@/hooks/useSupabaseData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  format, subMonths, startOfMonth, endOfMonth, startOfWeek, addWeeks,
+  format, subMonths, startOfMonth, endOfMonth,
 } from "date-fns";
 import {
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
@@ -99,7 +100,7 @@ function useInsightsData() {
 export default function ExecutiveInsights() {
   const [monthVal, setMonthVal] = useState(format(new Date(), "yyyy-MM"));
   const months = monthOptions(MONTH_OPTIONS);
-  const { data, isLoading } = useInsightsData();
+  const { data, isLoading, isError: insightsError, refetch: refetchInsights } = useInsightsData();
   // VP-certified firm-wide snapshot (single row) — authoritative month new-AR source. Shared
   // query key with AdminDashboard, so it is fetched once, and the panel renders without waiting
   // for it (falls back to the row-sum until it arrives).
@@ -107,10 +108,8 @@ export default function ExecutiveInsights() {
   // Certified per-collector cash (v_activity_collected_by_collector_weekly) — replaces the raw
   // SUM(collection_activities.collected_amount) in the collector table below.
   const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
-  // Hero band (2026-10-13): one VP-certified view per tile, aggregated server-side.
-  const { data: collectedMonths, isLoading: collectedLoading } = useExecCollectedSplitMonthly();
-  const { data: driftCells, isLoading: driftLoading } = useExecClientBucketDrift();
-  const { data: caseMix, isLoading: caseMixLoading } = useExecCaseMixMonthly();
+  // Hero band (2026-10-13): each tile fetches its own VP-certified view and owns its loading /
+  // error state, so the band renders independently of the legacy browser-side pull below.
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -121,21 +120,6 @@ export default function ExecutiveInsights() {
     const ar = data.ar;
     const payments = data.payments;
     const activities = data.activities || [];
-
-    // ---------- Weekly collections (8w sparkline) ----------
-    const weeks: { key: string; total: number }[] = [];
-    const now = new Date();
-    for (let i = 7; i >= 0; i--) {
-      const ws = startOfWeek(addWeeks(now, -i), { weekStartsOn: 1 });
-      weeks.push({ key: format(ws, "yyyy-MM-dd"), total: 0 });
-    }
-    const weekMap = new Map(weeks.map((w) => [w.key, w]));
-    payments.forEach((p: any) => {
-      if (!p.payment_date) return;
-      const ws = format(startOfWeek(new Date(p.payment_date), { weekStartsOn: 1 }), "yyyy-MM-dd");
-      if (weekMap.has(ws)) weekMap.get(ws)!.total += Number(p.amount) || 0;
-    });
-    const weeklySeries = weeks.map((w) => w.total);
 
     // ---------- Monthly aggregates for selected month vs prior ----------
     const monthAggs: Record<string, { collected: number; count: number }> = {};
@@ -154,9 +138,6 @@ export default function ExecutiveInsights() {
 
     // ---------- AR totals ----------
     const totalAR = ar.reduce((s: number, r: any) => s + (Number(r.remaining_balance) || 0), 0);
-    const atRisk = ar
-      .filter((r: any) => (Number(r.days_past_due) || 0) > 60)
-      .reduce((s: number, r: any) => s + (Number(r.remaining_balance) || 0), 0);
 
     // ---------- Aging × Collector heatmap ----------
     const collectorBuckets: Record<string, Record<string, number>> = {};
@@ -287,10 +268,8 @@ export default function ExecutiveInsights() {
       .reduce((s, r) => s + r.collected, 0);
 
     return {
-      weeklySeries,
       totalAR,
       arTotalCertified,
-      atRisk,
       collectorRows,
       heatMax,
       waterfall,
@@ -313,10 +292,6 @@ export default function ExecutiveInsights() {
       .map((r) => ({ ...r, collected: cert.get(r.collector) ?? 0 }))
       .sort((a, b) => b.collected - a.collected);
   }, [view, byCollectorWeeks, monthVal]);
-
-  if (isLoading || !view) {
-    return <div className="p-6 text-center text-sm text-muted-foreground">Loading executive insights…</div>;
-  }
 
   const sections = [
     { id: "hero", label: "Executive" },
@@ -380,26 +355,16 @@ export default function ExecutiveInsights() {
       {/* ─────────── Hero KPI band ─────────── */}
       <section id="hero" className="scroll-mt-24">
         <div className="grid grid-cols-1 divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-card via-card to-muted/30 shadow-[0_1px_0_0_hsl(var(--border)),0_24px_60px_-30px_hsl(var(--primary)/0.25)] sm:grid-cols-2 sm:divide-y-0 sm:divide-x lg:grid-cols-4">
-          <HeroKpi
-            label="Total AR"
-            value={fmtMoney(view.arTotalCertified)}
-            spark={view.weeklySeries}
-            sparkColor="hsl(var(--primary))"
-            sublabel="Outstanding balance"
-          />
-          <CollectedKpi rows={collectedMonths} loading={collectedLoading} monthVal={monthVal} />
-          <DriftKpi cells={driftCells} loading={driftLoading} monthVal={monthVal} />
-          <HeroKpi
-            label="AR at Risk"
-            value={fmtMoney(view.atRisk)}
-            accent="warn"
-            sublabel="60+ days past due"
-          />
+          <TotalArKpi />
+          <CollectedKpi monthVal={monthVal} />
+          <DriftKpi monthVal={monthVal} />
+          <ArAtRiskKpi />
         </div>
       </section>
 
       {/* ─────────── Money flow + Net change ─────────── */}
       <section id="flow" className="scroll-mt-24 grid gap-4 lg:grid-cols-3">
+        {view ? (
         <Card className="lg:col-span-2 rounded-2xl border-border/70 p-6 shadow-none">
           <SectionHeader
             eyebrow="Cash Movement"
@@ -472,10 +437,21 @@ export default function ExecutiveInsights() {
             );
           })()}
         </Card>
+        ) : (
+          <LegacyPending
+            className="lg:col-span-2"
+            title="Money Flow"
+            loading={isLoading}
+            error={insightsError}
+            onRetry={() => refetchInsights()}
+          />
+        )}
 
-        <CaseMixCard rows={caseMix} loading={caseMixLoading} monthVal={monthVal} />
+        <CaseMixCard monthVal={monthVal} />
       </section>
 
+      {view ? (
+      <>
       {/* ─────────── Aging matrix ─────────── */}
       <section id="aging" className="scroll-mt-24">
         <Card className="rounded-2xl border-border/70 p-6 shadow-none">
@@ -642,6 +618,15 @@ export default function ExecutiveInsights() {
           </div>
         </Card>
       </section>
+      </>
+      ) : (
+        <LegacyPending
+          title="Aging × Collector · Collector Activity · Bucket Movement · Failed / Issues"
+          loading={isLoading}
+          error={insightsError}
+          onRetry={() => refetchInsights()}
+        />
+      )}
     </div>
   );
 }
@@ -758,18 +743,12 @@ const DASH = "—";
 
 /** COLLECTED — firm cash actually collected (v_exec_collected_split_monthly: canonical ledger,
  *  MyCase Completed + Offline), split into clients vs non-clients (consult fees). */
-function CollectedKpi({
-  rows,
-  loading,
-  monthVal,
-}: {
-  rows: ExecCollectedMonth[] | null | undefined;
-  loading: boolean;
-  monthVal: string;
-}) {
+function CollectedKpi({ monthVal }: { monthVal: string }) {
+  const q = useExecCollectedSplitMonthly();
+  const rows: ExecCollectedMonth[] | undefined = q.data;
   const label = `Collected · ${format(monthValToDate(monthVal), "MMM")}`;
-  if (loading) return <HeroKpi label={label} value="…" sublabel="Loading firm ledger" />;
-  if (!rows) return <HeroKpi label={label} value={DASH} sublabel="Collections view unavailable" />;
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading firm ledger" />;
+  if (q.isError || !rows) return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
 
   const byMonth = new Map(rows.map((r) => [r.month.slice(0, 7), r]));
   const row = byMonth.get(monthVal);
@@ -830,18 +809,12 @@ const DRIFT_BUCKETS = ["Current", "1-30", "31-60", "61-90", "91-180", "181-365",
 
 /** DRIFT — clients whose worst MyCase aging bucket got worse vs recovered between the AR snapshot
  *  on/before the 1st and the latest snapshot in the month (v_exec_client_bucket_drift). */
-function DriftKpi({
-  cells,
-  loading,
-  monthVal,
-}: {
-  cells: ExecDriftCell[] | null | undefined;
-  loading: boolean;
-  monthVal: string;
-}) {
+function DriftKpi({ monthVal }: { monthVal: string }) {
+  const q = useExecClientBucketDrift();
+  const cells: ExecDriftCell[] | undefined = q.data;
   const label = "Drift";
-  if (loading) return <HeroKpi label={label} value="…" sublabel="Loading AR snapshots" />;
-  if (!cells) return <HeroKpi label={label} value={DASH} sublabel="Drift view unavailable" />;
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading AR snapshots" />;
+  if (q.isError || !cells) return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
 
   const mc = cells.filter((c) => c.month.slice(0, 7) === monthVal);
   if (mc.length === 0) {
@@ -849,7 +822,7 @@ function DriftKpi({
       <HeroKpi
         label={label}
         value={DASH}
-        sublabel={`No MyCase AR snapshot inside ${format(monthValToDate(monthVal), "MMM")} to compare`}
+        sublabel={`No MyCase AR snapshot pair (≤31 days apart) for ${format(monthValToDate(monthVal), "MMM")}`}
       />
     );
   }
@@ -860,6 +833,7 @@ function DriftKpi({
   const left = count("left");
   const base = mc[0].base_snapshot_date;
   const end = mc[0].end_snapshot_date;
+  const refreshed = mc[0].refreshed_at ? new Date(mc[0].refreshed_at) : null;
 
   return (
     <HeroKpi
@@ -882,6 +856,7 @@ function DriftKpi({
           </span>
           <span className="text-[10px] text-muted-foreground/70">
             clients · worst MyCase bucket · to {format(ymd(end), "MMM d")}
+            {refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
           </span>
         </span>
       }
@@ -984,15 +959,9 @@ function DriftMatrix({ cells, base, end }: { cells: ExecDriftCell[]; base: strin
 /** CASE MIX — services sold in the month (revenue cases opened, invoiced > 0) and the contract
  *  value they bring (v_exec_case_mix_monthly). Carries a feed-freshness line so a partially
  *  loaded month never reads as a collapse in sales. */
-function CaseMixCard({
-  rows,
-  loading,
-  monthVal,
-}: {
-  rows: ExecCaseMixRow[] | null | undefined;
-  loading: boolean;
-  monthVal: string;
-}) {
+function CaseMixCard({ monthVal }: { monthVal: string }) {
+  const q = useExecCaseMixMonthly();
+  const rows: ExecCaseMixRow[] | undefined = q.data;
   const monthStart = monthValToDate(monthVal);
   const monthLabel = format(monthStart, "MMMM yyyy");
   const mr = (rows ?? [])
@@ -1004,6 +973,7 @@ function CaseMixCard({
   const freshRow = rows?.find((r) => r.cases_loaded_through) ?? null;
   const loadedThrough = freshRow?.cases_loaded_through ? ymd(freshRow.cases_loaded_through) : null;
   const syncedAt = freshRow?.invoices_synced_at ? new Date(freshRow.invoices_synced_at) : null;
+  const refreshedAt = freshRow?.refreshed_at ? new Date(freshRow.refreshed_at) : null;
   const monthEnd = endOfMonth(monthStart);
   const today = new Date();
   const coverageEnd = monthEnd < today ? monthEnd : today;
@@ -1013,10 +983,12 @@ function CaseMixCard({
   return (
     <Card className="rounded-2xl border-border/70 p-6 shadow-none">
       <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
-      {loading ? (
+      {q.isLoading ? (
         <div className="py-8 text-center text-xs text-muted-foreground">Loading case mix…</div>
-      ) : !rows ? (
-        <div className="py-8 text-center text-xs text-muted-foreground">Case mix view unavailable.</div>
+      ) : q.isError || !rows ? (
+        <div className="py-8 text-center text-xs text-muted-foreground">
+          <TileError onRetry={() => q.refetch()} />
+        </div>
       ) : (
         <>
           <div className="mt-5 flex items-baseline gap-2">
@@ -1070,9 +1042,110 @@ function CaseMixCard({
             {syncedAt ? ` · invoices synced ${format(syncedAt, "MMM d")}` : ""}
             {partial ? " — partial month: cases opened after that date are not counted yet, not a drop in sales." : ""}
             {notLoaded ? " — the MyCase case feed has not reached this month yet." : ""}
+            {refreshedAt ? ` · updated ${fmtUpdated(refreshedAt)}` : ""}
           </p>
         </>
       )}
     </Card>
   );
+}
+
+/** Per-tile error state with a retry, so one failed query never blanks the band. */
+function TileError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-destructive">
+      Couldn&apos;t load
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-full border border-border/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        Retry
+      </button>
+    </span>
+  );
+}
+
+/** TOTAL AR — certified firm-wide AR (v_firm_financial_summary.ar_total, pinned AR snapshot). */
+function TotalArKpi() {
+  const q = useCertifiedFirmSummary();
+  const label = "Total AR";
+  if (q.isLoading) return <HeroKpi label={label} value="…" sublabel="Loading certified AR" />;
+  const s: any = q.data;
+  if (q.isError || !s || s.ar_total == null) {
+    return <HeroKpi label={label} value={DASH} sublabel={<TileError onRetry={() => q.refetch()} />} />;
+  }
+  return (
+    <HeroKpi
+      label={label}
+      value={fmtMoney(Number(s.ar_total) || 0)}
+      sublabel={
+        <span className="flex flex-col gap-0.5">
+          <span>Outstanding balance</span>
+          <span className="text-[10px] text-muted-foreground/70">
+            certified{s.as_of ? ` · MyCase AR as of ${format(ymd(String(s.as_of)), "MMM d")}` : ""}
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
+/** AR AT RISK — 60+ days past due (v_exec_ar_at_risk hourly cache of ar_dashboard; the legacy
+ *  definition, unchanged), with its share of the same book. */
+function ArAtRiskKpi() {
+  const q = useExecArAtRisk();
+  const label = "AR at Risk";
+  if (q.isLoading) return <HeroKpi label={label} value="…" accent="warn" sublabel="Loading AR aging" />;
+  const r = q.data;
+  if (q.isError || !r) {
+    return <HeroKpi label={label} value={DASH} accent="warn" sublabel={<TileError onRetry={() => q.refetch()} />} />;
+  }
+  const share = r.ar_total > 0 ? (r.ar_at_risk_60 / r.ar_total) * 100 : 0;
+  const refreshed = r.refreshed_at ? new Date(r.refreshed_at) : null;
+  return (
+    <HeroKpi
+      label={label}
+      value={fmtMoney(r.ar_at_risk_60)}
+      accent="warn"
+      sublabel={
+        <span className="flex flex-col gap-0.5">
+          <span>60+ days past due · {share.toFixed(1)}% of AR</span>
+          <span className="text-[10px] text-muted-foreground/70">
+            {r.contracts_at_risk_60.toLocaleString()} contracts · contract days-past-due basis{refreshed ? ` · updated ${fmtUpdated(refreshed)}` : ""}
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
+/** Placeholder for the legacy sections (Money Flow, Aging, Activity, Movement, Failed), which
+ *  still compute in the browser from useInsightsData. They no longer gate the hero band. */
+function LegacyPending({
+  title,
+  loading,
+  error,
+  onRetry,
+  className = "",
+}: {
+  title: string;
+  loading: boolean;
+  error: boolean;
+  onRetry: () => void;
+  className?: string;
+}) {
+  return (
+    <Card className={`rounded-2xl border-border/70 p-6 shadow-none ${className}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-secondary">{title}</div>
+      <div className="mt-6 py-6 text-center text-xs text-muted-foreground">
+        {error || !loading ? <TileError onRetry={onRetry} /> : "Loading detail…"}
+      </div>
+    </Card>
+  );
+}
+
+/** Cache stamp: time only when refreshed today, else date + time. */
+function fmtUpdated(d: Date): string {
+  return format(d, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? format(d, "h:mm a") : format(d, "MMM d, h:mm a");
 }

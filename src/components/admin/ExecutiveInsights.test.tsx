@@ -9,16 +9,21 @@ import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { render, screen, within, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+const legacy = vi.hoisted(() => ({ hang: false }));
+
 vi.mock("@/hooks/useSupabaseData", async () => {
   const f = await import("./__fixtures__/execInsightsHero.20261013");
+  const ok = (data: unknown) => ({ data, isLoading: false, isError: false, refetch: vi.fn() });
   return {
-    fetchAllRows: vi.fn(async () => []),
+    // Legacy browser-side pull: resolves empty by default; a test can make it hang.
+    fetchAllRows: vi.fn(async () => (legacy.hang ? new Promise(() => {}) : [])),
     useActivityCollectedByCollectorWeekly: () => ({ data: [] }),
     certifiedCollectedByCollector: () => new Map(),
-    useFirmFinancialSummary: () => ({ data: null }),
-    useExecCollectedSplitMonthly: () => ({ data: f.collected, isLoading: false }),
-    useExecClientBucketDrift: () => ({ data: f.drift, isLoading: false }),
-    useExecCaseMixMonthly: () => ({ data: f.caseMix, isLoading: false }),
+    useFirmFinancialSummary: () => ok(f.firmSummary),
+    useExecCollectedSplitMonthly: () => ok(f.collected),
+    useExecClientBucketDrift: () => ok(f.drift),
+    useExecCaseMixMonthly: () => ok(f.caseMix),
+    useExecArAtRisk: () => ok(f.arAtRisk),
   };
 });
 
@@ -31,6 +36,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  legacy.hang = false;
 });
 
 async function renderAt(isoDate: string) {
@@ -87,6 +93,20 @@ describe("Executive Insights hero band", () => {
     expect(c).toContain("T-Visa Principal$904.1k");
     expect(c).toContain("Total · 185 cases$1.41M");
     expect(c).not.toContain("partial month");
+  });
+
+  it("the hero band and Case Mix render while the legacy browser-side pull is still pending", async () => {
+    legacy.hang = true;
+    const { hero, caseMixCard, text } = await renderAt("2026-10-13T15:00:00");
+    const h = text(hero);
+    expect(h).toContain("Total AR$17.50M");
+    expect(h).toContain("AR at Risk$8.99M");
+    expect(h).toContain("60+ days past due · 51.3% of AR");
+    expect(h).toContain("$257.7k");
+    expect(h).toMatch(/114\s*worse/);
+    expect(text(caseMixCard)).toContain("$52.4k");
+    expect(screen.getAllByText("Loading detail…").length).toBe(2); // Money Flow + legacy sections
+    expect(screen.queryByText("Loading executive insights…")).toBeNull();
   });
 
   it("a closed month with partial consult coverage shows no client split (Feb 2026: consult ledger from Feb 17)", async () => {
