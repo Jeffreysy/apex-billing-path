@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload, Inbox,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ const STATIC_SECTIONS = [
   {
     label: "Admin",
     items: [
-      { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
+      { path: "/admin", label: "Admin Dashboard", icon: LayoutDashboard },
+      { path: "/admin/inquiries", label: "Website Inquiries", icon: Inbox },
     ],
   },
   {
@@ -37,7 +38,7 @@ const STATIC_SECTIONS = [
       { path: "/collections/queue", label: "Call Queue", icon: ListOrdered },
       { path: "/collections/escalations", label: "Escalations", icon: AlertTriangle },
       { path: "/legal", label: "Legal", icon: Scale },
-      { path: "/financial-oversight", label: "Financial Oversight", icon: Eye },
+      { path: "/financial-management", label: "Financial Management", icon: Eye },
       { path: "/ar-movement", label: "AR Movement", icon: TrendingUp },
       { path: "/contracts", label: "Contracts & AR", icon: FileText },
       { path: "/clients", label: "Client Lookup", icon: Search },
@@ -71,12 +72,12 @@ const AppSidebar = () => {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        if (item.path === "/") return canAccessAdmin(role);
+        if (item.path === "/admin" || item.path === "/admin/inquiries") return canAccessAdmin(role);
         if (item.path === "/collections" || item.path === "/collections/queue" || item.path === "/collections/escalations") {
           return canAccessCollections(role);
         }
         if (item.path === "/legal") return canAccessLegal(role);
-        if (item.path === "/financial-oversight" || item.path === "/ar-movement") return canAccessFinancial(role);
+        if (item.path === "/financial-management" || item.path === "/ar-movement") return canAccessFinancial(role);
         if (item.path === "/contracts") return canAccessContracts(role);
         if (item.path === "/clients") return canAccessClients(role);
         if (item.path === "/import") return canAccessAdmin(role);
@@ -120,7 +121,7 @@ const AppSidebar = () => {
               </button>
               {!isCollapsed && section.items.map((item) => {
                 const isActive = location.pathname === item.path ||
-                  (item.path !== "/" && location.pathname.startsWith(item.path));
+                  (item.path !== "/admin" && location.pathname.startsWith(item.path));
                 return (
                   <Link
                     key={item.path}
