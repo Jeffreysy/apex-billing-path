@@ -210,12 +210,17 @@ export function useLegalKPI(year?: number) {
   });
 }
 
-/** 2. AR Dashboard view — for AR Portfolio tab */
+/** 2. AR Dashboard view — for AR Portfolio tab. Only the columns ARPortfolioTab reads, ORDER BY the
+ *  unique contract_id: unsorted select=* pages got a slow plan (6.4–8.2 s, half timed out at 8 s, so the
+ *  tab never loaded) and unsorted offset paging can skip/duplicate rows. 2026-10-13. */
+export const AR_PORTFOLIO_COLUMNS =
+  "contract_id, client_name, case_number, practice_area, contract_status, total_contract_value, amount_collected, remaining_balance, collection_pct, days_past_due, installments_remaining, next_due_date";
+
 export function useARDashboard() {
   return useQuery({
-    queryKey: ["ar-dashboard"],
+    queryKey: ["ar-dashboard", "portfolio-cols"],
     queryFn: async () => {
-      return fetchAllRows<any>("ar_dashboard");
+      return fetchAllRows<any>("ar_dashboard", { columns: AR_PORTFOLIO_COLUMNS, orderBy: "contract_id" });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -1773,5 +1778,76 @@ export function useClientSearch(term: string) {
     },
     staleTime: 60 * 1000,
     placeholderData: (prev) => prev,
+  });
+}
+
+// ========================
+// EXECUTIVE INSIGHTS — COLLECTOR ACTIVITY (2026-10-13)
+// ========================
+/** v_exec_collector_activity_monthly — GRAIN: one row per (calendar month, collector); ACTIVITY-grain counts
+ *  (non-junk). Replaces paging every collection_activities row for 6 months into the browser. Month is the
+ *  calendar month of activity_date (the old browser code counted every activity dated the 1st in the previous
+ *  month). is_system_actor = System-* (autopay/system postings, not human collector work). VP cert 6b600cd2. */
+export interface ExecCollectorActivityRow {
+  month: string;
+  collector: string;
+  activities: number;
+  minutes: number;
+  payments: number;
+  commission: number;
+  failed: number;
+  is_system_actor: boolean;
+}
+
+export function useExecCollectorActivityMonthly(month: string) {
+  return useQuery<ExecCollectorActivityRow[]>({
+    queryKey: ["exec-collector-activity-monthly", month],
+    enabled: !!month,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_exec_collector_activity_monthly")
+        .select("month, collector, activities, minutes, payments, commission, failed, is_system_actor")
+        .eq("month", `${month}-01`);
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((r) => ({
+        ...r,
+        activities: Number(r.activities) || 0,
+        minutes: Number(r.minutes) || 0,
+        payments: Number(r.payments) || 0,
+        commission: Number(r.commission) || 0,
+        failed: Number(r.failed) || 0,
+        is_system_actor: Boolean(r.is_system_actor),
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** The 10 most recent FAILED-outcome activities in a month (same outcome rule as the view's `failed`:
+ *  failed / refund / disputed / disconnected / no collection; non-junk), fetched server-side. */
+export const FAILED_OUTCOME_PATTERNS = ["failed", "refund", "disputed", "disconnected", "no collection"] as const;
+
+export function useExecFailedActivities(month: string) {
+  return useQuery<any[]>({
+    queryKey: ["exec-failed-activities", month],
+    enabled: !!month,
+    queryFn: async () => {
+      const [y, m] = month.split("-").map(Number);
+      const from = format(new Date(y, m - 1, 1), "yyyy-MM-dd");
+      const to = format(new Date(y, m, 1), "yyyy-MM-dd");
+      const { data, error } = await (supabase as any)
+        .from("collection_activities")
+        .select("id, activity_date, client_name, collector, outcome, collected_amount")
+        .gte("activity_date", from)
+        .lt("activity_date", to)
+        .not("is_junk", "is", true)
+        .or(FAILED_OUTCOME_PATTERNS.map((p) => `outcome.ilike.*${p}*`).join(","))
+        .order("activity_date", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
