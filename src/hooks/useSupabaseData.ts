@@ -327,6 +327,46 @@ export function useFilevineCaseReconciliationCandidates(limit = 50) {
 // TABLE-BASED HOOKS (kept for components that still need them)
 // ========================
 
+/** ar_dashboard row (CONTRACT grain) -> Client. Shared by the full list (useMergedClients) and the single-
+ *  contract fetch the Client Lookup profile uses (useArDashboardContract), so both map identically. */
+export function mapArDashboardRow(row: any): Client {
+  const totalOwed = Number(row.total_contract_value) || 0;
+  const totalPaid = Number(row.amount_collected) || 0;
+  const downPayment = Number(row.down_payment) || 0;
+  const monthlyPayment = Number(row.monthly_installment) || 0;
+  const installmentMonths = row.total_installments || 18;
+  const daysAging = row.days_past_due || 0;
+
+  return {
+    id: row.contract_id,
+    name: row.client_name || "Unknown",
+    email: row.email || "",
+    phone: row.phone || "",
+    contractStart: row.start_date || "",
+    contractEnd: "",
+    totalOwed,
+    totalPaid,
+    monthlyPayment,
+    downPayment,
+    installmentMonths,
+    status: mapStatus(row.contract_status, row.delinquency_status),
+    assignedCollector: row.collector || "Unassigned",
+    lastContact: "",
+    nextPaymentDue: row.next_due_date || "",
+    caseNumber: row.case_number || "",
+    caseType: row.practice_area || "",
+    caseStage: mapCaseStage(row.case_stage),
+    daysAging,
+    // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
+    // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
+    clientId: row.client_id || undefined,
+    retainerDate: row.start_date || "",
+    downPaymentPaid: row.down_payment_paid || false,
+    filevineId: undefined,
+    mycaseId: undefined,
+  };
+}
+
 export function useMergedClients() {
   return useQuery({
     queryKey: ["merged-clients"],
@@ -338,43 +378,7 @@ export function useMergedClients() {
       // ~6.5 s and timed out under load; sorted ~0.5 s each). 2026-10-13.
       const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
 
-      return rows.map((row): Client => {
-        const totalOwed = Number(row.total_contract_value) || 0;
-        const totalPaid = Number(row.amount_collected) || 0;
-        const downPayment = Number(row.down_payment) || 0;
-        const monthlyPayment = Number(row.monthly_installment) || 0;
-        const installmentMonths = row.total_installments || 18;
-        const daysAging = row.days_past_due || 0;
-
-        return {
-          id: row.contract_id,
-          name: row.client_name || "Unknown",
-          email: row.email || "",
-          phone: row.phone || "",
-          contractStart: row.start_date || "",
-          contractEnd: "",
-          totalOwed,
-          totalPaid,
-          monthlyPayment,
-          downPayment,
-          installmentMonths,
-          status: mapStatus(row.contract_status, row.delinquency_status),
-          assignedCollector: row.collector || "Unassigned",
-          lastContact: "",
-          nextPaymentDue: row.next_due_date || "",
-          caseNumber: row.case_number || "",
-          caseType: row.practice_area || "",
-          caseStage: mapCaseStage(row.case_stage),
-          daysAging,
-          // Carry the canonical client_id so downstream joins (MyCase 360, payments, activities)
-          // key on the client — NOT the contract_id in `id`. `id` stays the contract_id (row grain).
-          clientId: row.client_id || undefined,
-          retainerDate: row.start_date || "",
-          downPaymentPaid: row.down_payment_paid || false,
-          filevineId: undefined,
-          mycaseId: undefined,
-        };
-      });
+      return rows.map(mapArDashboardRow);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -1847,6 +1851,177 @@ export function useExecFailedActivities(month: string) {
         .limit(10);
       if (error) throw error;
       return data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ========================
+// CLIENT LOOKUP + PROMISE-TO-PAY — targeted fetches (2026-10-13)
+// ========================
+// The Client Lookup page used to preload the whole AR book, every payment (23 pages), every immigration
+// case (12) and every milestone before it could show one client; the Promise-to-Pay tab paged every
+// collection_activities row (45) and every payment (23) to find a handful of promises. These hooks fetch
+// only what the screen shows, with the SAME matching rules as before.
+
+/** Escape LIKE/ILIKE wildcards so a name is matched literally. */
+const likeLiteral = (s: string) => s.replace(/[\%_]/g, (m) => "\\" + m);
+
+/** One ar_dashboard contract (the Client Lookup profile), mapped exactly like useMergedClients. */
+export function useArDashboardContract(contractId: string | null) {
+  return useQuery<Client | null>({
+    queryKey: ["ar-dashboard-contract", contractId],
+    enabled: !!contractId,
+    queryFn: async () => {
+      // .order("contract_id") is load-bearing: without it the planner picks a slow plan for this view
+      // (5-6.6 s for ONE row); with it ~0.3 s. Measured 2026-10-13.
+      const { data, error } = await (supabase as any)
+        .from("ar_dashboard")
+        .select("*")
+        .eq("contract_id", contractId)
+        .order("contract_id");
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return row ? mapArDashboardRow(row) : null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** One client's payments (payments_clean), same rule as before: payments carrying a client_id match on it;
+ *  payments with no client_id match on the exact (case-insensitive) client name. Newest first. */
+export function useClientPayments(clientId: string | null | undefined, clientName: string | null | undefined) {
+  const name = (clientName || "").trim();
+  return useQuery<Payment[]>({
+    queryKey: ["client-payments", clientId ?? null, name.toLowerCase()],
+    enabled: !!clientId || !!name,
+    queryFn: async () => {
+      const cols = "id, client_id, client_name, amount, payment_date, payment_method, collector_name";
+      const reqs: Promise<any>[] = [];
+      if (clientId) reqs.push((supabase as any).from("payments_clean").select(cols).eq("client_id", clientId));
+      if (name) {
+        let q = (supabase as any).from("payments_clean").select(cols).ilike("client_name", likeLiteral(name));
+        if (clientId) q = q.is("client_id", null); // name only decides when the payment has no client_id
+        reqs.push(q);
+      }
+      const results = await Promise.all(reqs);
+      const seen = new Set<string>();
+      const rows: any[] = [];
+      for (const r of results) {
+        if (r.error) throw r.error;
+        for (const p of r.data ?? []) if (!seen.has(p.id)) { seen.add(p.id); rows.push(p); }
+      }
+      return rows
+        .map((p): Payment => ({
+          id: p.id,
+          clientId: p.client_id || "",
+          clientName: p.client_name || "Unknown",
+          amount: Number(p.amount) || 0,
+          date: p.payment_date,
+          method: mapPaymentMethod(p.payment_method),
+          collectorId: "",
+          collectorName: p.collector_name || "CRM",
+          status: "completed" as const,
+        }))
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** One client's immigration cases, same rule as before: case_number equals the client's case number, OR the
+ *  case has no client_id and its notes name ("Filevine: <name>") equals the client name. */
+export function useClientImmigrationCases(caseNumber: string | null | undefined, clientName: string | null | undefined) {
+  const cn = (caseNumber || "").trim();
+  const name = (clientName || "").trim();
+  return useQuery<any[]>({
+    queryKey: ["client-immigration-cases", cn, name.toLowerCase()],
+    enabled: !!cn || !!name,
+    queryFn: async () => {
+      const reqs: Promise<any>[] = [];
+      if (cn) reqs.push((supabase as any).from("immigration_cases").select("*").eq("case_number", cn));
+      if (name) reqs.push((supabase as any).from("immigration_cases").select("*").is("client_id", null).ilike("notes", `%${likeLiteral(name)}%`));
+      const results = await Promise.all(reqs);
+      const lname = name.toLowerCase();
+      const seen = new Set<string>();
+      const out: any[] = [];
+      results.forEach((r, i) => {
+        if (r.error) throw r.error;
+        const byName = cn ? i === 1 : true;
+        for (const ic of r.data ?? []) {
+          if (seen.has(ic.id)) continue;
+          if (byName && extractClientNameFromNotes(ic.notes).toLowerCase().trim() !== lname) continue;
+          seen.add(ic.id);
+          out.push(ic);
+        }
+      });
+      return out;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Milestones for a set of immigration cases (newest first). */
+export function useCaseMilestonesFor(caseIds: string[]) {
+  const ids = [...caseIds].sort();
+  return useQuery<any[]>({
+    queryKey: ["case-milestones-for", ids.join(",")],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("case_milestones").select("*").in("immigration_case_id", ids);
+      if (error) throw error;
+      return (data ?? []).sort((a: any, b: any) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Promise-to-Pay inputs. Formal commitments (payment_commitments) first; when that table is empty the tab
+ *  derives promises from OUTBOUND calls whose next_payment_expected starts with an ISO date — filtered in the
+ *  database instead of paging every collection_activities row. */
+export function usePtpPromiseSources() {
+  return useQuery({
+    queryKey: ["ptp-promise-sources"],
+    queryFn: async () => {
+      const [commitments, derived] = await Promise.all([
+        fetchAllRows<any>("payment_commitments", {
+          columns: "id, client_id, collector, promised_date, promised_amount", // no client_name column: the tab shows "—" as before
+          orderBy: "id",
+        }),
+        fetchAllRows<any>("collection_activities", {
+          columns: "id, client_id, client_name, collector, activity_type, next_payment_expected",
+          orderBy: "id",
+          filter: (q: any) =>
+            q.eq("activity_type", "outbound_call").filter("next_payment_expected", "match", "^[0-9]{4}-[0-9]{2}-[0-9]{2}"),
+        }),
+      ]);
+      return { commitments, derived };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Payments (client_id, date, amount) for a set of clients inside [from, to], newest first — the only payments
+ *  the Promise-to-Pay kept-check reads. */
+export function usePaymentsForClients(clientIds: string[], from: string | null, to: string | null) {
+  const ids = [...new Set(clientIds.filter(Boolean))].sort();
+  return useQuery<any[]>({
+    queryKey: ["payments-for-clients", ids.join(","), from, to],
+    enabled: ids.length > 0 && !!from && !!to,
+    queryFn: async () => {
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+      const pages = await Promise.all(
+        chunks.map((chunk) =>
+          fetchAllRows<any>("payments_clean", {
+            columns: "id, client_id, payment_date, amount",
+            orderBy: "payment_date",
+            ascending: false,
+            filter: (q: any) => q.in("client_id", chunk).gte("payment_date", from).lte("payment_date", to).order("id"),
+          }),
+        ),
+      );
+      return pages.flat();
     },
     staleTime: 5 * 60 * 1000,
   });

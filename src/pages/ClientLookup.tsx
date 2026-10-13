@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, useCollectors, usePaymentsData, useClientActivityHistory, useImmigrationCases, useCaseMilestones, useMyCaseClient360, extractClientNameFromNotes } from "@/hooks/useSupabaseData";
+import { useClientSearch, useArDashboardContract, useClientPayments, useClientImmigrationCases, useCaseMilestonesFor, useClientActivityHistory, useMyCaseClient360 } from "@/hooks/useSupabaseData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +13,18 @@ import { Search, User, FileText, Phone, DollarSign, Clock, AlertTriangle, CheckC
 import TakePaymentDialog, { type PaymentTarget } from "@/components/TakePaymentDialog";
 import CallDocumentationDialog from "@/components/CallDocumentationDialog";
 
+// 2026-10-13: the page no longer preloads the whole AR book, every payment, every immigration case and every
+// milestone. Search runs server-side (search_ar_clients: name / case # / invoice # / email, max 20) and a
+// client's contract, payments, cases and milestones are fetched only when that client is opened, with the
+// same matching rules as before.
 const ClientLookup = () => {
-  const { data: clients = [], isLoading: cl } = useMergedClients();
-  const { data: collectors = [] } = useCollectors();
-  const { data: payments = [] } = usePaymentsData();
-  const { data: immigrationCases = [] } = useImmigrationCases();
-  const { data: caseMilestones = [] } = useCaseMilestones();
   const [search, setSearch] = useState("");
+  const [term, setTerm] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+  const { data: hits = [], isFetching: searching } = useClientSearch(term);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
@@ -27,22 +33,29 @@ const ClientLookup = () => {
   // `selectedClientId` is the contract_id (Client.id === ar_dashboard.contract_id). The MyCase/LawPay/AR
   // world joins on the canonical client_id — so resolve the client first and drive the 360 + history off
   // `clientId`, never the contract_id (the old bug that left the entire MyCase 360 block silently empty).
-  const selectedClient = useMemo(() => clients.find(c => c.id === selectedClientId) || null, [selectedClientId, clients]);
+  const { data: selectedRow, isLoading: profileLoading } = useArDashboardContract(selectedClientId);
+  const selectedClient = selectedRow ?? null;
   const { data: myCase } = useMyCaseClient360(selectedClient?.clientId ?? null);
   const { data: clientCalls = [] } = useClientActivityHistory(selectedClient?.clientId ?? null, selectedClient?.name ?? null);
 
-  // Deep-link support: ?clientId=... or ?contractId=... selects a client on load
+  // Deep-link support: ?clientId=<contract_id> (header search) or ?contractId=... selects that contract on
+  // load; ?name=... resolves an exact (case-insensitive) name through the server-side search.
   useEffect(() => {
-    if (clients.length === 0) return;
-    const cid = searchParams.get("clientId");
-    const contractId = searchParams.get("contractId");
+    const cid = searchParams.get("clientId") || searchParams.get("contractId");
     const name = searchParams.get("name");
-    let match: any = null;
-    if (cid) match = clients.find(c => c.id === cid);
-    if (!match && contractId) match = clients.find(c => (c as any).contractId === contractId);
-    if (!match && name) match = clients.find(c => c.name.toLowerCase() === name.toLowerCase());
-    if (match) setSelectedClientId(match.id);
-  }, [clients, searchParams]);
+    if (cid) {
+      if (cid !== selectedClientId) setSelectedClientId(cid);
+      return;
+    }
+    if (!name) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any).rpc("search_ar_clients", { p_term: name, p_limit: 20 });
+      const exact = (data ?? []).find((r: any) => (r.client_name || "").toLowerCase() === name.toLowerCase());
+      if (!cancelled && exact) setSelectedClientId(exact.contract_id);
+    })();
+    return () => { cancelled = true; };
+  }, [searchParams]);
 
   // Keep URL in sync when user picks a client manually
   useEffect(() => {
@@ -53,53 +66,19 @@ const ClientLookup = () => {
     setSearchParams(next, { replace: true });
   }, [selectedClientId]);
 
-  const filteredClients = useMemo(() => {
-    if (!search.trim()) return [];
-    const q = search.toLowerCase();
-    return clients.filter(c => c.name.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) || c.email.toLowerCase().includes(q));
-  }, [search, clients]);
+  const searchActive = term.length >= 2 && search.trim().length >= 2;
+  const filteredClients = searchActive ? hits : [];
 
   // Payments key on client_id when both sides carry one; fall back to exact-name only when the id is absent.
-  const clientPayments = useMemo(
-    () => selectedClient ? payments.filter(p =>
-      (selectedClient.clientId && p.clientId)
-        ? p.clientId === selectedClient.clientId
-        : p.clientName.toLowerCase() === selectedClient.name.toLowerCase()
-    ).sort((a, b) => b.date.localeCompare(a.date)) : [],
-    [selectedClient, payments]
-  );
+  const { data: clientPayments = [] } = useClientPayments(selectedClient?.clientId ?? null, selectedClient?.name ?? null);
 
   // clientCalls now comes from useClientActivityHistory (client_id-first, full history) — no month cap.
 
-  const assignedCollector = useMemo(
-    () => selectedClient ? collectors.find(c => c.name === selectedClient.assignedCollector) : null,
-    [selectedClient, collectors]
-  );
-
-  // Immigration cases for selected client - match by client_id OR by name from notes field
-  const clientCasesById = useMemo(() => {
-    if (!selectedClient) return [];
-    const clientName = selectedClient.name.toLowerCase().trim();
-    return immigrationCases.filter(ic => {
-      // Match by case_number
-      if (ic.case_number === selectedClient.caseNumber) return true;
-      // Match by client_id if available (through clients table linkage)
-      if (ic.client_id) return false; // already handled above if case_number matched
-      // Match by extracting name from notes field (remove "Filevine: " prefix)
-      const notesName = extractClientNameFromNotes(ic.notes).toLowerCase().trim();
-      return notesName === clientName;
-    });
-  }, [selectedClient, immigrationCases]);
-
-  // Get milestones for this client's cases
-  const clientMilestones = useMemo(() => {
-    const caseIds = new Set(clientCasesById.map(c => c.id));
-    return caseMilestones
-      .filter(m => caseIds.has(m.immigration_case_id))
-      .sort((a, b) => (b.milestone_date || "").localeCompare(a.milestone_date || ""));
-  }, [clientCasesById, caseMilestones]);
-
-  if (cl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading...</div></DashboardLayout>;
+  // Immigration cases for selected client: case_number match, or (no client_id) name from the notes field
+  const { data: clientCasesById = [] } = useClientImmigrationCases(selectedClient?.caseNumber ?? null, selectedClient?.name ?? null);
+  const caseIds = useMemo(() => clientCasesById.map((c: any) => c.id), [clientCasesById]);
+  // Get milestones for this client's cases (newest first)
+  const { data: clientMilestones = [] } = useCaseMilestonesFor(caseIds);
 
   const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
     active: { variant: "default", icon: CheckCircle },
@@ -147,7 +126,7 @@ const ClientLookup = () => {
             {filteredClients.slice(0, 20).map(c => {
               const cfg = statusConfig[c.status];
               return (
-                <button key={c.id} onClick={() => { setSelectedClientId(c.id); setSearch(""); }} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
+                <button key={c.contractId} onClick={() => { setSelectedClientId(c.contractId); setSearch(""); setTerm(""); }} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
                   <div><p className="font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.caseNumber} · {c.caseType}</p></div>
                   <Badge variant={cfg.variant} className="text-xs capitalize">{c.status}</Badge>
                 </button>
@@ -155,12 +134,14 @@ const ClientLookup = () => {
             })}
           </div>
         )}
-        {search.trim() && filteredClients.length === 0 && (
+        {searchActive && !searching && filteredClients.length === 0 && (
           <div className="absolute left-0 right-0 top-14 z-50 rounded-lg border bg-card p-4 text-center text-sm text-muted-foreground shadow-lg">No clients found matching "{search}"</div>
         )}
       </div>
 
-      {selectedClient ? (
+      {selectedClientId && profileLoading ? (
+        <div className="p-8 text-center text-muted-foreground">Loading client…</div>
+      ) : selectedClient ? (
         <div className="space-y-6">
           <div className="dashboard-section">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -268,7 +249,7 @@ const ClientLookup = () => {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Case Number</span><span className="font-mono font-semibold">{selectedClient.caseNumber}</span></div><Separator />
                 <div className="flex justify-between"><span className="text-muted-foreground">Case Type</span><span className="font-medium">{selectedClient.caseType}</span></div><Separator />
-                <div className="flex justify-between"><span className="text-muted-foreground">Assigned Collector</span><span className="font-medium">{assignedCollector?.name ?? selectedClient.assignedCollector ?? "—"}</span></div><Separator />
+                <div className="flex justify-between"><span className="text-muted-foreground">Assigned Collector</span><span className="font-medium">{selectedClient.assignedCollector ?? "—"}</span></div><Separator />
                 <div className="flex justify-between"><span className="text-muted-foreground">Contract Period</span><span>{selectedClient.contractStart} → {selectedClient.contractEnd || "Ongoing"}</span></div>
               </CardContent>
             </Card>
