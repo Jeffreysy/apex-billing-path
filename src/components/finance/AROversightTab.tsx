@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
+import { fetchAllRows, usePtpPromiseSources, usePaymentsForClients } from "@/hooks/useSupabaseData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,24 +34,13 @@ function downloadCsv(filename: string, rows: Record<string, any>[]) {
 
 // ---------- PTP Kept Rate ----------
 function PTPSection() {
-  // Use payment_commitments if populated, else derive from collection_activities.next_payment_expected
-  const { data: commitments = [] } = useQuery({
-    queryKey: ["ptp-commitments"],
-    queryFn: async () => fetchAllRows<any>("payment_commitments"),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ["ptp-activities"],
-    queryFn: async () => fetchAllRows<any>("collection_activities"),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: payments = [] } = useQuery({
-    queryKey: ["ptp-payments"],
-    queryFn: async () => fetchAllRows<any>("payments_clean", { orderBy: "payment_date", ascending: false }),
-    staleTime: 5 * 60 * 1000,
-  });
+  // Use payment_commitments if populated, else derive from collection_activities.next_payment_expected.
+  // 2026-10-13: both are filtered in the database (usePtpPromiseSources) and the kept-check only loads the
+  // promised clients' payments inside the promise windows — instead of paging every activity (45 requests)
+  // and every payment (23). Same rules, same numbers.
+  const { data: sources } = usePtpPromiseSources();
+  const commitments: any[] = sources?.commitments ?? [];
+  const activities: any[] = sources?.derived ?? [];
 
   // Derive promises: prefer payment_commitments table; else build from activities
   const promises = useMemo(() => {
@@ -85,6 +74,19 @@ function PTPSection() {
         source: "derived" as const,
       }));
   }, [commitments, activities]);
+
+  // The kept-check window for each promise is [promised_date - 1 month, promised_date].
+  const paymentWindow = useMemo(() => {
+    if (promises.length === 0) return { ids: [] as string[], from: null as string | null, to: null as string | null };
+    let from = "9999-12-31", to = "0000-01-01";
+    for (const p of promises) {
+      const h = format(subMonths(parseISO(p.promised_date), 1), "yyyy-MM-dd");
+      if (h < from) from = h;
+      if (p.promised_date > to) to = p.promised_date;
+    }
+    return { ids: promises.map((p: any) => p.client_id).filter(Boolean), from, to };
+  }, [promises]);
+  const { data: payments = [] } = usePaymentsForClients(paymentWindow.ids, paymentWindow.from, paymentWindow.to);
 
   // Group payments by client for kept-check
   const paymentsByClient = useMemo(() => {
