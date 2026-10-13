@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  Phone, DollarSign, TrendingUp, LayoutDashboard, FileText, Search,
+  Phone, TrendingUp, LayoutDashboard, FileText, Search,
   Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
+import { BrandMark } from "@/components/BrandLogo";
 import {
   canAccessAdmin,
   canAccessClients,
@@ -98,9 +99,7 @@ const AppSidebar = () => {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-          <DollarSign className="h-4 w-4 text-sidebar-primary-foreground" />
-        </div>
+        <BrandMark reversed className="h-7 w-7" />
         <div>
           <h1 className="text-sm font-bold text-sidebar-primary-foreground">LexCollect</h1>
           <p className="text-[10px] text-sidebar-foreground/60">Billing &amp; Collections</p>
