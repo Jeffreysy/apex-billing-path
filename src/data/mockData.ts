@@ -52,6 +52,8 @@ export interface Client {
   caseStage: CaseStage;
   daysAging: number;
   clientId?: string; // canonical clients.id — the identity key MyCase/LawPay/AR-book join on (distinct from `id`, which is the contract_id)
+  invoiceNumber?: string; // ar_dashboard row grain (unique, stable) — the key the Client Lookup page selects and deep-links on
+  contractId?: string | null; // contracts.id ONLY when the AR row has a real matched contract; null for snapshot-only rows (the view fakes a random contract_id for those)
   tags?: string[];
   notes?: ClientNote[];
   retainerDate: string;

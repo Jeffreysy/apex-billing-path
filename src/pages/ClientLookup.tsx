@@ -20,19 +20,22 @@ const ClientLookup = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // The URL is the single source of truth for which client is open. Every link into this page is
-  // honoured: ?contractId= / ?id= (contract_id, which is Client.id), ?clientId= (canonical clients.id,
-  // what CollectorDashboard passes), or ?name=. Picking a client from the dropdown writes ?contractId=.
+  // honoured: ?invoice= (the AR row's invoice_number — the only stable key, what this page and the
+  // header search write), ?contractId= / ?id= (contract_id), ?clientId= (canonical clients.id, what
+  // CollectorDashboard passes), or ?name=.
   const lookupKey = useMemo(() => ({
+    invoice: searchParams.get("invoice"),
     contractId: searchParams.get("contractId") || searchParams.get("id"),
     clientId: searchParams.get("clientId"),
     name: searchParams.get("name"),
   }), [searchParams]);
-  const hasLookupKey = !!(lookupKey.contractId || lookupKey.clientId || lookupKey.name);
+  const hasLookupKey = !!(lookupKey.invoice || lookupKey.contractId || lookupKey.clientId || lookupKey.name);
   const { data: selectedClient = null, isLoading: clientLoading, error: clientError } = useClientLookup(lookupKey);
 
-  const selectClient = (contractId: string) => {
+  const selectClient = (c: { id: string; invoiceNumber?: string }) => {
     const next = new URLSearchParams();
-    next.set("contractId", contractId);
+    if (c.invoiceNumber) next.set("invoice", c.invoiceNumber);
+    else next.set("contractId", c.id);
     setSearchParams(next, { replace: true });
     setSearch("");
   };
@@ -52,7 +55,7 @@ const ClientLookup = () => {
   const { data: clientMilestones = [] } = useClientCaseMilestones(caseIds);
 
   // Close the dropdown when the user navigates away from the search box via a deep link.
-  useEffect(() => { if (hasLookupKey) setSearch(""); }, [hasLookupKey, lookupKey.contractId, lookupKey.clientId, lookupKey.name]);
+  useEffect(() => { if (hasLookupKey) setSearch(""); }, [hasLookupKey, lookupKey.invoice, lookupKey.contractId, lookupKey.clientId, lookupKey.name]);
 
   const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: typeof CheckCircle }> = {
     active: { variant: "default", icon: CheckCircle },
@@ -67,10 +70,10 @@ const ClientLookup = () => {
   const paymentTarget: PaymentTarget | null = selectedClient
     ? {
         clientId: selectedClient.id,
-        contractId: (selectedClient as any).contractId || null,
+        contractId: selectedClient.contractId ?? null, // verified contracts.id, or null for snapshot-only AR rows
         clientName: selectedClient.name,
         email: selectedClient.email,
-        invoiceNumber: (selectedClient as any).invoiceNumber || null,
+        invoiceNumber: selectedClient.invoiceNumber || null,
         caseNumber: selectedClient.caseNumber,
         defaultAmount: Math.max(0, selectedClient.totalOwed - selectedClient.totalPaid),
         collectorName: selectedClient.assignedCollector || null,
@@ -82,7 +85,7 @@ const ClientLookup = () => {
   const callAccount = selectedClient
     ? {
         client_id: selectedClient.clientId ?? null,
-        contract_id: selectedClient.id, // Client.id === contract_id
+        contract_id: selectedClient.contractId ?? null, // verified contracts.id only; the AR view fakes contract_id for unmatched rows
         client_name: selectedClient.name,
         collector: selectedClient.assignedCollector || null,
         assigned_collector: selectedClient.assignedCollector || null,
@@ -100,7 +103,7 @@ const ClientLookup = () => {
             {filteredClients.map(c => {
               const cfg = statusConfig[c.status];
               return (
-                <button key={c.id} onClick={() => selectClient(c.id)} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
+                <button key={c.invoiceNumber ?? c.id} onClick={() => selectClient(c)} className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent">
                   <div><p className="font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.caseNumber} · {c.caseType}</p></div>
                   <Badge variant={cfg.variant} className="text-xs capitalize">{c.status}</Badge>
                 </button>

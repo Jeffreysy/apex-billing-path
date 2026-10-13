@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 /** Header search. Queries the server once typing pauses instead of downloading every client on
- *  every page, and deep-links with ?contractId= (Client.id is the contract_id), which /clients reads. */
+ *  every page, and deep-links with ?invoice= (the AR row's stable key), which /clients reads. */
 const ClientSearchBar = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -34,8 +34,8 @@ const ClientSearchBar = () => {
         <div className="absolute left-0 right-0 top-10 z-50 max-h-64 overflow-y-auto rounded-lg border bg-card shadow-lg">
           {filtered.map((c) => (
             <button
-              key={c.id}
-              onMouseDown={() => { navigate(`/clients?contractId=${encodeURIComponent(c.id)}`); setSearch(""); setOpen(false); }}
+              key={c.invoiceNumber ?? c.id}
+              onMouseDown={() => { navigate(c.invoiceNumber ? `/clients?invoice=${encodeURIComponent(c.invoiceNumber)}` : `/clients?contractId=${encodeURIComponent(c.id)}`); setSearch(""); setOpen(false); }}
               className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
             >
               <div>

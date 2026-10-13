@@ -182,7 +182,9 @@ export function useARDashboard() {
   return useQuery({
     queryKey: ["ar-dashboard"],
     queryFn: async () => {
-      return fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
+      // invoice_number is the view's row grain (unique, never null). contract_id is NOT a stable key:
+      // the live view fills it with gen_random_uuid() for rows without a matched contract.
+      return fetchAllRows<any>("ar_dashboard", { orderBy: "invoice_number" });
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -328,6 +330,7 @@ export function mapArRowToClient(row: ArDashboardRow): Client {
     downPaymentPaid: row.down_payment_paid || false,
     filevineId: undefined,
     mycaseId: undefined,
+    invoiceNumber: row.invoice_number ?? undefined,
   };
 }
 
@@ -354,8 +357,10 @@ export function useMergedClients() {
       // Keep ALL ar_dashboard rows — do NOT drop delinquency_status = 'Paid'. The 08-04 client-ar + VP
       // ruling LOCKED that those "Paid"-but-open rows are REAL AR (~$104K; "Paid" is a stale contracts
       // label bled via the unreliable invoice_number join). Matches ExecutiveInsights + the certified book.
-      // contract_id is the view's row grain, so ordering on it keeps the .range() pages disjoint.
-      const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "contract_id" });
+      // invoice_number is the view's row grain (unique, never null), so ordering on it keeps the
+      // .range() pages disjoint. contract_id is NOT stable: the live view fills it with
+      // gen_random_uuid() for rows without a matched contract.
+      const rows = await fetchAllRows<any>("ar_dashboard", { orderBy: "invoice_number" });
       return rows.map(mapArRowToClient);
     },
     staleTime: 5 * 60 * 1000,
@@ -390,7 +395,7 @@ export function useClientSearch(term: string, limit = 20) {
         .select("*")
         .or(`client_name.ilike."${pattern}",case_number.ilike."${pattern}",email.ilike."${pattern}"`)
         .order("client_name", { ascending: true })
-        .order("contract_id", { ascending: true })
+        .order("invoice_number", { ascending: true })
         .limit(limit);
       if (error) throw error;
       return (data ?? []).map(mapArRowToClient);
@@ -398,33 +403,48 @@ export function useClientSearch(term: string, limit = 20) {
   });
 }
 
-export type ClientLookupKey = { contractId?: string | null; clientId?: string | null; name?: string | null };
+export type ClientLookupKey = { invoice?: string | null; contractId?: string | null; clientId?: string | null; name?: string | null };
 
-/** Resolve ONE client for the profile page. Accepts the contract_id (Client.id), the canonical
- *  clients.id, or an exact name — in that priority — so every deep link into /clients resolves. */
+/** Resolve ONE client for the profile page. Accepts the AR row's invoice_number (the stable key this
+ *  page links on), a contract_id (Client.id), the canonical clients.id, or an exact name — in that
+ *  priority — so every deep link into /clients resolves. The live ar_dashboard view fakes a random
+ *  contract_id for rows with no matched contract, so the resolved client also carries `contractId`
+ *  set ONLY when that id really exists in contracts (write-backs must never use the fake one). */
 export function useClientLookup(key: ClientLookupKey) {
+  const invoice = key.invoice?.trim() || null;
   const contractId = key.contractId?.trim() || null;
   const clientId = key.clientId?.trim() || null;
   const name = key.name?.trim() || null;
   return useQuery({
-    queryKey: ["client-lookup", contractId, clientId, name],
-    enabled: !!(contractId || clientId || name),
+    queryKey: ["client-lookup", invoice, contractId, clientId, name],
+    enabled: !!(invoice || contractId || clientId || name),
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<Client | null> => {
       const attempts: Array<() => PromiseLike<{ data: ArDashboardRow[] | null; error: { message: string } | null }>> = [];
-      if (contractId) attempts.push(() => supabase.from("ar_dashboard").select("*").eq("contract_id", contractId).limit(1));
+      const base = () => supabase.from("ar_dashboard").select("*");
+      if (invoice) attempts.push(() => base().eq("invoice_number", invoice).limit(1));
+      if (contractId) attempts.push(() => base().eq("contract_id", contractId).order("invoice_number").limit(1));
       if (clientId) {
-        attempts.push(() => supabase.from("ar_dashboard").select("*").eq("client_id", clientId).order("contract_id").limit(1));
+        attempts.push(() => base().eq("client_id", clientId).order("invoice_number").limit(1));
         // Older links (and this page's own URLs before the fix) put the contract_id under ?clientId=.
-        attempts.push(() => supabase.from("ar_dashboard").select("*").eq("contract_id", clientId).limit(1));
+        attempts.push(() => base().eq("contract_id", clientId).order("invoice_number").limit(1));
       }
-      if (name) attempts.push(() => supabase.from("ar_dashboard").select("*").ilike("client_name", sanitizeSearchTerm(name)).order("contract_id").limit(1));
+      if (name) attempts.push(() => base().ilike("client_name", sanitizeSearchTerm(name)).order("invoice_number").limit(1));
+      let row: ArDashboardRow | null = null;
       for (const run of attempts) {
         const { data, error } = await run();
         if (error) throw error;
-        if (data && data.length > 0) return mapArRowToClient(data[0]);
+        if (data && data.length > 0) { row = data[0]; break; }
       }
-      return null;
+      if (!row) return null;
+      const client = mapArRowToClient(row);
+      let realContractId: string | null = null;
+      if (row.contract_id) {
+        const { data: contract, error } = await supabase.from("contracts").select("id").eq("id", row.contract_id).limit(1);
+        if (error) throw error;
+        realContractId = contract && contract.length > 0 ? contract[0].id : null;
+      }
+      return { ...client, contractId: realContractId };
     },
   });
 }
