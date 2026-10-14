@@ -2,10 +2,12 @@
 /**
  * Built-in contact form, placed with the shortcode [lexcollect_contact].
  *
- * Each submission is saved under "Inquiries" in wp-admin and emailed to the
- * firm inbox (LEXCOLLECT_CONTACT_EMAIL), so a lead is never lost if email delivery fails.
- * The visitor gets a branded confirmation (inc/confirmation-email.php).
- * Change the recipient with the lexcollect_contact_recipient filter.
+ * Each submission is saved under "Inquiries" in wp-admin, so a lead is never lost
+ * if email delivery fails, then emailed to the WordPress admin address and the firm
+ * inbox (LEXCOLLECT_CONTACT_EMAIL). The visitor gets a branded confirmation
+ * (inc/confirmation-email.php). Whether each email went out, or why it didn't, is
+ * recorded on the inquiry and shown in the Inquiries list. Change the recipients
+ * with the lexcollect_contact_recipient filter.
  *
  * @package LexCollect
  */
@@ -53,7 +55,80 @@ function lexcollect_contact_options() {
 	);
 }
 
+/**
+ * Everyone who hears about a call request: the WordPress admin address and the
+ * firm inbox, without duplicates.
+ *
+ * @return string[]
+ */
+function lexcollect_contact_recipients() {
+	$to = array_values( array_unique( array_filter( array( get_option( 'admin_email' ), LEXCOLLECT_CONTACT_EMAIL ), 'is_email' ) ) );
+	return (array) apply_filters( 'lexcollect_contact_recipient', $to );
+}
+
+/**
+ * Sends one email and says what happened: "sent", or "failed: " and the
+ * mailer's own reason, so a delivery problem can be pinned to a request.
+ *
+ * @param string|string[] $to      Recipients.
+ * @param string          $subject Subject.
+ * @param string          $body    Body.
+ * @param string[]        $headers Headers.
+ * @return string
+ */
+function lexcollect_mail( $to, $subject, $body, $headers = array() ) {
+	$error = '';
+	$catch = static function ( $wp_error ) use ( &$error ) {
+		$error = $wp_error->get_error_message();
+	};
+	add_action( 'wp_mail_failed', $catch );
+	$ok = wp_mail( $to, $subject, $body, $headers );
+	remove_action( 'wp_mail_failed', $catch );
+
+	if ( $ok ) {
+		return 'sent';
+	}
+	return 'failed: ' . ( '' !== $error ? $error : __( 'the mailer did not accept the message', 'lexcollect' ) );
+}
+
 add_shortcode( 'lexcollect_contact', 'lexcollect_contact_form' );
+
+/*
+ * Inquiries list: whether each email went out, and which page the request came from.
+ * Requests saved before theme 2.4.1 show a dash.
+ */
+add_filter(
+	'manage_lc_inquiry_posts_columns',
+	function ( $columns ) {
+		$columns['lc_mail_firm']    = __( 'Emailed to firm', 'lexcollect' );
+		$columns['lc_mail_visitor'] = __( 'Confirmation to visitor', 'lexcollect' );
+		$columns['lc_sent_from']    = __( 'Sent from', 'lexcollect' );
+		return $columns;
+	}
+);
+add_action(
+	'manage_lc_inquiry_posts_custom_column',
+	function ( $column, $post_id ) {
+		$keys = array(
+			'lc_mail_firm'    => '_lc_mail_firm',
+			'lc_mail_visitor' => '_lc_mail_visitor',
+			'lc_sent_from'    => '_lc_sent_from',
+		);
+		if ( ! isset( $keys[ $column ] ) ) {
+			return;
+		}
+		$value = (string) get_post_meta( $post_id, $keys[ $column ], true );
+		if ( '' === $value ) {
+			echo '&mdash;';
+		} elseif ( 0 === strpos( $value, 'failed' ) ) {
+			echo '<strong style="color:#b32d2e">' . esc_html( $value ) . '</strong>';
+		} else {
+			echo esc_html( $value );
+		}
+	},
+	10,
+	2
+);
 
 /**
  * Renders the call-request form.
@@ -185,7 +260,7 @@ function lexcollect_handle_contact() {
 	}
 	$body = implode( "\n", $lines );
 
-	wp_insert_post(
+	$post_id = wp_insert_post(
 		array(
 			'post_type'    => 'lc_inquiry',
 			'post_status'  => 'private',
@@ -194,14 +269,21 @@ function lexcollect_handle_contact() {
 		)
 	);
 
-	$to = apply_filters( 'lexcollect_contact_recipient', LEXCOLLECT_CONTACT_EMAIL );
-	wp_mail(
+	$to   = lexcollect_contact_recipients();
+	$firm = lexcollect_mail(
 		$to,
 		/* translators: 1: firm name, 2: person's name */
 		sprintf( __( 'New call request: %1$s (%2$s)', 'lexcollect' ), $data['Firm'], $data['Name'] ),
 		$body . "\n\n" . __( 'All inquiries:', 'lexcollect' ) . ' ' . admin_url( 'edit.php?post_type=lc_inquiry' ),
 		array( 'Reply-To: ' . $data['Name'] . ' <' . $data['Email'] . '>' )
 	);
+	$visitor = lexcollect_send_confirmation( $data );
 
-	$back( lexcollect_send_confirmation( $data ) ? 'ok' : 'saved' );
+	if ( $post_id && ! is_wp_error( $post_id ) ) {
+		update_post_meta( $post_id, '_lc_mail_firm', $firm . ' (' . implode( ', ', $to ) . ')' );
+		update_post_meta( $post_id, '_lc_mail_visitor', $visitor . ' (' . $data['Email'] . ')' );
+		update_post_meta( $post_id, '_lc_sent_from', $return );
+	}
+
+	$back( 'sent' === $visitor ? 'ok' : 'saved' );
 }
