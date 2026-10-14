@@ -108,7 +108,7 @@ export default function ExecutiveInsights() {
   // 2026-10-14: Money Flow reads the AR roll-forward by month (v_ar_waterfall, snapshot grain) and the delinquent
   // recovery reads certified cash (mv_collections_certified_monthly). Both used to fall back to payments_clean
   // (client-linked LawPay only — Jul $286,820 vs $1,768,833.95 certified).
-  const { data: waterfallRows = [] } = useArWaterfall();
+  const { data: waterfallRows = [], isLoading: wfLoading, isError: wfError } = useArWaterfall();
   const { data: certifiedMonths = [] } = useCertifiedMonthlyCollections(MONTH_OPTIONS + 1);
   // Hero band (2026-10-13): each tile fetches its own VP-certified view and owns its loading /
   // error state, so the band renders independently of the legacy browser-side pull below.
@@ -170,6 +170,8 @@ export default function ExecutiveInsights() {
       { name: "Closing AR", value: closingAR, type: "balance" },
     ];
     const movementSpan = mv ? { from: mv.firstSnapshot, to: mv.lastSnapshot, periods: mv.periods } : null;
+    // "unavailable" (query failed / still loading) is NOT "no snapshot": only say "no snapshot" after a good read.
+    const movementState: "ok" | "none" | "loading" | "error" = mv ? "ok" : wfError ? "error" : wfLoading ? "loading" : "none";
 
     // Calendar-month test on the DATE string. new Date("yyyy-mm-dd") is UTC midnight, i.e. the previous
     // evening in US time zones, which used to count every payment dated the 1st in the previous month.
@@ -207,6 +209,7 @@ export default function ExecutiveInsights() {
       waterfall,
       closingAR,
       movementSpan,
+      movementState,
       bucketRows,
       bucketMax,
       recoveredFromDelinquent,
@@ -214,7 +217,7 @@ export default function ExecutiveInsights() {
       linkedMonthTotal,
       certifiedCashMonth,
     };
-  }, [data, monthVal, firmSummary, waterfallRows, certifiedMonths]);
+  }, [data, monthVal, firmSummary, waterfallRows, wfLoading, wfError, certifiedMonths]);
 
   // Collector time & activity (selected month), aggregated server-side (v_exec_collector_activity_monthly,
   // VP cert 6b600cd2) instead of paging every collection_activities row into the browser. "Collected" is the
@@ -317,7 +320,11 @@ export default function ExecutiveInsights() {
             title="Money Flow"
             caption={view.movementSpan
               ? `AR roll-forward · MyCase snapshots ${view.movementSpan.from} → ${view.movementSpan.to} (${view.movementSpan.periods} period${view.movementSpan.periods === 1 ? "" : "s"}) · ${monthLabel}`
-              : `No MyCase AR snapshot landed in ${monthLabel} — no movement to show`}
+              : view.movementState === "loading"
+                ? `Loading the AR roll-forward · ${monthLabel}`
+                : view.movementState === "error"
+                  ? `AR roll-forward unavailable right now (snapshot waterfall did not load) — showing closing AR only · ${monthLabel}`
+                  : `No MyCase AR snapshot landed in ${monthLabel} — no movement to show`}
           />
           {(() => {
             const opening = view.waterfall[0].value;

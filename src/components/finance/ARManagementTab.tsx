@@ -250,7 +250,7 @@ function PTPSection() {
 //   - Certified cash = mv_collections_certified_monthly (bank-supported, transaction grain). Reductions include
 //     write-offs/adjustments and are on the snapshot clock, so they legitimately differ from cash.
 function ARRollForwardSection() {
-  const { data: waterfall = [] } = useArWaterfall();
+  const { data: waterfall = [], isLoading: wfLoading, isError: wfError } = useArWaterfall();
   const { data: cash = [] } = useCertifiedMonthlyCollections(6);
 
   const rollForward = useMemo(() => {
@@ -259,7 +259,7 @@ function ARRollForwardSection() {
       const m = byMonth.get(c.monthKey);
       return {
         month: format(parseISO(`${c.monthKey}-01`), "MMM yy"),
-        snapshots: m ? `${m.firstSnapshot} → ${m.lastSnapshot}` : "no snapshot",
+        snapshots: m ? `${m.firstSnapshot} → ${m.lastSnapshot}` : wfError ? "unavailable" : wfLoading ? "loading…" : "no snapshot",
         beginning: m ? m.beginning : null,
         additions: m ? m.additions : null,
         reductions: m ? m.reductions : null,
@@ -268,7 +268,7 @@ function ARRollForwardSection() {
         certifiedCash: c.total,
       };
     });
-  }, [waterfall, cash]);
+  }, [waterfall, cash, wfError, wfLoading]);
 
   const withMove = rollForward.filter((r) => r.net != null);
   const totals = {
@@ -320,6 +320,7 @@ function ARRollForwardSection() {
               <p className="mt-1 text-xs text-muted-foreground">
                 MyCase AR snapshots (v_ar_waterfall) grouped by the month each snapshot is dated in · certified cash from
                 mv_collections_certified_monthly. Reductions include write-offs and adjustments, so they differ from cash.
+                {wfError ? " The snapshot waterfall did not load just now — AR columns show “—”; certified cash is unaffected." : ""}
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => downloadCsv(`ar-rollforward-${format(new Date(), "yyyy-MM-dd")}.csv`, csvRows)}>

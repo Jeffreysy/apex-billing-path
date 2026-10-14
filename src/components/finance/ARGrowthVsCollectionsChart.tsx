@@ -20,7 +20,8 @@ const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 const ARGrowthVsCollectionsChart = () => {
   const { data: cash = [], isLoading: cl } = useCertifiedMonthlyCollections(MONTHS);
-  const { data: waterfall = [], isLoading: wl } = useArWaterfall();
+  // The waterfall is optional here: cash renders even if the roll-forward fails, and the tile says so.
+  const { data: waterfall = [], isError: wfError } = useArWaterfall();
   const { data: firmSummary } = useFirmFinancialSummary();
 
   const result = useMemo(() => {
@@ -43,7 +44,7 @@ const ARGrowthVsCollectionsChart = () => {
     return { data, totalColl, netChange, span, monthsWithMove: withMove.length };
   }, [cash, waterfall]);
 
-  if (cl || wl) {
+  if (cl) {
     return <div className="p-4 text-center text-muted-foreground text-sm">Loading AR vs Collections...</div>;
   }
 
@@ -61,9 +62,9 @@ const ARGrowthVsCollectionsChart = () => {
         />
         <StatCard
           label="Net AR Change"
-          value={`${netChange >= 0 ? "+" : "-"}${money(Math.abs(netChange))}`}
+          value={wfError || monthsWithMove === 0 ? "—" : `${netChange >= 0 ? "+" : "-"}${money(Math.abs(netChange))}`}
           icon={netChange >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-          caption={`MyCase snapshot roll-forward · ${monthsWithMove} month${monthsWithMove === 1 ? "" : "s"} with a snapshot`}
+          caption={wfError ? "AR roll-forward unavailable right now (snapshot waterfall did not load)" : `MyCase snapshot roll-forward · ${monthsWithMove} month${monthsWithMove === 1 ? "" : "s"} with a snapshot`}
         />
         <StatCard
           label="Total AR Now"

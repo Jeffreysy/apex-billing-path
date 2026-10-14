@@ -4,7 +4,8 @@
  * mv_collections_certified_monthly (Nov 2025 – Oct 2026 MTD) and v_ar_waterfall grouped by month. No client data.
  */
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 const CERT = [
   ["2025-11", 2153232.07, 298162], ["2025-12", 1660205.07, 225023], ["2026-01", 1578465.55, 103467],
@@ -22,6 +23,8 @@ const WF = [
   ["2026-09-28", 17447843, 981382, 952624, 17476601], ["2026-10-12", 17476601, 533200, 506915, 17502886],
 ] as const;
 
+const wf = vi.hoisted(() => ({ fail: false }));
+
 vi.mock("@/hooks/useSupabaseData", async () => {
   const actual = await vi.importActual<any>("@/hooks/useSupabaseData");
   return {
@@ -32,8 +35,9 @@ vi.mock("@/hooks/useSupabaseData", async () => {
         monthKey: k, month: k, total: Math.round(t), totalExact: t, delinquent: Math.round(d), onPlan: Math.round(t - d), from180: 0, autopayEnrolled: 0, basis: "",
       })),
     }),
-    useArWaterfall: () => ({
+    useArWaterfall: () => wf.fail ? ({ isLoading: false, isError: true, data: undefined }) : ({
       isLoading: false,
+      isError: false,
       data: WF.map(([pd, b, a, r, e]) => ({ prior_date: null, period_date: pd, beginning: b, additions: a, reductions: r, ending: e })),
     }),
     useFirmFinancialSummary: () => ({ data: { ar_total: 17502885.52, as_of: "2026-10-12", open_invoices: 3924 } }),
@@ -43,6 +47,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 
 import ARGrowthVsCollectionsChart from "./ARGrowthVsCollectionsChart";
 
+afterEach(() => cleanup());
 beforeAll(() => {
   (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 });
@@ -59,5 +64,15 @@ describe("Collections vs AR Movement (Finance overview)", () => {
     expect(text).toContain("3,924 invoices");
     expect(text).toContain("$1,646,089"); // avg of the 11 closed months
     expect(text).not.toContain("AR Growth Rate");
+  });
+
+  it("live 10-14: when the snapshot waterfall fails (HTTP 500), cash still renders and the AR tile says unavailable", () => {
+    wf.fail = true;
+    render(<ARGrowthVsCollectionsChart />);
+    const text = document.body.textContent || "";
+    expect(text).toContain("$18,403,131");
+    expect(text).toContain("AR roll-forward unavailable right now");
+    expect(text).not.toContain("-$5,592,733");
+    wf.fail = false;
   });
 });
