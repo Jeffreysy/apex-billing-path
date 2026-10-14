@@ -102,7 +102,7 @@ const AppSidebar = () => {
         <BrandMark reversed className="h-7 w-7" />
         <div>
           <h1 className="text-sm font-bold text-sidebar-primary-foreground">LexCollect</h1>
-          <p className="text-[10px] text-sidebar-foreground/60">Billing &amp; Collections</p>
+          <p className="text-[10px] text-sidebar-foreground/60">AR Software</p>
         </div>
       </div>
 
