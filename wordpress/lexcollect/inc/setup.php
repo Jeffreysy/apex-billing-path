@@ -107,12 +107,70 @@ function lexcollect_setup_screen() {
 			<li><?php esc_html_e( 'Replace every yellow "Placeholder" or "Add figure" tag and every [bracketed] field with real content.', 'lexcollect' ); ?></li>
 			<li><?php esc_html_e( 'Set LEXCOLLECT_BOOKING_URL (your Google Calendar booking page) and LEXCOLLECT_APP_LOGIN_URL at the top of functions.php.', 'lexcollect' ); ?></li>
 			<li><?php esc_html_e( 'Set your Site Icon in Settings > General (use lexcollect-site-icon-512.png from the Brand folder).', 'lexcollect' ); ?></li>
-			<li><?php esc_html_e( 'Contact form submissions arrive by email and are also saved under Inquiries in this menu.', 'lexcollect' ); ?></li>
+			<li><?php esc_html_e( 'Call requests are saved under Inquiries, emailed to the addresses below, and confirmed to the visitor by email. The Inquiries list shows whether each email went out.', 'lexcollect' ); ?></li>
 			<li><?php esc_html_e( 'Change colors, fonts and spacing site-wide in Appearance > Editor > Styles.', 'lexcollect' ); ?></li>
 		</ol>
+
+		<h2 id="lc-test-mail"><?php esc_html_e( 'Test email delivery', 'lexcollect' ); ?></h2>
+		<?php $result = get_transient( 'lexcollect_test_mail_' . get_current_user_id() ); ?>
+		<?php if ( $result ) : ?>
+			<?php delete_transient( 'lexcollect_test_mail_' . get_current_user_id() ); ?>
+			<div class="notice inline <?php echo false !== strpos( $result, 'failed' ) ? 'notice-error' : 'notice-success'; ?>">
+				<p><?php echo esc_html( $result ); ?></p>
+			</div>
+		<?php endif; ?>
+		<p style="max-width:640px">
+			<?php
+			/* translators: %s: comma-separated email addresses */
+			echo esc_html( sprintf( __( 'Call requests are emailed to: %s.', 'lexcollect' ), implode( ', ', lexcollect_contact_recipients() ) ) );
+			echo ' ';
+			esc_html_e( 'This sends those addresses a test message, and sends you a sample of the confirmation a visitor gets. If either is missing after a few minutes, check spam, then install WP Mail SMTP and connect it to the firm mailbox.', 'lexcollect' );
+			?>
+		</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="lexcollect_test_mail">
+			<?php wp_nonce_field( 'lexcollect_test_mail' ); ?>
+			<?php submit_button( __( 'Send a test email', 'lexcollect' ), 'secondary' ); ?>
+		</form>
 	</div>
 	<?php
 }
+
+add_action(
+	'admin_post_lexcollect_test_mail',
+	function () {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to send a test email.', 'lexcollect' ) );
+		}
+		check_admin_referer( 'lexcollect_test_mail' );
+
+		$user = wp_get_current_user();
+		$to   = lexcollect_contact_recipients();
+		$firm = lexcollect_mail(
+			$to,
+			__( 'LexCollect test: call requests reach this inbox', 'lexcollect' ),
+			__( 'This is a test from your website. If you can read it, call requests from the booking form will reach this inbox.', 'lexcollect' )
+		);
+		$sample = lexcollect_send_confirmation(
+			array(
+				'Name'      => $user->display_name,
+				'Firm'      => get_bloginfo( 'name' ),
+				'Email'     => $user->user_email,
+				'Firm size' => '',
+				'Systems'   => '',
+			)
+		);
+
+		set_transient(
+			'lexcollect_test_mail_' . get_current_user_id(),
+			/* translators: 1: result for the firm addresses, 2: those addresses, 3: result for the sample, 4: your address */
+			sprintf( __( 'Test to the firm: %1$s (%2$s). Sample confirmation to you: %3$s (%4$s).', 'lexcollect' ), $firm, implode( ', ', $to ), $sample, $user->user_email ),
+			5 * MINUTE_IN_SECONDS
+		);
+		wp_safe_redirect( admin_url( 'themes.php?page=lexcollect-setup#lc-test-mail' ) );
+		exit;
+	}
+);
 
 add_action(
 	'admin_post_lexcollect_setup',

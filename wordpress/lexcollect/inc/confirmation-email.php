@@ -212,7 +212,7 @@ function lexcollect_confirmation_email( array $data ) {
  * email passes the domain's SPF and DKIM checks; only the display name changes.
  *
  * @param array $data Sanitized submission.
- * @return bool Whether the mailer accepted the message.
+ * @return string "sent", or "failed: " and the mailer's reason (see lexcollect_mail()).
  */
 function lexcollect_send_confirmation( array $data ) {
 	$email     = lexcollect_confirmation_email( $data );
@@ -225,7 +225,7 @@ function lexcollect_send_confirmation( array $data ) {
 
 	add_filter( 'wp_mail_from_name', $from_name );
 	add_action( 'phpmailer_init', $alt_body );
-	$sent = wp_mail(
+	$sent = lexcollect_mail(
 		$data['Email'],
 		$email['subject'],
 		$email['html'],
