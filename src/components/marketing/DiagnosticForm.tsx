@@ -125,7 +125,7 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
             id={id("firmType")}
             type="text"
             required
-            placeholder="e.g. professional services with payment plans"
+            placeholder="e.g. immigration: asylum, family petitions, removal defense"
             value={form.firmType}
             onChange={update("firmType")}
           />
@@ -144,7 +144,7 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
 
       <div className="field">
         <label htmlFor={id("systems")}>
-          Systems you use <span className="opt">(client management, payments, accounting)</span>
+          Systems you use <span className="opt">(case management, payments, accounting)</span>
         </label>
         <input
           id={id("systems")}
@@ -161,7 +161,7 @@ const DiagnosticForm = ({ heading, sourcePage, idPrefix = "lc" }: Props) => {
         </label>
         <textarea
           id={id("message")}
-          placeholder="Unmatched payments, a growing unapplied balance, payment plans that drift..."
+          placeholder="Payments we can't match, families who stopped answering, plans that drift..."
           value={form.message}
           onChange={update("message")}
         />

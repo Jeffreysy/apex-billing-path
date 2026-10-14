@@ -24,7 +24,8 @@ export const INTEGRATIONS = ["MyCase", "Filevine", "LawPay", "HubSpot", "QuickBo
 /** The home page's logo strip: the systems above, plus the tools LexCollect runs automations and outreach through. */
 export const LOGO_STRIP = [...INTEGRATIONS, "Zapier", "Mailchimp", "Aircall"] as const;
 
-export const BLOG_POST_SLUG = "where-firms-lose-money-between-systems";
+// Matches the live WordPress post's address.
+export const BLOG_POST_SLUG = "immigration-firms-lose-money-between-systems";
 export const blogPostPath = (slug: string) => `${MARKETING_ROUTES.blog}/${slug}`;
 
 export interface DiagnosticInquiry {

@@ -82,8 +82,8 @@ function lexcollect_confirmation_email( array $data ) {
 
 	$steps = array(
 		array( __( 'We reply within one business day', 'lexcollect' ), __( 'to set a time that works for your team.', 'lexcollect' ) ),
-		array( __( 'We walk through your systems', 'lexcollect' ), __( 'Your client-management, payment and accounting tools, and where money seems to go missing.', 'lexcollect' ) ),
-		array( __( "You see what's recoverable", 'lexcollect' ), __( 'Late, unmatched, failed-card and ready-to-connect, with a dollar figure on each.', 'lexcollect' ) ),
+		array( __( 'We walk through your systems', 'lexcollect' ), __( 'Your case management, payment and accounting tools, and where payments seem to go missing.', 'lexcollect' ) ),
+		array( __( "You see what's recoverable", 'lexcollect' ), __( 'Late, never credited, failed-card and ready-to-reconnect, with a dollar figure on each.', 'lexcollect' ) ),
 	);
 
 	$answers = array_filter(

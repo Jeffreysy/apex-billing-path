@@ -78,12 +78,13 @@ export const MockConnect = () => (
     <ol className="hm-thread">
       <li className="hm-msg hm-msg--out">
         <span className="hm-msg__meta">Text · 9:14 AM · Delivered</span>
-        Hi Ana, it's the billing team at Morgan &amp; Hale. The card on your payment plan didn't go through. You can
-        update it here in about a minute: <u>pay.morganhale.com/u/8F2K</u>
+        Hi Ana, it's Lucía from the billing team at Morgan &amp; Hale. Thank you for staying with your plan. This
+        month's card payment didn't go through. Nothing about your case has changed. You can update the card here in
+        about a minute: <u>pay.morganhale.com/u/8F2K</u>
       </li>
       <li className="hm-msg hm-msg--in">
         <span className="hm-msg__meta">Reply · 9:31 AM</span>
-        Done, sorry about that. Can I catch up on the 15th?
+        Done, thank you for telling me. Can I catch up on the 15th?
       </li>
       <li className="hm-event">
         <i className="hm-dot hm-dot--ok" aria-hidden="true" /> Card updated · promise logged: $1,050 on Oct 15
@@ -140,7 +141,7 @@ export const MockRecover = () => (
 
 const CHECKS: { name: string; meta: string; state: string; tone: Tone }[] = [
   { name: "Monthly receivables snapshot", meta: "Captured on the 1st · 12-month trend", state: "Certified", tone: "ok" },
-  { name: "Processor to client system", meta: "2,013 matched · 759 queued for a person", state: "Healthy", tone: "ok" },
+  { name: "Processor to case system", meta: "2,013 matched · 759 queued for a person", state: "Healthy", tone: "ok" },
   { name: "Contracts marked paid with no payments", meta: "428 found with ~4% collected · reclassified, reversible", state: "Flagged", tone: "warn" },
   { name: "Duplicate and orphan clients", meta: "561 contracts re-linked · 89 duplicates merged", state: "Healthy", tone: "ok" },
   { name: "Double-booking guard", meta: "A retried payment can't be booked twice", state: "Healthy", tone: "ok" },

@@ -6,9 +6,9 @@ import { AccountCard, type AccountState, MockConnect, MockRecover, MockRun, Mock
 import { CONTACT_EMAIL, INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const HOME_META = {
-  title: "AR Accounting Services for Firms | LexCollect",
+  title: "Accounting & Client Trust for Immigration Law Firms | LexCollect",
   description:
-    "LexCollect is an accounts-receivable accounting service for firms: one reconciled number for everything you're owed, and an automatic way back to the clients behind every late balance.",
+    "LexCollect gives immigration and humanitarian law firms one source of truth across case management, payments, books and bank, so every payment a family makes is seen, credited and honored, and clients stay connected to the firm.",
 };
 
 /*
@@ -144,13 +144,14 @@ const Hero = () => (
     <div className="container">
       <div className="hm-hero__grid">
         <div className="hm-hero__copy">
-          <p className="eyebrow">Accounts-receivable accounting for firms</p>
+          <p className="eyebrow">For immigration &amp; humanitarian law firms</p>
           <h1>
-            Every dollar accounted for. <em>Every client connected.</em>
+            Every payment is an act of trust. <em>Honor every one.</em>
           </h1>
           <p className="lead">
-            One reconciled number for everything your firm is owed, across your client system, processor, books and
-            bank. And an automatic, on-brand way back to the client behind every late balance.
+            Your clients pay for their future in installments, from their own card, a relative's or a sponsor's.
+            LexCollect brings your case system, processor, books and bank into one source of truth, so your firm sees
+            every payment, credits it to the right family, and never chases someone who already paid.
           </p>
           <div className="actions">
             <BookCallLink className="btn btn--primary">
@@ -171,12 +172,59 @@ const Hero = () => (
   </section>
 );
 
+/* ---------- Why trust is the whole job ---------- */
+
+const TRUST = [
+  {
+    kicker: "The client",
+    title: "Living with a fear most of us never carry",
+    text: "Many of the people your firm represents are undocumented, waiting years on a decision, or part of a mixed-status family. A knock at the door, an official-looking letter or a call from a number they don't know can feel like the start of losing everything they've built here.",
+  },
+  {
+    kicker: "The payment",
+    title: "Every installment is a sacrifice",
+    text: "They work long hours, often in jobs with no security, to keep a household running here and often a family back home. Your fee is paid out of that, month after month, sometimes by a brother, a spouse or an employer. Each payment says: I trust you with my future.",
+  },
+  {
+    kicker: "The break",
+    title: "When the firm can't see it, trust breaks",
+    text: "When a payment lands in one system and not another, the firm asks about money the family already paid, or says nothing while they quietly fall behind. Either way the client hears the same thing: they don't see me. Clients who stop trusting the firm stop answering, and a case that depends on staying in touch is put at risk.",
+  },
+];
+
+const Trust = () => (
+  <section className="section section--light ab-story" id="trust">
+    <div className="container">
+      <div className="ab-story__grid">
+        <div className="ab-story__lead" data-reveal>
+          <p className="eyebrow">Why trust is the whole job</p>
+          <blockquote className="ab-quote">
+            For many of your clients, an unexpected call about money isn't a reminder. It's a reason to be afraid.
+          </blockquote>
+          <p className="ab-quote__cite">
+            LexCollect exists to close the gap between what a family has paid and what your firm can see.
+          </p>
+        </div>
+        <ol className="ab-chapters">
+          {TRUST.map((c, i) => (
+            <li key={c.kicker} data-reveal data-reveal-delay={i * 100}>
+              <span className="ab-chapters__kicker">{c.kicker}</span>
+              <h3>{c.title}</h3>
+              <p>{c.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+);
+
 /* ---------- Proof ---------- */
 
 const PROOF: ProofItem[] = [
   { n: 21.4, decimals: 1, prefix: "$", suffix: "M", label: "receivables book reconciled to the firm's own ground truth" },
   { n: 3.5, decimals: 1, prefix: "$", suffix: "M", label: "in balances re-linked to the right clients through a system migration" },
-  { n: 228, label: "willing payers reached with one message instead of a collections call" },
+  { n: 228, label: "clients who wanted to pay, reached with one update-your-card message instead of a collections call" },
   { n: 928, prefix: "$", suffix: "K", label: "kept out of hard debt by separating failed cards from delinquency" },
 ];
 
@@ -186,7 +234,7 @@ const Proof = () => (
     items={PROOF}
     intro={
       <>
-        From the first deployment, inside a high-volume firm.{" "}
+        From the first deployment, inside a high-volume immigration firm.{" "}
         <Link to={MARKETING_ROUTES.results}>
           Read the results <Arrow />
         </Link>
@@ -199,7 +247,7 @@ const Proof = () => (
 
 const RECONCILED = 412_860;
 const SOURCES = [
-  { system: "Client system", tool: "MyCase", raw: 411_410, note: "+$1,450.00 · 2 payments made by a relative, now linked to the client" },
+  { system: "Case system", tool: "MyCase", raw: 411_410, note: "+$1,450.00 · 2 payments made by a relative, now credited to the client" },
   { system: "Processor", tool: "LawPay", raw: 412_860, note: "Matches the deposit record" },
   { system: "Books", tool: "QuickBooks", raw: 414_060, note: "−$1,200.00 · 1 duplicate entry removed" },
   { system: "Bank", tool: "Operating account", raw: 402_331.06, note: "+$10,528.94 · deposit in transit, cleared Oct 1" },
@@ -210,15 +258,17 @@ const Recon = () => (
     <div className="container">
       <div className="hm-recon__grid">
         <div className="hm-recon__copy" data-reveal>
-          <p className="eyebrow">Every dollar accounted for</p>
-          <h2>Most firms have four versions of what they collected.</h2>
+          <p className="eyebrow">One source of truth</p>
+          <h2>Most immigration firms have four versions of what a family has paid.</h2>
           <p className="lead">
-            The client system, the processor, the books and the bank each tell a different story, so the partners pick
-            one and hope. LexCollect ties them into one number and explains every dollar of difference.
+            A deposit at the consultation, installments from a sponsor's card, a filing fee passed through, a payment
+            taken at the front desk. The case system, the processor, the books and the bank each hold a piece, so the
+            partners pick one and hope. LexCollect ties them into one number and explains every dollar of difference.
           </p>
           <ul className="hm-ticks">
-            <li>Payments traced from the client system to the bank deposit</li>
-            <li>Payments made by a relative or employer linked to the right client</li>
+            <li>Payments traced from the case system to the bank deposit</li>
+            <li>Payments by a relative, sponsor or employer credited to the right client</li>
+            <li>Each matter in a household kept apart, so one case never looks overdue for another's payment</li>
             <li>A certified snapshot every month, so trends are real history</li>
           </ul>
         </div>
@@ -289,16 +339,16 @@ const CAPABILITIES: Capability[] = [
     id: "see",
     tab: "See every dollar",
     title: "A receivables number the partners can trust, every month.",
-    text: "One live view across your client system, processor, books and bank, with a certified snapshot on the 1st that you can hand to the partners.",
+    text: "One live view across your case system, processor, books and bank, with a certified snapshot on the 1st that you can hand to the partners.",
     points: ["Aging and open AR from real history, not a re-run of today", "Expected deposits by week", "Unmatched payments counted and queued, never parked"],
     screens: "AR Management · Controller view · AR Movement · Monthly snapshots",
     Mock: MockSee,
   },
   {
     id: "connect",
-    tab: "Reconnect clients",
-    title: "Most late accounts aren't refusals. They're clients the firm lost touch with.",
-    text: "The right message, by email or text, goes to the right client at the right moment, in your firm's voice. A person steps in only when the client needs one.",
+    tab: "Reach families with care",
+    title: "Most late accounts aren't refusals. They're families the firm lost touch with.",
+    text: "A clear, respectful message, by email or text, reaches the right client at the right moment, in your firm's name and voice. A person steps in only when the family needs one.",
     points: ["Balances reconciled before anything is sent", "Failed cards get an update link, not a collections call", "Every reply and promise logged to the account"],
     screens: "Connect queue · Email & SMS · Client lists · Commitments",
     Mock: MockConnect,
@@ -306,9 +356,9 @@ const CAPABILITIES: Capability[] = [
   {
     id: "recover",
     tab: "Recover hard debt",
-    title: "Older balances get a plan the client can keep.",
-    text: "Ninety-day-plus accounts get a sequence instead of a shouting match: a reconciled balance first, a clear message, a plan, and a record of every promise.",
-    points: ["Promises tracked to the date and the dollar", "Missed installments surface while they're small", "Hardship requests routed to the right person"],
+    title: "Older balances get a plan the family can keep.",
+    text: "Ninety-day-plus accounts get patience with a structure: a reconciled balance first, a clear and respectful message, a plan that fits a paycheck, and a record of every promise.",
+    points: ["Promises tracked to the date and the dollar", "Missed installments surface while they're small", "Hardship requests routed to someone who can say yes"],
     screens: "Hard-debt sequences · Promise tracking · Hardship requests · Card recovery",
     Mock: MockRecover,
   },
@@ -329,7 +379,9 @@ const Explore = () => (
       <div className="hm-explore__head" data-reveal>
         <p className="eyebrow">The platform</p>
         <h2>One place for the whole receivables job.</h2>
-        <p className="lead">Four jobs an accounting department does for a firm, each one a working part of LexCollect today.</p>
+        <p className="lead">
+          Four jobs a high-level accounting department does for a firm, each one a working part of LexCollect today.
+        </p>
       </div>
       <div className="hm-tabs" data-tabs data-autoplay="9000" data-reveal>
         <div className="hm-tabs__list" aria-label="Platform capabilities">
@@ -403,7 +455,7 @@ const LOOP: { key: string; title: string; text: string; card: AccountState }[] =
   {
     key: "connect",
     title: "Connect",
-    text: "A clear, on-brand text or email goes out: a failed card, a missed installment, a balance due. It's logged, and a person steps in only when needed.",
+    text: "A clear, respectful text or email goes out in your firm's name: a failed card, a missed installment, a balance due. It's logged, and a person steps in only when needed.",
     card: {
       status: "Message sent · 9:14 AM",
       tone: "info",
@@ -451,8 +503,8 @@ const Loop = () => (
   <section className="section section--light hm-loop" id="connect">
     <div className="container">
       <div className="hm-loop__head" data-reveal>
-        <p className="eyebrow">Every client connected</p>
-        <h2>From “they stopped paying” to a plan and a payment.</h2>
+        <p className="eyebrow">Every family heard</p>
+        <h2>From “they stopped answering” to a plan the family can keep.</h2>
         <p className="lead">One account, four steps, a record at every one. A partner can see what happened without asking.</p>
       </div>
       <div className="hm-loop__grid" data-scrolly>
@@ -501,8 +553,8 @@ const ResultsBand = () => (
             rest was a named backlog with an owner.
           </blockquote>
           <p className="muted">
-            A high-volume firm running MyCase, Filevine, LawPay, HubSpot and QuickBooks, with thousands of payment plans
-            and payers who weren't the client.
+            A high-volume immigration firm running MyCase, Filevine, LawPay, HubSpot and QuickBooks, with thousands of
+            payment plans and families paying for one another.
           </p>
           <Link className="hm-link" to={MARKETING_ROUTES.results}>
             Read the full results <Arrow />
@@ -527,7 +579,7 @@ const ROLES = [
   { who: "Partners & owners", what: "The number, and the reason behind it", text: "Certified AR, team performance and the biggest movers in the book this month." },
   { who: "Controllers & administrators", what: "Reconciled, forecastable, defensible", text: "Expected deposits, cash-flow analytics and the month-end packet, ready." },
   { who: "Billing & client relations", what: "A queue that's already prioritized", text: "Messages, promises, hardship requests and the client's full ledger on one screen." },
-  { who: "Service teams", what: "Delivery sees what billing sees", text: "Pipeline by stage, deadline watch and an inbox for escalations that need someone who knows the client." },
+  { who: "Case teams", what: "Attorneys and paralegals see what billing sees", text: "The plan, the payments, deadline watch and an inbox for escalations that need someone who knows the client." },
 ];
 
 const Roles = () => (
@@ -535,10 +587,10 @@ const Roles = () => (
     <div className="container">
       <div className="hm-roles__head" data-reveal>
         <p className="eyebrow">Suited to your firm</p>
-        <h2>Built for everyone who touches the money.</h2>
+        <h2>Built for everyone who touches the money, and the relationship.</h2>
         <p className="lead">
-          Roles, queues, messages, product lines and integrations are configuration, not code. Your clients hear from
-          your firm, in your voice.
+          Roles, queues, messages, case types and integrations are configuration, not code. Your clients hear from your
+          firm, in your voice, never from a stranger.
         </p>
       </div>
       <ul className="hm-roles__grid">
@@ -559,14 +611,18 @@ const Roles = () => (
 const FAQS = [
   {
     q: "What is LexCollect?",
-    a: "An accounts-receivable accounting service for firms: the visibility, automation and client connection of a high-level accounting department, delivered as software and run by people who know receivables. It reconciles your client system, processor, books and bank into one view of what you're owed, then runs the outreach, promises, escalations and reporting on top of it.",
+    a: "An accounts-receivable accounting service built for immigration and humanitarian law firms: the visibility, automation and client connection of a high-level accounting department, delivered as software and run by people who know receivables. It reconciles your case system, processor, books and bank into one source of truth, then runs the outreach, promises, escalations and reporting on top of it.",
   },
   {
-    q: "Do you provide collectors?",
-    a: "No. LexCollect provides the connection: the queues, the automated email and text, the promises and the record. Your own team handles the conversations that need a person, with the client's reconciled ledger in front of them.",
+    q: "Why does an immigration firm need this more than other firms?",
+    a: "Because the billing is harder and the relationship is more fragile. Flat fees paid over months or years, payments from relatives and sponsors, several matters in one household, names spelled three different ways, and clients for whom an unexpected call about money can be frightening. Getting the record right is how the firm keeps their trust.",
   },
   {
-    q: "Does it replace our client-management or accounting software?",
+    q: "Is LexCollect a collections agency?",
+    a: "No. Nobody from LexCollect calls your clients. LexCollect provides the connection: the reconciled book, the queues, the respectful automated email and text, the promises and the record. Your own team handles the conversations that need a person, with the client's reconciled ledger in front of them.",
+  },
+  {
+    q: "Does it replace our case management or accounting software?",
     a: "No. LexCollect sits across the systems you already run and reconciles them. Your team keeps working in the same tools.",
   },
   {
@@ -575,7 +631,7 @@ const FAQS = [
   },
   {
     q: "What does the first call involve?",
-    a: "One conversation about your systems, then a first look at your book: what's late, what's unmatched, which clients have simply lost touch, and what you could recover first. No exports needed for the first call.",
+    a: "One conversation about your practice and your systems, then a first look at your book: what's late, which payments were never credited, which families have simply lost touch, and what you could recover first. No exports needed for the first call.",
   },
 ];
 
@@ -601,10 +657,10 @@ const Start = () => (
       <div className="hm-start__grid">
         <div className="hm-start__copy">
           <p className="eyebrow">Book a call</p>
-          <h2>See what your own book says.</h2>
+          <h2>See where money, and trust, are slipping.</h2>
           <p className="lead">
-            Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is
-            worth, and which clients one message would bring back.
+            Tell us about your practice and the systems you use. We'll show you where payments are going unseen, which
+            families have quietly lost touch, and what a respectful message would bring back.
           </p>
           <ol className="next-steps">
             <li>
@@ -613,11 +669,11 @@ const Start = () => (
             </li>
             <li>
               <b>We walk through your systems</b>
-              <span>Your client-management, payment and accounting tools, and where money seems to go missing.</span>
+              <span>Your case management, payment and accounting tools, and where payments seem to go missing.</span>
             </li>
             <li>
               <b>You see what's recoverable</b>
-              <span>Late, unmatched, failed-card and ready-to-connect, with a dollar figure on each.</span>
+              <span>Late, never credited, failed-card and ready-to-reconnect, with a dollar figure on each.</span>
             </li>
           </ol>
           <p className="hm-start__alt">
@@ -640,6 +696,7 @@ const LandingPage = () => {
   return (
     <SiteShell>
       <Hero />
+      <Trust />
       <Proof />
       <Recon />
       <Explore />

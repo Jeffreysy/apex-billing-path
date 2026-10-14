@@ -111,10 +111,9 @@ def main() -> None:
         patterns / "post-article.php",
         pattern_header(
             "post-article",
-            "Starter article",
-            "Where Firms Lose Money Between Their Systems and the Bank. Saved as a draft post by LexCollect setup.",
+            "Article: Where Immigration Firms Lose Money, and Trust",
+            "The full article. LexCollect setup saves it as a draft post; insert it into the live post to update that one.",
             categories="lexcollect",
-            extra=" * Inserter: no\n",
         )
         + html_block(prose_html),
     )

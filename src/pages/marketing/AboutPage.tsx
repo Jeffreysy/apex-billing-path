@@ -4,9 +4,9 @@ import MomentumCard from "@/components/marketing/MomentumCard";
 import { MARKETING_ROUTES } from "@/lib/marketing";
 
 export const ABOUT_META = {
-  title: "About LexCollect | An Accounting Department at Your Fingertips",
+  title: "About LexCollect | The Accounting Department Immigration Firms Never Had",
   description:
-    "LexCollect was built in a firm's finance department to reconcile receivables, automate client outreach, and give partners a number they can trust. An elite accounting firm's visibility and automation, as a service.",
+    "LexCollect was built inside a high-volume immigration firm to give partners one source of truth across every system and to protect the trust between the firm and the families it serves. High-level accounting and visibility, as a service.",
 };
 
 /**
@@ -24,12 +24,12 @@ const STORY = [
   {
     kicker: "Before",
     title: "Five systems, each right about its own piece",
-    text: "The firm ran MyCase, then Filevine, took payments through LawPay, tracked leads in HubSpot and closed the books in QuickBooks. None of them agreed about the whole, and the “true AR” lived in a spreadsheet someone rebuilt from raw exports every month.",
+    text: "The firm ran MyCase, then Filevine, took payments through LawPay, tracked leads in HubSpot and closed the books in QuickBooks. Families paid from their own cards, a cousin's or a sponsor's. None of the systems agreed about the whole, so a family who had paid could still look overdue, and the “true AR” lived in a spreadsheet someone rebuilt from raw exports every month.",
   },
   {
     kicker: "What we built",
     title: "The thing in the middle",
-    text: "It reconciled a $21M book to the firm's own ground truth, found hundreds of contracts marked paid that weren't, re-linked $3.5M of balances to the right clients, and replaced rounds of calls with reconciled lists, automated email and SMS, and a record of every contact.",
+    text: "It reconciled a $21M book to the firm's own ground truth, found hundreds of contracts marked paid that weren't, re-linked $3.5M of balances to the right clients, and replaced rounds of calls with reconciled lists, respectful email and SMS, and a record of every contact.",
   },
   {
     kicker: "What came next",
@@ -39,20 +39,24 @@ const STORY = [
 ];
 
 const OUTCOMES = [
-  { title: "Maximize revenue", text: "Collect more of what was already billed, add paying clients, and see which products to sell more of." },
+  { title: "Client trust", text: "The connection between firm and family, rebuilt: nobody is chased for money they already paid, and nobody who is struggling is ignored." },
+  { title: "Maximize revenue", text: "Collect more of what was already billed, add paying clients, and see which case types to grow." },
   { title: "Financial visibility", text: "One reconciled, certified view of receivables across every system." },
-  { title: "Recover hard debt", text: "A prioritized queue, sequences instead of call rounds, promises that get followed, and failed cards handled gently." },
+  { title: "Recover hard debt", text: "A prioritized queue, respectful sequences instead of call rounds, promises that get followed, and failed cards handled gently." },
   { title: "Accountability", text: "Every team member measured from the full record, every day." },
   { title: "Internal communication", text: "Escalations with queues, priorities and owners instead of email chains." },
-  { title: "Client trust", text: "The connection between firm and client, rebuilt: nobody is chased for money they already paid." },
-  { title: "Products & lifecycle", text: "Cash by product and where in an engagement's life it arrives." },
-  { title: "Works with your CRM", text: "Any CRM that exports or has an API. Leads validated by money, and a client 360 the books agree with." },
+  { title: "Case types & lifecycle", text: "Cash by case type, and where in a case's life it arrives." },
+  { title: "Works with every system", text: "Any case system or CRM that exports or has an API. Leads validated by money, and a client 360 the books agree with." },
 ];
 
 const PRINCIPLES = [
   {
-    title: "Reconcile before you collect",
-    text: "A message built on unreconciled data wastes the firm's credibility and the client's trust. We tie every dollar to a client, contract and invoice before anyone is contacted.",
+    title: "Reconcile before you reach out",
+    text: "A message built on unreconciled data costs the firm its credibility and the family its trust. We tie every dollar to a client, contract and invoice before anyone is contacted.",
+  },
+  {
+    title: "Write for someone who may be afraid",
+    text: "Every message is clear, respectful and in the firm's own name. It thanks people for what they've paid, offers a plan before a deadline, and never reads like a threat. Hardship gets a person, not another reminder.",
   },
   {
     title: "Every finding has a price and an owner",
@@ -69,10 +73,10 @@ const PRINCIPLES = [
 ];
 
 const FIT = [
-  "We bill clients and carry receivables",
-  "We run payment plans or installments",
-  "Our systems don't agree on what we're owed",
-  "Someone on our team chases late accounts by hand",
+  "We handle immigration or humanitarian cases",
+  "Our clients pay flat fees on payment plans",
+  "Relatives, sponsors or employers often pay for our clients",
+  "Our systems don't agree on who has paid",
 ];
 
 const AboutPage = () => {
@@ -86,10 +90,10 @@ const AboutPage = () => {
         eyebrow="About LexCollect"
         title={
           <>
-            An elite accounting department, <em>at your fingertips.</em>
+            The accounting department <em>immigration firms never had.</em>
           </>
         }
-        lead="LexCollect is an AR accounting service for firms. It reconciles your client, payment, accounting and bank data into one live view of what you're owed, automates the outreach that keeps clients current, and rebuilds the connection between your firm and the people who owe it money."
+        lead="LexCollect was built inside a high-volume immigration firm, where thousands of families were paying for their cases in installments and the firm's systems couldn't agree on who had paid. It reconciles your case, payment, accounting and bank data into one source of truth, and protects the trust between your firm and the families who depend on it."
         aside={
           <figure className="page-hero__figure">
             <div className="page-hero__visual">
@@ -116,8 +120,8 @@ const AboutPage = () => {
             <div className="ab-story__lead" data-reveal>
               <p className="eyebrow">Our story</p>
               <blockquote className="ab-quote">
-                The partners didn't need a prettier report. They needed one number they could trust, and a way to
-                reconnect with the clients behind it.
+                The partners didn't need a prettier report. They needed one number they could trust, and a way back
+                to the families behind it.
               </blockquote>
               <p className="ab-quote__cite">Why LexCollect exists</p>
             </div>
@@ -159,7 +163,7 @@ const AboutPage = () => {
             <div className="ab-principles__head" data-reveal>
               <p className="eyebrow">Principles</p>
               <h2>How we work.</h2>
-              <p className="lead">Four rules every number, message and cleanup has to pass before it reaches a partner or a client.</p>
+              <p className="lead">Five rules every number, message and cleanup has to pass before it reaches a partner or a family.</p>
             </div>
             <ol className="ab-principles__list">
               {PRINCIPLES.map((p, i) => (
@@ -181,14 +185,16 @@ const AboutPage = () => {
           <div className="ab-serve__grid">
             <div data-reveal>
               <p className="eyebrow">Who we serve</p>
-              <h2>Firms past the point of keeping receivables in someone's head.</h2>
+              <h2>Immigration and humanitarian firms carrying families on payment plans.</h2>
               <p className="lead">
-                Mid-size and growing firms with payment plans, multiple systems and someone chasing late accounts, but no
-                finance department to chase every dollar full time.
+                Practices handling asylum, family petitions, U and T visas, VAWA, DACA and TPS renewals, removal defense
+                and naturalization: flat fees on long payment plans, payments from relatives and sponsors, several
+                systems, and no finance department to watch every dollar full time.
               </p>
               <p className="muted">
-                The first deployment was a firm with thousands of installment plans and payers who weren't the client,
-                which is the hardest version of the problem. The system fits any firm that bills.
+                The first deployment was a high-volume immigration firm with thousands of installment plans and payers
+                who weren't the client, which is the hardest version of the problem. The same system fits any firm that
+                bills on payment plans.
               </p>
               {showFounder && (
                 <div className="ab-founder">
@@ -235,8 +241,8 @@ const AboutPage = () => {
       </section>
 
       <CtaBand
-        title="See what your own numbers say."
-        lead="One conversation, your systems, and a first look at what's late, what's unmatched and what's recoverable now."
+        title="See what your own numbers say, and who they're about."
+        lead="One conversation, your systems, and a first look at what's late, which payments were never credited, and which families are ready to reconnect."
       />
     </SiteShell>
   );
