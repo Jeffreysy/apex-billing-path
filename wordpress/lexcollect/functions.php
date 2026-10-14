@@ -205,4 +205,5 @@ add_filter(
 );
 
 require get_theme_file_path( 'inc/contact-form.php' );
+require get_theme_file_path( 'inc/confirmation-email.php' );
 require get_theme_file_path( 'inc/setup.php' );

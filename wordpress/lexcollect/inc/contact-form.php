@@ -4,6 +4,7 @@
  *
  * Each submission is saved under "Inquiries" in wp-admin and emailed to the
  * firm inbox (LEXCOLLECT_CONTACT_EMAIL), so a lead is never lost if email delivery fails.
+ * The visitor gets a branded confirmation (inc/confirmation-email.php).
  * Change the recipient with the lexcollect_contact_recipient filter.
  *
  * @package LexCollect
@@ -69,7 +70,8 @@ function lexcollect_contact_form( $atts = array() ) {
 	// Read-only status flag from our own redirect; no data is changed here.
 	$status   = isset( $_GET['lc_sent'] ) ? sanitize_key( wp_unslash( $_GET['lc_sent'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$messages = array(
-		'ok'      => array( '', __( 'Thanks, your request is in. We reply within one business day.', 'lexcollect' ) ),
+		'ok'      => array( '', __( "Thanks, your request is in. We've emailed you a confirmation, and we reply within one business day.", 'lexcollect' ) ),
+		'saved'   => array( '', __( 'Thanks, your request is in. We reply within one business day.', 'lexcollect' ) ),
 		'invalid' => array( 'form-status--error', __( 'Please add your name, firm, a valid email, what your firm does and its size, then send again.', 'lexcollect' ) ),
 		/* translators: %s: the firm's email address */
 		'limit'   => array( 'is-error', sprintf( __( 'We received several requests from your network in the last hour. Please email us instead at %s.', 'lexcollect' ), LEXCOLLECT_CONTACT_EMAIL ) ),
@@ -201,5 +203,5 @@ function lexcollect_handle_contact() {
 		array( 'Reply-To: ' . $data['Name'] . ' <' . $data['Email'] . '>' )
 	);
 
-	$back( 'ok' );
+	$back( lexcollect_send_confirmation( $data ) ? 'ok' : 'saved' );
 }
