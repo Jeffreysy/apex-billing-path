@@ -142,7 +142,7 @@ export const SiteFooter = () => (
       <div className="footer-grid">
         <div className="footer-brand">
           <Brand />
-          <p>Accounts-receivable accounting for firms. Every dollar accounted for, every client connected.</p>
+          <p>Accounting and client trust for immigration and humanitarian law firms. Every payment seen, every family heard.</p>
         </div>
         <div className="footer-col">
           <h2>Platform</h2>

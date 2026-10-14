@@ -3,9 +3,9 @@ import { CtaBand, PageHero, ProofStrip, SiteShell, SubNav, Timeline, usePageMeta
 import { INTEGRATIONS, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const RESULTS_META = {
-  title: "Results: Reconciliation, Migration & Client Connection at a Working Firm | LexCollect",
+  title: "Results: Reconciliation, Migration & Client Trust at a Working Immigration Firm | LexCollect",
   description:
-    "What LexCollect did inside a working firm: a $21.4M book reconciled, 561 orphan contracts re-linked, a migration with zero mismatches, email segments from real balances, and escalations with seven hand-off queues.",
+    "What LexCollect did inside a high-volume immigration firm: a $21.4M book reconciled, 561 orphan contracts re-linked, a migration with zero mismatches, 228 clients with failed cards reached without a collections call, and escalations with seven hand-off queues.",
 };
 
 /*
@@ -18,7 +18,7 @@ const HEADLINE: ProofItem[] = [
   { n: 21.4, decimals: 1, prefix: "$", suffix: "M", label: "receivables reconciled to the firm's ground truth, within 5%, the gap explained and assigned" },
   { n: 3.5, decimals: 1, prefix: "$", suffix: "M", label: "in contract balances re-linked to the right clients through a migration between two CRMs" },
   { n: 1395, label: "records reconciled in that migration, with 0 mismatches needing manual correction" },
-  { n: 228, label: "willing payers with a failed card ($928K) reached with one message instead of a collections call" },
+  { n: 228, label: "clients who wanted to pay but had a failed card ($928K), reached with one message instead of a collections call" },
 ];
 
 /** Still being measured. Set `value` (e.g. "+38") to publish one. */
@@ -69,7 +69,7 @@ const STORIES: Story[] = [
     short: "Payment matching",
     eyebrow: "Payment matching",
     title: "Thousands of processor payments, tied to the right client.",
-    lede: "The processor knew who paid. The client system knew who owed. Nothing connected the two, especially when a spouse, parent or employer was the one paying.",
+    lede: "The processor knew who paid. The case system knew who owed. Nothing connected the two, especially when a spouse, parent, U.S. sponsor or employer was the one paying.",
     facts: [
       { value: "2,013", label: "payments ($1,190,204) matched to a client, contract and invoice" },
       { value: "759", label: "payments ($370,447) queued for human confirmation with ranked suggestions" },
@@ -77,7 +77,7 @@ const STORIES: Story[] = [
     ],
     notes: [
       { title: "Suggestions, not guesses.", text: "For every unmatched payment, LexCollect ranks the five most likely clients using name similarity, amount against the client's installment, and timing against their due date. Nothing is auto-matched below a confidence threshold. A person confirms, and the confirmation is recorded with who did it and how." },
-      { title: "Real-world names.", text: "ALL-CAPS processor names, corrected names left in a notes field, two surnames in a different order. The matcher reads all of them." },
+      { title: "Real-world names.", text: "ALL-CAPS processor names, corrected names left in a notes field, two surnames in a different order, a name transliterated two ways. The matcher reads all of them, and a person confirms the close calls." },
       { title: "Booked once.", text: "Payment webhooks retry and handlers race. Idempotency guards mean a payment can't be booked twice no matter how many times the processor sends it." },
     ],
   },
@@ -86,7 +86,7 @@ const STORIES: Story[] = [
     short: "Migration",
     eyebrow: "Migration",
     title: "A mass financial migration between two incompatible CRMs, without losing a dollar.",
-    lede: "Moving every client's balance, plan and history from MyCase to Filevine is where receivables usually get lost. LexCollect reconciled both systems against the firm's own client lists before, during and after the move.",
+    lede: "Moving every family's balance, plan and history from MyCase to Filevine is where receivables usually get lost, and where a client who paid can suddenly look like they didn't. LexCollect reconciled both systems against the firm's own client lists before, during and after the move.",
     facts: [
       { value: "$3.5M", label: "in contract balances re-linked to the right clients during the move" },
       { value: "1,395", label: "records in the new system reconciled against 548 records on the firm's own lists" },
@@ -97,15 +97,15 @@ const STORIES: Story[] = [
     notes: [
       { title: "Direct payment sync.", text: "Filevine payments now post straight into LexCollect through a webhook, with no middleware. Each one matches by invoice number, updates the invoice and contract balances, and logs an activity on the account, so the next message reflects it." },
       { title: "History, through the same door.", text: "Historical Filevine payments were backfilled through the identical booking pipeline as live ones, so old and new money follow one set of rules." },
-      { title: "The old system kept in the picture.", text: "Contacts, engagements, ledgers and payment plans from the previous system are synced into the client 360, so staff still see the full history during and after the transition." },
+      { title: "The old system kept in the picture.", text: "Contacts, matters, ledgers and payment plans from the previous system are synced into the client 360, so staff still see the full history during and after the transition." },
     ],
   },
   {
     id: "hard-debt",
     short: "Hard debt",
     eyebrow: "Hard debt",
-    title: "Delinquent dollars, reconnected by message and measured by bucket.",
-    lede: "Once the book was reconciled, the firm could see its delinquent balance, split it by age, and reach every account with the right message instead of another round of calls.",
+    title: "Delinquent dollars, reconnected with respect and measured by bucket.",
+    lede: "Once the book was reconciled, the firm could see its delinquent balance, split it by age, and reach every family with the right message instead of another round of calls.",
     facts: [
       { value: "$15.7M", label: "delinquent and late receivables made visible by aging bucket and owner" },
       { value: "$928K", label: "across 228 willing payers with a failed card, separated from true delinquency" },
@@ -116,7 +116,7 @@ const STORIES: Story[] = [
       { title: "The right list.", text: "Consult-only contacts, raw import noise and abandoned contracts are classified and kept out of the queue by default, so every message and every conversation lands on a real account." },
       { title: "A record of every contact.", text: "Outcome, dollars, origin and commission are logged per activity, whether it was an email, an SMS or a conversation. The firm's old activity dashboard had been showing about 8% of real activity. LexCollect now certifies per-person figures from the full log." },
       { title: "Promises that get followed.", text: "Payment commitments carry a date and an amount, and missed installments surface while they're still small." },
-      { title: "Willing payers treated differently.", text: "The failed-card segment gets an “update your card” email instead of a collections call, which protects the relationship and recovers money faster." },
+      { title: "Willing payers treated differently.", text: "The failed-card segment gets an “update your card” email instead of a collections call. For a client who already worries about every unexpected call, that difference is the relationship. It also recovers money faster." },
     ],
   },
   {
@@ -142,16 +142,16 @@ const STORIES: Story[] = [
     short: "Escalations",
     eyebrow: "Unique escalations & internal connection",
     title: "Internal hand-offs with a queue, a priority and an owner.",
-    lede: "Before, an escalation was an email. Now it's a record that billing, service teams and management all see, with a status that has to be closed.",
+    lede: "Before, an escalation was an email. Now it's a record that billing, case teams and management all see, with a status that has to be closed.",
     facts: [
       { value: "7", label: "hand-off queues: service teams, compliance, customer care, management, sales, billing ops, plus a custom one" },
       { value: "9", label: "source contexts, from client reply to service-team request to refund follow-up" },
       { value: "4", label: "priorities, with urgent and high surfaced to the right inbox automatically" },
     ],
     notes: [
-      { title: "Inboxes per department.", text: "Service teams see what needs someone who knows the client. Management sees what needs a decision. Billing sees what's theirs. The same escalation, three views." },
-      { title: "Hardship handled, not hidden.", text: "Hardship requests are their own workflow, so a client in trouble gets a considered answer instead of another message." },
-      { title: "Deadlines respected.", text: "A deadline watch shows the firm's commitments on the client record and firm-wide, so collections never collides with a promise the firm has made." },
+      { title: "Inboxes per department.", text: "Case teams see what needs someone who knows the client. Management sees what needs a decision. Billing sees what's theirs. The same escalation, three views." },
+      { title: "Hardship handled, not hidden.", text: "Hardship requests are their own workflow, so a family in trouble gets a considered answer from a person instead of another message." },
+      { title: "Deadlines respected.", text: "A deadline watch shows the firm's commitments on the client record and firm-wide, so a payment message never collides with a case deadline or a promise the firm has made." },
     ],
   },
   {
@@ -176,8 +176,8 @@ const STORIES: Story[] = [
 
 const ONBOARDING = [
   { kicker: "Week 1", title: "Connect and reconcile", text: "We connect your systems, pull history and show you the first reconciled book with the gaps named." },
-  { kicker: "Week 2", title: "Configure the firm", text: "Roles, roster, queues, product lines and escalation targets set to match how you already work." },
-  { kicker: "Week 3", title: "Work the queue", text: "Sequences go out to reconciled lists. Your team works the clients who need a person, with the ledger in front of them." },
+  { kicker: "Week 2", title: "Configure the firm", text: "Roles, roster, queues, case types and escalation targets set to match how you already work." },
+  { kicker: "Week 3", title: "Work the queue", text: "Respectful sequences go out to reconciled lists. Your team works the families who need a person, with the ledger in front of them." },
   { kicker: "Month 1", title: "First certified snapshot", text: "A receivables number the partners can trust, with the trend starting from a real baseline." },
 ];
 
@@ -190,8 +190,8 @@ const ResultsPage = () => {
       <PageHero
         crumb="Results"
         eyebrow="Results"
-        title="What LexCollect did inside a working firm."
-        lead={`LexCollect was built in the finance department of a high-volume firm with a $21M receivables book spread across ${INTEGRATIONS.join(", ")} and the bank. Everything below happened there. Every number came out of the system, not a slide deck.`}
+        title="What LexCollect did inside a working immigration firm."
+        lead={`LexCollect was built in the finance department of a high-volume immigration firm: thousands of families on payment plans, many paid by someone other than the client, and a $21M receivables book spread across ${INTEGRATIONS.join(", ")} and the bank. Everything below happened there. Every number came out of the system, not a slide deck.`}
       />
 
       <ProofStrip label="Headline results" items={HEADLINE} />
@@ -262,8 +262,8 @@ const ResultsPage = () => {
             <p className="eyebrow">Suited to your firm</p>
             <h2>Everything above is configuration at your firm, not a rebuild.</h2>
             <p className="lead">
-              Your team comes from a live roster. Escalation targets are your departments. Message sequences, product
-              lines, aging buckets, outcome labels and queues are set per firm.{" "}
+              Your team comes from a live roster. Escalation targets are your departments. Message sequences, case
+              types, aging buckets, outcome labels and queues are set per firm.{" "}
               <Link to={MARKETING_ROUTES.contact}>Tell us about your firm.</Link>
             </p>
           </div>
@@ -273,7 +273,7 @@ const ResultsPage = () => {
 
       <CtaBand
         title="Want these numbers for your firm?"
-        lead="One conversation, your systems, and a first look at what's late, what's unmatched and what's recoverable now."
+        lead="One conversation, your systems, and a first look at what's late, which payments were never credited, and which families are ready to reconnect."
         secondary={{ to: MARKETING_ROUTES.platform, label: "Explore the platform" }}
       />
     </SiteShell>

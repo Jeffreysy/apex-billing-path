@@ -160,16 +160,16 @@ add_action(
 			}
 		}
 
-		$article_slug = 'where-firms-lose-money-between-systems';
+		$article_slug = 'immigration-firms-lose-money-between-systems';
 		if ( ! get_page_by_path( $article_slug, OBJECT, 'post' ) ) {
 			$cat = get_term_by( 'name', 'Reconciliation', 'category' );
 			wp_insert_post(
 				array(
 					'post_type'     => 'post',
 					'post_status'   => 'draft',
-					'post_title'    => 'Where Firms Lose Money Between Their Systems and the Bank',
+					'post_title'    => 'Where Immigration Firms Lose Money, and Trust, Between the Case System and the Bank',
 					'post_name'     => $article_slug,
-					'post_excerpt'  => 'Payment plans, third-party payers and batched deposits. Five places firms lose track of money they\'ve already been paid, and how to find it.',
+					'post_excerpt'  => 'Payment plans, payments from relatives and sponsors, and batched deposits. Five places immigration firms lose track of money families have already paid, what it costs the relationship, and how to find it.',
 					'post_content'  => lexcollect_pattern( 'post-article' ),
 					'post_category' => $cat ? array( (int) $cat->term_id ) : array(),
 				)

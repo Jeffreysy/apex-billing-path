@@ -4,9 +4,9 @@ import { PageHero, SiteShell, usePageMeta } from "@/components/marketing/SiteChr
 import { BLOG_POST_SLUG, CONTACT_EMAIL, blogPostPath, subscribeToNewsletter } from "@/lib/marketing";
 
 export const BLOG_META = {
-  title: "AR, Reconciliation & Collections Blog | LexCollect",
+  title: "Receivables, Reconciliation & Client Trust Blog for Immigration Firms | LexCollect",
   description:
-    "Practical articles on accounts receivable, payment reconciliation, payment plans and collections for firms, from the team at LexCollect.",
+    "Practical articles for immigration and humanitarian law firms on receivables, payment reconciliation, payment plans and keeping the trust of the families they serve, from the team at LexCollect.",
 };
 
 type Category = "reconciliation" | "payment-plans" | "collections" | "operations";
@@ -14,7 +14,7 @@ type Category = "reconciliation" | "payment-plans" | "collections" | "operations
 const CATEGORY_LABELS: Record<Category, string> = {
   reconciliation: "Reconciliation",
   "payment-plans": "Payment plans",
-  collections: "Collections",
+  collections: "Client trust",
   operations: "Operations",
 };
 
@@ -33,9 +33,9 @@ export const FEATURED_POST: Post = {
   cat: "reconciliation",
   fig: "4 handoffs",
   cover: "teal",
-  title: "Where Firms Lose Money Between Their Systems and the Bank",
+  title: "Where Immigration Firms Lose Money, and Trust, Between the Case System and the Bank",
   summary:
-    "Payment plans, third-party payers and batched deposits. Five places firms lose track of money they've already been paid, and how to find it.",
+    "Payment plans, payments from relatives and sponsors, and batched deposits. Five places immigration firms lose track of money families have already paid, what it costs the relationship, and how to find it.",
   readTime: "8 min read",
   slug: BLOG_POST_SLUG,
 };
@@ -46,7 +46,7 @@ export const UPCOMING_POSTS: Post[] = [
     fig: "untied",
     title: "Unattributed Payments: Why Payment-Plan Money Goes Missing",
     summary:
-      "The money arrived. It just never got attached to a client. How unattributed payments happen at firms and how to clear them for good.",
+      "The money arrived. It just never got attached to a client. How unattributed payments happen at immigration firms and how to clear them for good.",
     readTime: "6 min read",
   },
   {
@@ -70,15 +70,16 @@ export const UPCOMING_POSTS: Post[] = [
     cat: "collections",
     fig: "paid",
     cover: "teal",
-    title: "Stop Chasing Clients Who Already Paid",
-    summary: "A collections message to a client who paid through someone else damages trust fast. Reconcile first, then connect.",
+    title: "When a Payment Reminder Sounds Like a Threat",
+    summary:
+      "For a client living with fear, an unexpected call about money can sound like danger. How to reach immigrant clients so the message builds trust instead of breaking it.",
     readTime: "5 min read",
   },
   {
     cat: "payment-plans",
     fig: "12×",
-    title: "Flat Fees and Payment Plans: A Month-End AR Checklist",
-    summary: "A month-end checklist for firms running hundreds of installment plans across clients and engagements.",
+    title: "Flat Fees and Payment Plans: A Month-End AR Checklist for Immigration Practices",
+    summary: "A month-end checklist for firms running hundreds of installment plans across families, matters and payers.",
     readTime: "9 min read",
   },
   {
@@ -190,8 +191,8 @@ const BlogPage = () => {
       <PageHero
         crumb="Blog"
         eyebrow="The LexCollect blog"
-        title="Receivables, reconciliation and collections, explained plainly."
-        lead="Practical writing for firm owners, controllers and administrators on where money gets stuck, how to reconcile it, and how to collect it."
+        title="Receivables, reconciliation and client trust, explained plainly."
+        lead="Practical writing for immigration firm owners, controllers and administrators on where money gets stuck, how to reconcile it, and how to reach families in a way that keeps their trust."
       />
 
       <section className="section section--tight">
@@ -242,7 +243,7 @@ const BlogPage = () => {
             <div>
               <p className="eyebrow">Newsletter</p>
               <h2 style={{ fontSize: "var(--fs-2xl)" }}>One practical AR note a month.</h2>
-              <p className="lead">For firm owners and administrators. No sales pitch, and you can unsubscribe any time.</p>
+              <p className="lead">For immigration firm owners and administrators. No sales pitch, and you can unsubscribe any time.</p>
             </div>
             <NewsletterForm />
           </div>

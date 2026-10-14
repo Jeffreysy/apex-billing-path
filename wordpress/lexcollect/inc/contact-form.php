@@ -96,7 +96,7 @@ function lexcollect_contact_form( $atts = array() ) {
 			<div class="field"><label for="lc-phone"><?php esc_html_e( 'Phone', 'lexcollect' ); ?> <span class="opt"><?php esc_html_e( '(optional)', 'lexcollect' ); ?></span></label><input id="lc-phone" name="lc_phone" type="tel" autocomplete="tel" maxlength="40"></div>
 		</div>
 		<div class="form-row">
-			<div class="field"><label for="lc-firmtype"><?php esc_html_e( 'What your firm does', 'lexcollect' ); ?></label><input id="lc-firmtype" name="lc_firmtype" type="text" required maxlength="120" placeholder="<?php esc_attr_e( 'e.g. professional services with payment plans', 'lexcollect' ); ?>"></div>
+			<div class="field"><label for="lc-firmtype"><?php esc_html_e( 'What your firm does', 'lexcollect' ); ?></label><input id="lc-firmtype" name="lc_firmtype" type="text" required maxlength="120" placeholder="<?php esc_attr_e( 'e.g. immigration: asylum, family petitions, removal defense', 'lexcollect' ); ?>"></div>
 			<div class="field">
 				<label for="lc-size"><?php esc_html_e( 'Firm size', 'lexcollect' ); ?></label>
 				<select id="lc-size" name="lc_size" required>
@@ -107,8 +107,8 @@ function lexcollect_contact_form( $atts = array() ) {
 				</select>
 			</div>
 		</div>
-		<div class="field"><label for="lc-systems"><?php esc_html_e( 'Systems you use', 'lexcollect' ); ?> <span class="opt"><?php esc_html_e( '(client management, payments, accounting)', 'lexcollect' ); ?></span></label><input id="lc-systems" name="lc_systems" type="text" maxlength="300" placeholder="<?php esc_attr_e( 'e.g. MyCase, LawPay, QuickBooks', 'lexcollect' ); ?>"></div>
-		<div class="field"><label for="lc-message"><?php esc_html_e( "What's going on?", 'lexcollect' ); ?> <span class="opt"><?php esc_html_e( '(optional)', 'lexcollect' ); ?></span></label><textarea id="lc-message" name="lc_message" maxlength="4000" placeholder="<?php esc_attr_e( 'Unmatched payments, a growing unapplied balance, payment plans that drift...', 'lexcollect' ); ?>"></textarea></div>
+		<div class="field"><label for="lc-systems"><?php esc_html_e( 'Systems you use', 'lexcollect' ); ?> <span class="opt"><?php esc_html_e( '(case management, payments, accounting)', 'lexcollect' ); ?></span></label><input id="lc-systems" name="lc_systems" type="text" maxlength="300" placeholder="<?php esc_attr_e( 'e.g. MyCase, LawPay, QuickBooks', 'lexcollect' ); ?>"></div>
+		<div class="field"><label for="lc-message"><?php esc_html_e( "What's going on?", 'lexcollect' ); ?> <span class="opt"><?php esc_html_e( '(optional)', 'lexcollect' ); ?></span></label><textarea id="lc-message" name="lc_message" maxlength="4000" placeholder="<?php esc_attr_e( "Payments we can't match, families who stopped answering, plans that drift...", 'lexcollect' ); ?>"></textarea></div>
 		<div class="hp" aria-hidden="true"><label for="lc-website">Website</label><input id="lc-website" name="lc_website" type="text" tabindex="-1" autocomplete="off"></div>
 		<input type="hidden" name="action" value="lexcollect_contact">
 		<input type="hidden" name="lc_ts" value="<?php echo esc_attr( time() ); ?>">

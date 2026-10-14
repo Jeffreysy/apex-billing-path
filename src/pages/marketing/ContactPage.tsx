@@ -4,19 +4,19 @@ import DiagnosticForm from "@/components/marketing/DiagnosticForm";
 import { CONTACT_EMAIL, MARKETING_ROUTES } from "@/lib/marketing";
 
 export const CONTACT_META = {
-  title: "Book a Call About Your Firm's Receivables | LexCollect",
+  title: "Book a Call About Your Firm's Receivables and Client Trust | LexCollect",
   description:
-    "Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account is worth, and which clients one message would bring back.",
+    "Tell us about your immigration practice and the systems you use. We'll show you where payments are going unseen, which families have lost touch, and what a respectful message would bring back.",
 };
 
 const FAQS = [
   {
-    q: "Do we need to be a particular kind of firm?",
-    a: "No. If your firm bills clients, carries receivables and has someone chasing late accounts, it fits. Tell us what your firm does and which systems you run, and we'll tell you honestly how well LexCollect fits.",
+    q: "Do we need to be an immigration firm?",
+    a: "LexCollect is built for immigration and humanitarian practices, where payment plans, family payers and client trust matter most. Other firms that bill on payment plans fit too. Tell us what your firm does and which systems you run, and we'll tell you honestly how well LexCollect fits.",
   },
   {
     q: "What should we have ready for the call?",
-    a: "The names of your client-management, payment, accounting and banking systems, plus a rough sense of how many active payment plans or open accounts you carry. No exports are needed for a first conversation.",
+    a: "The names of your case management, payment, accounting and banking systems, plus a rough sense of how many active payment plans or open cases you carry. No exports are needed for a first conversation.",
   },
   {
     q: "Who from our firm should join?",
@@ -37,10 +37,10 @@ const ContactPage = () => {
                 <Link to={MARKETING_ROUTES.home}>Home</Link> / Contact
               </p>
               <p className="eyebrow">Book a call</p>
-              <h1>Book a call about your firm's receivables.</h1>
+              <h1>Book a call about your receivables, and the families behind them.</h1>
               <p className="lead">
-                Tell us about your firm and the systems you use. We'll show you where money is stuck, what each account
-                is worth, and which clients one message would bring back.
+                Tell us about your practice and the systems you use. We'll show you where payments are going unseen,
+                which families have quietly lost touch, and what a respectful message would bring back.
               </p>
               <ol className="next-steps">
                 <li>
@@ -49,11 +49,11 @@ const ContactPage = () => {
                 </li>
                 <li>
                   <b>We walk through your systems</b>
-                  <span>Your client-management, payment and accounting tools, and where the money seems to go missing.</span>
+                  <span>Your case management, payment and accounting tools, and where payments seem to go missing.</span>
                 </li>
                 <li>
                   <b>You see what's fixable</b>
-                  <span>A first view of where money is stuck, by cause, and what your team could clear first.</span>
+                  <span>A first view of where money is stuck, by cause, and which families your team could reconnect with first.</span>
                 </li>
               </ol>
               <p className="hm-start__alt">
