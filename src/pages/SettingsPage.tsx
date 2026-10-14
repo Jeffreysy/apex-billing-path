@@ -54,7 +54,7 @@ type CreatedUserResult = {
 type InviteMode = "create" | "invite";
 
 const ROLE_PRESETS: Array<{ label: string; role: UserRole; description: string }> = [
-  { label: "Leadership", role: "admin", description: "Full operational oversight across LexCollect." },
+  { label: "Leadership", role: "admin", description: "Full operational management across LexCollect." },
   { label: "Collections", role: "billing_clerk", description: "Collections dashboards, call queue, and escalations." },
   { label: "Legal", role: "attorney", description: "Legal queue visibility and legal dashboard access." },
   { label: "Read Only", role: "read_only", description: "Client lookup and reporting without write actions." },

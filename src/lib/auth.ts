@@ -15,7 +15,7 @@ export function getDefaultRouteForRole(role: UserRole | null | undefined): strin
   switch (role) {
     case "admin":
     case "partner":
-      return "/";
+      return "/admin";
     case "billing_clerk":
       return "/collections";
     case "attorney":
