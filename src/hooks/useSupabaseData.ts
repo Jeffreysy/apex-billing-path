@@ -908,14 +908,21 @@ export function useClientContact(clientId: string | null, clientName?: string | 
 }
 
 /** AR roll-forward per snapshot period (penny-exact) */
+// 2026-10-14: the live view v_ar_waterfall takes ~7 s and returns HTTP 500 (statement timeout) for signed-in users.
+// Read the materialized copy (mv_ar_waterfall, same columns, requested from the VP) first; fall back to the view
+// only if the MV does not exist yet. Callers MUST treat isError as "roll-forward unavailable", never as "no snapshot".
+const AR_WATERFALL_COLS = "prior_date, period_date, beginning, additions, reductions, ending, mycase_cash_all_methods, lawpay_card_cash";
 export function useArWaterfall() {
   return useQuery({
-    queryKey: ["ar-waterfall"],
+    queryKey: ["ar-waterfall", "v2"],
     staleTime: 5 * 60 * 1000,
+    retry: 1,
     queryFn: async () => {
-      const { data, error } = await supabase.from("v_ar_waterfall").select("*").order("period_date", { ascending: true });
+      const mv = await (supabase as any).from("mv_ar_waterfall").select(AR_WATERFALL_COLS).order("period_date", { ascending: true });
+      if (!mv.error) return (mv.data ?? []) as any[];
+      const { data, error } = await (supabase as any).from("v_ar_waterfall").select(AR_WATERFALL_COLS).order("period_date", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     },
   });
 }
