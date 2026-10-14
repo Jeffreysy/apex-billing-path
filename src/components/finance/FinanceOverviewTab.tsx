@@ -9,7 +9,7 @@ import {
   useAdminKPI, useFirmFinancialSummary, useMergedClients, usePaymentsClean, useCollectionActivityRows,
   useControllerARCashflow, useARLiveMovement, useARLiveTrend, useCertifiedMonthlyCollections,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
-  computeWeeklyPastCollections, computeContractAnalytics,
+  computeWeeklyPastCollections, computeContractAnalytics, localDay,
 } from "@/hooks/useSupabaseData";
 import {
   DollarSign, TrendingUp, FileText, CheckCircle, Target,
@@ -97,14 +97,14 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
   const currentPeriodPayments = paymentRows.filter((payment) => {
     if (!payment.payment_date || !payment.amount) return false;
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = localDay(payment.payment_date) ?? new Date(NaN);
     return !Number.isNaN(paymentDate.getTime()) && isWithinInterval(paymentDate, { start: monthStart, end: nowEnd });
   });
 
   const weekCollected = paymentRows
     .filter((payment) => {
       if (!payment.payment_date || !payment.amount) return false;
-      const paymentDate = new Date(payment.payment_date);
+      const paymentDate = localDay(payment.payment_date) ?? new Date(NaN);
       return !Number.isNaN(paymentDate.getTime()) && isWithinInterval(paymentDate, { start: weekStart, end: nowEnd });
     })
     .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
@@ -119,7 +119,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const weekCollectorLogged = activityRows
     .filter((activity) => {
       if (!activity.activity_date || !activity.collected_amount) return false;
-      const activityDate = new Date(activity.activity_date);
+      const activityDate = localDay(activity.activity_date) ?? new Date(NaN);
       return !Number.isNaN(activityDate.getTime()) && isWithinInterval(activityDate, { start: weekStart, end: nowEnd });
     })
     .reduce((sum, activity) => sum + Number(activity.collected_amount || 0), 0);
@@ -127,7 +127,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const monthCollectorLogged = activityRows
     .filter((activity) => {
       if (!activity.activity_date || !activity.collected_amount) return false;
-      const activityDate = new Date(activity.activity_date);
+      const activityDate = localDay(activity.activity_date) ?? new Date(NaN);
       return !Number.isNaN(activityDate.getTime()) && isWithinInterval(activityDate, { start: monthStart, end: nowEnd });
     })
     .reduce((sum, activity) => sum + Number(activity.collected_amount || 0), 0);
@@ -135,7 +135,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const weekFilevineTagged = currentPeriodPayments
     .filter((payment) => {
       if (!payment.payment_date) return false;
-      const paymentDate = new Date(payment.payment_date);
+      const paymentDate = localDay(payment.payment_date) ?? new Date(NaN);
       return !Number.isNaN(paymentDate.getTime())
         && isWithinInterval(paymentDate, { start: weekStart, end: nowEnd })
         && isExplicitFilevinePayment(payment);

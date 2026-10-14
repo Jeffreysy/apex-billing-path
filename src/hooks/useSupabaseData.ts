@@ -1101,19 +1101,36 @@ export function computeMonthlyForecast(clients: Client[], collectionRatePct?: nu
   }));
 }
 
+/** Parse a DATE string ("yyyy-mm-dd") as a LOCAL calendar day. new Date("yyyy-mm-dd") is UTC midnight, which is the
+ *  previous evening in US time zones and pushes the 1st of a month / a Monday into the prior month / week. */
+export function localDay(d: string | null | undefined): Date | null {
+  if (!d) return null;
+  const s = String(d).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const dt = new Date(`${s}T00:00:00`);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+/** Monday-start week key that carries the YEAR (sortable). The old "MMM dd" key merged the same week across years. */
+function weekKey(d: Date): string {
+  return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
+}
+function weekLabel(key: string): string {
+  return format(new Date(`${key}T00:00:00`), "MMM dd");
+}
+
 export function computeWeeklyCollections(payments: Payment[], weeklyTarget?: number) {
+  // Last 12 Monday-start weeks up to today, oldest first. 2026-10-14: keyed "MMM dd" (no year) and sliced the OLDEST 12
+  // of a newest-first list, so the chart showed Jan-Mar weeks merged across years.
   const weekMap = new Map<string, number>();
   for (const p of payments) {
-    if (!p.date) continue;
-    const d = new Date(p.date);
-    const ws = startOfWeek(d, { weekStartsOn: 1 });
-    const key = format(ws, "MMM dd");
+    const d = localDay(p.date);
+    if (!d) continue;
+    const key = weekKey(d);
     weekMap.set(key, (weekMap.get(key) || 0) + p.amount);
   }
-  const entries = Array.from(weekMap, ([week, collected]) => ({
-    week,
-    collected: Math.round(collected),
-  })).slice(-12);
+  const thisWeek = weekKey(new Date());
+  const entries = [...weekMap.keys()].filter((k) => k <= thisWeek).sort().slice(-12)
+    .map((k) => ({ week: weekLabel(k), collected: Math.round(weekMap.get(k) || 0) }));
   const avgWeekly = entries.length > 0 ? Math.round(entries.reduce((s, e) => s + e.collected, 0) / entries.length) : 0;
   const target = weeklyTarget ?? avgWeekly;
   return entries.map(e => ({ ...e, target }));
@@ -1137,15 +1154,16 @@ export function computeMonthlyCollections(payments: Payment[], monthlyTarget?: n
 }
 
 export function computeDailyCollections(payments: Payment[]) {
+  // THIS week (Mon-Fri) only. 2026-10-14: it summed every payment ever recorded by weekday under a "This Week" title.
   const dayMap = new Map<string, { collector: number; crm: number }>();
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   days.forEach(d => dayMap.set(d, { collector: 0, crm: 0 }));
+  const thisWeek = weekKey(new Date());
 
   for (const p of payments) {
-    if (!p.date) continue;
-    const d = new Date(p.date);
-    const dayOfWeek = d.getDay();
-    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dayOfWeek];
+    const d = localDay(p.date);
+    if (!d || weekKey(d) !== thisWeek) continue;
+    const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
     if (!dayMap.has(dayName)) continue;
     const entry = dayMap.get(dayName)!;
     if (p.collectorName && p.collectorName !== "CRM") {
@@ -1162,12 +1180,12 @@ export function computeDailyCollections(payments: Payment[]) {
 }
 
 export function computeWeeklyPastCollections(payments: Payment[]) {
+  // Last 12 Monday-start weeks up to today, oldest first (same fix as computeWeeklyCollections).
   const weekMap = new Map<string, { collector: number; crm: number }>();
   for (const p of payments) {
-    if (!p.date) continue;
-    const d = new Date(p.date);
-    const ws = startOfWeek(d, { weekStartsOn: 1 });
-    const key = format(ws, "MMM dd");
+    const d = localDay(p.date);
+    if (!d) continue;
+    const key = weekKey(d);
     const entry = weekMap.get(key) || { collector: 0, crm: 0 };
     if (p.collectorName && p.collectorName !== "CRM") {
       entry.collector += p.amount;
@@ -1176,12 +1194,11 @@ export function computeWeeklyPastCollections(payments: Payment[]) {
     }
     weekMap.set(key, entry);
   }
-  return Array.from(weekMap, ([week, { collector, crm }]) => ({
-    week,
-    collector: Math.round(collector),
-    crm: Math.round(crm),
-    total: Math.round(collector + crm),
-  })).slice(-12);
+  const thisWeek = weekKey(new Date());
+  return [...weekMap.keys()].filter((k) => k <= thisWeek).sort().slice(-12).map((k) => {
+    const { collector, crm } = weekMap.get(k)!;
+    return { week: weekLabel(k), collector: Math.round(collector), crm: Math.round(crm), total: Math.round(collector + crm) };
+  });
 }
 
 export function computeMonthlyPastCollections(payments: Payment[]) {
