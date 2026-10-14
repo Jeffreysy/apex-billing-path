@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Phone, TrendingUp, LayoutDashboard, FileText, Search,
-  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload, Inbox,
+  Scale, Eye, Users, ChevronDown, ChevronRight, ListOrdered, AlertTriangle, Settings, Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,7 @@ const STATIC_SECTIONS = [
   {
     label: "Admin",
     items: [
-      { path: "/admin", label: "Admin Dashboard", icon: LayoutDashboard },
-      { path: "/admin/inquiries", label: "Website Inquiries", icon: Inbox },
+      { path: "/", label: "Admin Dashboard", icon: LayoutDashboard },
     ],
   },
   {
@@ -72,7 +71,7 @@ const AppSidebar = () => {
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => {
-        if (item.path === "/admin" || item.path === "/admin/inquiries") return canAccessAdmin(role);
+        if (item.path === "/") return canAccessAdmin(role);
         if (item.path === "/collections" || item.path === "/collections/queue" || item.path === "/collections/escalations") {
           return canAccessCollections(role);
         }
@@ -121,7 +120,7 @@ const AppSidebar = () => {
               </button>
               {!isCollapsed && section.items.map((item) => {
                 const isActive = location.pathname === item.path ||
-                  (item.path !== "/admin" && location.pathname.startsWith(item.path));
+                  (item.path !== "/" && location.pathname.startsWith(item.path));
                 return (
                   <Link
                     key={item.path}
