@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary } from "@/hooks/useSupabaseData";
+import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary, useArWaterfall, useCertifiedMonthlyCollections, aggregateArWaterfallByMonth } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
@@ -105,6 +105,11 @@ export default function ExecutiveInsights() {
   // Certified per-collector cash (v_activity_collected_by_collector_weekly) — replaces the raw
   // SUM(collection_activities.collected_amount) in the collector table below.
   const { data: byCollectorWeeks = [] } = useActivityCollectedByCollectorWeekly();
+  // 2026-10-14: Money Flow reads the AR roll-forward by month (v_ar_waterfall, snapshot grain) and the delinquent
+  // recovery reads certified cash (mv_collections_certified_monthly). Both used to fall back to payments_clean
+  // (client-linked LawPay only — Jul $286,820 vs $1,768,833.95 certified).
+  const { data: waterfallRows = [] } = useArWaterfall();
+  const { data: certifiedMonths = [] } = useCertifiedMonthlyCollections(MONTH_OPTIONS + 1);
   // Hero band (2026-10-13): each tile fetches its own VP-certified view and owns its loading /
   // error state, so the band renders independently of the legacy browser-side pull below.
 
@@ -117,19 +122,6 @@ export default function ExecutiveInsights() {
     const ar = data.ar;
     const payments = data.payments;
 
-    // ---------- Monthly aggregates for selected month vs prior ----------
-    const monthAggs: Record<string, { collected: number; count: number }> = {};
-    payments.forEach((p: any) => {
-      const m = (p.payment_date || "").substring(0, 7);
-      if (!m) return;
-      monthAggs[m] = monthAggs[m] || { collected: 0, count: 0 };
-      monthAggs[m].collected += Number(p.amount) || 0;
-      monthAggs[m].count += 1;
-    });
-    // Contract-attached payments (payments_clean) for the selected month. NOT the firm's
-    // collections — the hero "Collected" tile reads v_exec_collected_split_monthly. Kept only as
-    // the Money Flow donut's past-month "− Collected" fallback.
-    const curr = monthAggs[monthVal] || { collected: 0, count: 0 };
     const isCurrentMonth = monthVal === format(new Date(), "yyyy-MM");
 
     // ---------- AR totals ----------
@@ -157,43 +149,27 @@ export default function ExecutiveInsights() {
       ...collectorRows.flatMap((r) => AGING_BUCKETS.map((b) => r.buckets[b.key] || 0)),
     );
 
-    // ---------- Money flow (waterfall) for selected month ----------
-    // Calendar-month test on the DATE string (new Date("yyyy-mm-dd") shifted the 1st into the prior month).
-    const startDateAdded = ar
-      .filter((r: any) => !!r.start_date && String(r.start_date).slice(0, 7) === monthVal)
-      .reduce((s: number, r: any) => s + (Number(r.total_contract_value) || 0), 0);
-    // New AR: for the CURRENT month, read the VP-certified live-snapshot additions
-    // (v_firm_financial_summary.ar_additions). ar_dashboard.start_date comes from the frozen
-    // aging file and is structurally ~$0, so it undercounts real new AR. Past months have no
-    // month-keyed certified source, so they fall back to the start_date calc (unchanged).
-    // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor — re-pins
-    // as new AR snapshots land; $18,012,092.68 as of the 08-05 anchor, incl-"Paid" basis). Fall back to the row-sum
-    // only if the certified row is unavailable, so the AR tile never renders empty.
+    // ---------- Money flow (AR roll-forward) for selected month ----------
+    // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified anchor, re-pins as AR snapshots land). Fall
+    // back to the ar_dashboard row-sum only if the certified row is unavailable, so the tile never renders empty.
     const arTotalCertified = firmSummary && firmSummary.ar_total != null ? Number(firmSummary.ar_total) || 0 : totalAR;
-    const arAddedThisMonth =
-      isCurrentMonth && firmSummary && firmSummary.ar_additions != null
-        ? Number(firmSummary.ar_additions) || 0
-        : startDateAdded;
-    const collectedMonth = curr.collected;
-    // Money-flow decomposition. For the CURRENT month, use the VP-certified month movement
-    // from v_firm_financial_summary (additions / reductions / net) so the card matches the
-    // firm's official AR movement (Aug: additions $166,368 − reductions $251,590 = −$85,222)
-    // instead of an incommensurate "new AR − MTD cash" figure that would read as growth.
-    // "Reductions" include collections + write-offs/adjustments, so it legitimately differs
-    // from the cash-basis "Collected" hero tile. Past months fall back to the cash-basis
-    // identity (mathematically identical to the prior behavior).
-    const certifiedMovement = isCurrentMonth && firmSummary && firmSummary.ar_net_movement != null;
-    const reductionsMonth = certifiedMovement ? Number(firmSummary.ar_reductions) || 0 : collectedMonth;
-    const netMovement = certifiedMovement
-      ? Number(firmSummary.ar_net_movement) || 0
-      : arAddedThisMonth - reductionsMonth;
-    const openingAR = arTotalCertified - netMovement;
+    // Month movement = every MyCase AR snapshot period dated in the selected month (v_ar_waterfall): beginning of the
+    // first period, additions / reductions summed, ending of the last. "Reductions" = collections + write-offs +
+    // adjustments, so it legitimately differs from the cash "Collected" tile. The current month closes on the certified
+    // Total AR (the waterfall stores whole dollars). No snapshot in the month → no movement is shown (never a guess).
+    const mv = aggregateArWaterfallByMonth(waterfallRows).find((m) => m.monthKey === monthVal) ?? null;
+    const closingAR = mv ? (isCurrentMonth ? arTotalCertified : mv.ending) : arTotalCertified;
+    const arAddedThisMonth = mv ? mv.additions : 0;
+    const reductionsMonth = mv ? mv.reductions : 0;
+    const netMovement = mv ? mv.additions - mv.reductions : 0;
+    const openingAR = closingAR - netMovement;
     const waterfall = [
       { name: "Opening AR", value: openingAR, type: "balance" },
       { name: "+ New AR", value: arAddedThisMonth, type: "pos" },
-      { name: certifiedMovement ? "− Reductions" : "− Collected", value: -reductionsMonth, type: "neg" },
-      { name: "Closing AR", value: arTotalCertified, type: "balance" },
+      { name: "− Reductions", value: -reductionsMonth, type: "neg" },
+      { name: "Closing AR", value: closingAR, type: "balance" },
     ];
+    const movementSpan = mv ? { from: mv.firstSnapshot, to: mv.lastSnapshot, periods: mv.periods } : null;
 
     // Calendar-month test on the DATE string. new Date("yyyy-mm-dd") is UTC midnight, i.e. the previous
     // evening in US time zones, which used to count every payment dated the 1st in the previous month.
@@ -213,9 +189,15 @@ export default function ExecutiveInsights() {
       .map((b) => ({ bucket: b, ...(bucketMovement[b] || { collected: 0, count: 0 }) }))
       .filter((r) => r.collected > 0 || r.count > 0);
     const bucketMax = Math.max(1, ...bucketRows.map((r) => r.collected));
-    const recoveredFromDelinquent = bucketRows
+    // Bucket rows are client-linked LawPay payments (payments_clean carries the aging bucket); they are a SUBSET of
+    // cash. The headline "Recovered from Delinquent" is the certified figure for the month.
+    const linkedFromDelinquent = bucketRows
       .filter((r) => r.bucket !== "Current")
       .reduce((s, r) => s + r.collected, 0);
+    const linkedMonthTotal = bucketRows.reduce((s, r) => s + r.collected, 0);
+    const certMonth = certifiedMonths.find((m) => m.monthKey === monthVal) ?? null;
+    const recoveredFromDelinquent = certMonth ? certMonth.delinquent : null;
+    const certifiedCashMonth = certMonth ? certMonth.total : null;
 
     return {
       totalAR,
@@ -223,11 +205,16 @@ export default function ExecutiveInsights() {
       collectorRows,
       heatMax,
       waterfall,
+      closingAR,
+      movementSpan,
       bucketRows,
       bucketMax,
       recoveredFromDelinquent,
+      linkedFromDelinquent,
+      linkedMonthTotal,
+      certifiedCashMonth,
     };
-  }, [data, monthVal, firmSummary]);
+  }, [data, monthVal, firmSummary, waterfallRows, certifiedMonths]);
 
   // Collector time & activity (selected month), aggregated server-side (v_exec_collector_activity_monthly,
   // VP cert 6b600cd2) instead of paging every collection_activities row into the browser. "Collected" is the
@@ -328,13 +315,15 @@ export default function ExecutiveInsights() {
           <SectionHeader
             eyebrow="Cash Movement"
             title="Money Flow"
-            caption={`Composition of inflows vs outflows · ${monthLabel}`}
+            caption={view.movementSpan
+              ? `AR roll-forward · MyCase snapshots ${view.movementSpan.from} → ${view.movementSpan.to} (${view.movementSpan.periods} period${view.movementSpan.periods === 1 ? "" : "s"}) · ${monthLabel}`
+              : `No MyCase AR snapshot landed in ${monthLabel} — no movement to show`}
           />
           {(() => {
             const opening = view.waterfall[0].value;
             const newAR = view.waterfall[1].value;
             const collected = Math.abs(view.waterfall[2].value);
-            const closing = view.arTotalCertified;
+            const closing = view.closingAR;
             const pieData = [
               { name: "Opening AR", value: Math.max(0, opening), color: "hsl(var(--primary))" },
               { name: "+ New AR", value: Math.max(0, newAR), color: "hsl(var(--destructive))" },
@@ -517,9 +506,9 @@ export default function ExecutiveInsights() {
             <SectionHeader
               eyebrow="Aging Recovery"
               title="Bucket Movement"
-              caption={`Collections by aging bucket · ${monthLabel}`}
+              caption={`Client-linked LawPay payments by aging bucket · ${monthLabel}${view.certifiedCashMonth ? ` · ${fmtMoney(view.linkedMonthTotal)} of ${fmtMoney(view.certifiedCashMonth)} certified cash` : ""}`}
             />
-            <Metric mini label="Recovered from Delinquent" value={fmtMoney(view.recoveredFromDelinquent)} />
+            <Metric mini label="Recovered from Delinquent (certified)" value={view.recoveredFromDelinquent == null ? DASH : fmtMoney(view.recoveredFromDelinquent)} />
           </div>
           <div className="mt-6 space-y-2">
             {view.bucketRows.length === 0 ? (

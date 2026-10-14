@@ -239,7 +239,9 @@ export function useCollectionsDashboard() {
   });
 }
 
-/** 4. Payments Clean view — for transactions tab */
+/** payments_clean = LawPay charges LINKED to a client contract only (Jul 2026: $286,820 of $1,768,833.95 certified firm
+ *  cash). Use it for per-client / per-contract payment detail, NEVER as firm collections — firm cash is
+ *  useCertifiedMonthlyCollections (mv_collections_certified_monthly). Screens that show it must say "client-linked". */
 export function usePaymentsClean() {
   return useQuery({
     queryKey: ["payments-clean"],
@@ -384,6 +386,7 @@ export function useMergedClients() {
   });
 }
 
+/** Same client-linked LawPay rows as usePaymentsClean, mapped to Payment. NOT firm cash (see usePaymentsClean). */
 export function usePaymentsData() {
   return useQuery({
     queryKey: ["payments-data"],
@@ -798,44 +801,68 @@ export function useCaseMilestones() {
   });
 }
 
-/** Full MyCase records for one client: contact, cases, invoices, payment-level ledger, payment plans.
- *  Fetched per-selected-client (server-side filter by matched_client_id) so we never pull the 150K-row
- *  transaction table wholesale. Transactions/plans are linked by the client's MyCase invoice numbers. */
+/** MyCase invoice numbers are TEXT (up to 19 digits) and are written two ways: `mycase_invoices` /
+ *  `mycase_payment_plans` store digits only ("1234567"), the rich payment feed (`mycase_transactions_rich.reference`,
+ *  surfaced as v_financial_ledger_canonical.invoice_number) and the AR clock store "#1234567". Never parse them as
+ *  numbers (19 digits round). Match on the digits-only key and query both spellings. */
+export function invoiceDigitsKey(inv: string | null | undefined): string {
+  return String(inv ?? "").replace(/\D/g, "");
+}
+export function invoiceNumberSpellings(invoiceNumbers: Array<string | null | undefined>): string[] {
+  const out = new Set<string>();
+  for (const inv of invoiceNumbers) {
+    const k = invoiceDigitsKey(inv);
+    if (k.length < 5) continue; // too short to be a MyCase invoice number; would over-match
+    out.add(k);
+    out.add(`#${k}`);
+  }
+  return [...out].sort();
+}
+
+// Explicit columns only: never select * on client-bearing tables (raw_payload carries the full MyCase record).
+const MYCASE_CONTACT_COLS =
+  "mycase_contact_id, full_name, first_name, last_name, email, phone, cell_phone_number, work_phone_number, home_phone_number, contact_group, company, birthdate, matched_client_id, match_type, synced_at";
+const MYCASE_INVOICE_COLS = "invoice_number, status, amount, amount_paid, amount_due, issue_date, due_date, mycase_case_id, synced_at";
+const MYCASE_PLAN_COLS =
+  "id, invoice_number, case_name, total, paid, amount_due, installments_paid, total_installments, next_due_date, next_due_date_norm, next_amount, final_date, final_date_norm, autopay, retired_at, last_synced_at";
+const MYCASE_CASE_COLS =
+  "id, mycase_case_id, case_number, case_name, case_type, case_stage, practice_area, status, is_closed, open_date, closed_date, lead_attorney, flat_fee, billing_type, outstanding_balance, sol_date, matched_client_id, synced_at";
+const LAWPAY_RECENT_COLS = "id, payment_date, amount, status, payment_method, card_brand, card_last_four, client_id";
+
+/** MyCase records for one client: contact, cases, invoices, payment plans, and recent LawPay card payments.
+ *  Fetched per-selected-client (server-side filter by matched_client_id).
+ *  Payments are NOT read here: the profile's payment history is the certified cash ledger (useClientLedger →
+ *  v_financial_ledger_canonical = mycase_transactions_rich, current to the latest rich load). 2026-10-14: this hook used
+ *  to also pull the plain-scrape `mycase_transaction_history` (frozen 2026-09-29) with select *; nothing rendered it. */
 export function useMyCaseClient360(clientId: string | null) {
   return useQuery({
-    queryKey: ["mycase-client-360", clientId],
+    queryKey: ["mycase-client-360", "v2", clientId],
     enabled: !!clientId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!clientId) return null;
       const [contactsRes, casesRes, invoicesRes, lawpayRes] = await Promise.all([
-        supabase.from("mycase_contacts").select("*").eq("matched_client_id", clientId),
-        supabase.from("mycase_cases").select("*").eq("matched_client_id", clientId).order("open_date", { ascending: false }),
-        supabase.from("mycase_invoices").select("*").eq("matched_client_id", clientId),
-        supabase.from("lawpay_transactions").select("*").eq("client_id", clientId).eq("status", "COMPLETED").order("payment_date", { ascending: false }),
+        supabase.from("mycase_contacts").select(MYCASE_CONTACT_COLS).eq("matched_client_id", clientId),
+        supabase.from("mycase_cases").select(MYCASE_CASE_COLS).eq("matched_client_id", clientId).order("open_date", { ascending: false }),
+        supabase.from("mycase_invoices").select(MYCASE_INVOICE_COLS).eq("matched_client_id", clientId),
+        supabase.from("lawpay_transactions").select(LAWPAY_RECENT_COLS).eq("client_id", clientId).eq("status", "COMPLETED").order("payment_date", { ascending: false }),
       ]);
-      const contacts = contactsRes.data ?? [];
-      const cases = casesRes.data ?? [];
-      const invoices = invoicesRes.data ?? [];
-      const lawpay = lawpayRes.data ?? [];
-      const invoiceNos = Array.from(new Set(invoices.map((i: any) => i.invoice_number).filter(Boolean)));
-      let transactions: any[] = [];
+      const contacts = (contactsRes.data ?? []) as any[];
+      const cases = (casesRes.data ?? []) as any[];
+      const invoices = (invoicesRes.data ?? []) as any[];
+      const lawpay = (lawpayRes.data ?? []) as any[];
+      // mycase_invoices is a separate, slower feed (see v_feed_freshness 'invoices'); expose its sync date so the
+      // page can say how current the invoice list is.
+      const invoicesSyncedAt = invoices.reduce(
+        (m: string | null, i: any) => (i.synced_at && (!m || i.synced_at > m) ? i.synced_at : m), null as string | null);
+      const planKeys = invoiceNumberSpellings(invoices.map((i: any) => i.invoice_number)).filter((s) => !s.startsWith("#"));
       let plans: any[] = [];
-      if (invoiceNos.length > 0) {
-        const [txRes, planRes] = await Promise.all([
-          supabase.from("mycase_transaction_history").select("*").in("invoice_number", invoiceNos).order("payment_date", { ascending: false }),
-          supabase.from("mycase_payment_plans").select("*").in("invoice_number", invoiceNos),
-        ]);
-        transactions = txRes.data ?? [];
+      if (planKeys.length > 0) {
+        const planRes = await supabase.from("mycase_payment_plans").select(MYCASE_PLAN_COLS).in("invoice_number", planKeys);
         plans = planRes.data ?? [];
       }
-      // MyCase transaction_history is synced unevenly (currently lags ~weeks). Blend in fresher LawPay
-      // card payments that post-date this client's latest MyCase-recorded payment, so the ledger surfaces
-      // recent activity instead of silently cutting off at the stale sync date.
-      const mycaseThrough = transactions.reduce(
-        (m: string | null, t: any) => (t.payment_date && (!m || t.payment_date > m) ? t.payment_date : m), null as string | null);
-      const lawpayRecent = lawpay.filter((l: any) => l.payment_date && (!mycaseThrough || l.payment_date > mycaseThrough));
-      return { contact: contacts[0] ?? null, contacts, cases, invoices, transactions, plans, lawpayRecent, mycaseThrough };
+      // LawPay card payments for this client; the page shows only those newer than the client's latest ledger payment.
+      return { contact: contacts[0] ?? null, contacts, cases, invoices, invoicesSyncedAt, plans, lawpayRecent: lawpay };
     },
   });
 }
@@ -868,11 +895,11 @@ export function useClientContact(clientId: string | null, clientName?: string | 
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (clientId) {
-        const { data } = await supabase.from("mycase_contacts").select("*").eq("matched_client_id", clientId).limit(1);
+        const { data } = await supabase.from("mycase_contacts").select(MYCASE_CONTACT_COLS).eq("matched_client_id", clientId).limit(1);
         if (data && data.length) return { contact: data[0] as any, source: "client_id" as const };
       }
       if (clientName && clientName.trim()) {
-        const { data } = await supabase.from("mycase_contacts").select("*").ilike("full_name", clientName.trim()).limit(1);
+        const { data } = await supabase.from("mycase_contacts").select(MYCASE_CONTACT_COLS).ilike("full_name", clientName.trim()).limit(1);
         if (data && data.length) return { contact: data[0] as any, source: "name_match" as const };
       }
       return { contact: null as any, source: "none" as const };
@@ -1194,6 +1221,10 @@ export type CertifiedMonthlyCollection = {
   onPlan: number;
   delinquent: number;
   from180: number;
+  autopayEnrolled: number;
+  basis: string;
+  /** Unrounded real_cash_total — sum THIS across months (summing the whole-dollar `total` drifts by cents). */
+  totalExact: number;
 };
 
 export function useCertifiedMonthlyCollections(months = 5) {
@@ -1202,7 +1233,7 @@ export function useCertifiedMonthlyCollections(months = 5) {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("mv_collections_certified_monthly")
-        .select("mon, real_cash_total, delinquent_recovery, recovery_from_180plus")
+        .select("mon, real_cash_total, delinquent_recovery, recovery_from_180plus, cash_from_autopay_enrolled_payers, basis")
         .order("mon", { ascending: false })
         .limit(months);
       if (error) throw error;
@@ -1217,8 +1248,82 @@ export function useCertifiedMonthlyCollections(months = 5) {
           onPlan: total - delinquent,
           delinquent,
           from180: Math.round(Number(r.recovery_from_180plus) || 0),
+          autopayEnrolled: Math.round(Number(r.cash_from_autopay_enrolled_payers) || 0),
+          basis: String(r.basis || ""),
+          totalExact: Number(r.real_cash_total) || 0,
         };
       });
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** AR roll-forward by calendar month, from v_ar_waterfall (one row per MyCase AR snapshot period, beginning →
+ *  additions/reductions → ending). A month = every snapshot period whose period_date falls in it: beginning of the
+ *  first, ending of the last, additions/reductions summed. SNAPSHOT grain, whole dollars. Before May 2026 the
+ *  snapshots were monthly-or-sparser and the basis changed (Jan/Feb 2026 show ~$18-20M gross churn), so the
+ *  additions/reductions columns are only meaningful from 2026-05 on; ending/net change are valid throughout. */
+export type ArMonthMovement = {
+  monthKey: string;
+  month: string;
+  periods: number;
+  firstSnapshot: string;
+  lastSnapshot: string;
+  beginning: number;
+  additions: number;
+  reductions: number;
+  ending: number;
+  net: number;
+};
+
+export function aggregateArWaterfallByMonth(rows: any[]): ArMonthMovement[] {
+  const byMonth = new Map<string, any[]>();
+  for (const r of rows ?? []) {
+    const k = String(r.period_date ?? "").slice(0, 7);
+    if (!k) continue;
+    if (!byMonth.has(k)) byMonth.set(k, []);
+    byMonth.get(k)!.push(r);
+  }
+  return [...byMonth.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, list]) => {
+      const sorted = [...list].sort((a, b) => String(a.period_date).localeCompare(String(b.period_date)));
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+      const beginning = Number(first.beginning) || 0;
+      const ending = Number(last.ending) || 0;
+      return {
+        monthKey: k,
+        month: format(new Date(`${k}-01T00:00:00`), "MMM yyyy"),
+        periods: sorted.length,
+        firstSnapshot: String(first.prior_date ?? "").slice(0, 10),
+        lastSnapshot: String(last.period_date ?? "").slice(0, 10),
+        beginning,
+        additions: sorted.reduce((s, r) => s + (Number(r.additions) || 0), 0),
+        reductions: sorted.reduce((s, r) => s + (Number(r.reductions) || 0), 0),
+        ending,
+        net: ending - beginning,
+      };
+    });
+}
+
+/** CLIENT-grain AR headcount: v_client_ar_front_door (one row per linked client on the active MyCase snapshot).
+ *  On 2026-10-14 = 3,321 clients / $15,772,665.52 (snapshot 734dedb0, 2026-10-12); the remaining $1,730,220 of the
+ *  $17,502,885.52 book sits on 259 invoices with no client link. Use this, not admin_kpi.total_clients (ar_dashboard's
+ *  own client join: 3,304). */
+export function useArClientGrain() {
+  return useQuery({
+    queryKey: ["ar-client-grain"],
+    queryFn: async () => {
+      const [countRes, snapRes] = await Promise.all([
+        (supabase as any).from("v_client_ar_front_door").select("client_id", { count: "exact", head: true }),
+        (supabase as any).from("v_ar_active_snapshot").select("snapshot_date").limit(1),
+      ]);
+      if (countRes.error) throw countRes.error;
+      return {
+        clients: Number(countRes.count) || 0,
+        snapshotDate: ((snapRes.data ?? [])[0]?.snapshot_date as string | undefined) ?? null,
+      };
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -2012,7 +2117,10 @@ export interface LedgerPayment {
 }
 
 export function useClientLedger(clientId: string | null | undefined, invoiceNumbers: string[] = []) {
-  const invs = [...new Set(invoiceNumbers.filter(Boolean))].sort();
+  // 2026-10-14: the ledger's invoice_number is the rich feed's "#1234567"; mycase_invoices hands us "1234567". The old
+  // exact .in() never matched, so every no-client ledger row on a client's own invoice was missing from the profile
+  // (1,595 rows / $1,688,968.42 across 1,030 clients on 10-14). Query both spellings of the digits-only key.
+  const invs = invoiceNumberSpellings(invoiceNumbers);
   return useQuery<LedgerPayment[]>({
     queryKey: ["client-ledger", clientId ?? null, invs.join(",")],
     enabled: !!clientId || invs.length > 0,

@@ -80,7 +80,7 @@ const ReportBuilderTab = () => {
     <div className="space-y-6">
       <div className="dashboard-section">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2"><Filter className="h-5 w-5 text-primary" /><h2 className="text-lg font-semibold text-foreground">Report Builder</h2></div>
+          <div className="flex items-center gap-2"><Filter className="h-5 w-5 text-primary" /><h2 className="text-lg font-semibold text-foreground">Report Builder</h2><span className="text-xs text-muted-foreground">· client-linked LawPay payments (payments_clean), not firm cash</span></div>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={clearFilters}><X className="h-4 w-4 mr-1" /> Clear</Button>
             <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Export CSV</Button>

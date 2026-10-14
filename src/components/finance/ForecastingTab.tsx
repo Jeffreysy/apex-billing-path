@@ -52,8 +52,8 @@ const ForecastingTab = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Scheduled Installments / Mo" value={`$${scheduledMonthlyInstallments.toLocaleString()}`} icon={<Target className="h-5 w-5" />} />
-        <StatCard label="Remaining AR" value={`$${totalRemainingAR.toLocaleString()}`} icon={<BarChart3 className="h-5 w-5" />} />
-        <StatCard label="Avg Collector Payment" value={`$${avgCollectorPayment.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Remaining AR (live)" value={`$${totalRemainingAR.toLocaleString()}`} icon={<BarChart3 className="h-5 w-5" />} caption="ar_dashboard: MyCase snapshot less LawPay paid since" />
+        <StatCard label="Avg Linked Payment" value={`$${avgCollectorPayment.toLocaleString()}`} icon={<TrendingUp className="h-5 w-5" />} />
         <StatCard label="Active Contracts" value={String(activeClients.length)} icon={<ArrowDownRight className="h-5 w-5" />} />
       </div>
 
@@ -74,7 +74,7 @@ const ForecastingTab = () => {
 
       <div className="dashboard-section">
         <h2 className="mb-2 text-lg font-semibold text-foreground">Expected Deposits Forecast</h2>
-        <p className="mb-3 text-xs text-muted-foreground">Driven by active contracts, scheduled installments, CRM transactions, and collector payments</p>
+        <p className="mb-3 text-xs text-muted-foreground">Driven by active contracts and scheduled installments; "actual" = client-linked LawPay payments (payments_clean), a subset of firm cash</p>
         <Tabs defaultValue="weekly">
           <TabsList>
             <TabsTrigger value="weekly">Weekly</TabsTrigger>

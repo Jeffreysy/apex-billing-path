@@ -360,7 +360,11 @@ const ClientLookup = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base"><DollarSign className="h-4 w-4 text-secondary" />Payment History ({ledger.length + lawpayPending.length})</CardTitle>
-                <AsOf source="Certified cash ledger (MyCase payments)" date={feeds.transactions_rich?.asOf} red={feeds.transactions_rich?.isRed} />
+                <AsOf source="Certified cash ledger (MyCase rich payment feed)" date={feeds.transactions_rich?.asOf} red={feeds.transactions_rich?.isRed} />
+                {myCase?.invoicesSyncedAt && (
+                  <AsOf source="Unattributed payments matched on this client's MyCase invoice list" date={myCase.invoicesSyncedAt} red={feeds.invoices?.isRed}
+                    note="invoices created after that date are not matched yet" />
+                )}
                 {lawpayPending.length > 0 && <AsOf source={`${lawpayPending.length} newer LawPay payment(s) not in MyCase yet`} date={feeds.lawpay?.asOf} red={feeds.lawpay?.isRed} />}
               </CardHeader>
               <CardContent>

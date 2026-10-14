@@ -90,7 +90,7 @@ describe("Client Lookup", () => {
     expect(h.cardAsked).toContain("cl-1");
     expect(screen.getByText("Payment History (2)")).toBeInTheDocument();
     expect(screen.getByText("Contract Breakdown")).toBeInTheDocument();
-    expect(screen.getByText(/Certified cash ledger \(MyCase payments\) · data as of 2026-10-13/)).toBeInTheDocument();
+    expect(screen.getByText(/Certified cash ledger \(MyCase rich payment feed\) · data as of 2026-10-13/)).toBeInTheDocument();
     expect(screen.getByText(/Collector activity log · data as of 2026-09-15 · stale feed/)).toBeInTheDocument();
   });
 

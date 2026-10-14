@@ -3,6 +3,7 @@ import StatCard from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePaymentsClean, usePaymentsData, useMergedClients } from "@/hooks/useSupabaseData";
+import LinkedPaymentsNotice from "./LinkedPaymentsNotice";
 import {
   DollarSign, CreditCard, Briefcase, Receipt, FileText, Landmark, Calculator,
   ChevronLeft, ChevronRight,
@@ -130,11 +131,12 @@ const WeeklyRevenueTab = ({ dateRange }: Props) => {
         <Badge variant="outline" className="text-xs">{classifiedPayments.length} transactions</Badge>
       </div>
 
+      <LinkedPaymentsNotice />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-7">
         <StatCard label="Down Payments" value={`$${downPaymentTotal.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} />
         <StatCard label="Other Booked" value={`$${bookedOtherTotal.toLocaleString()}`} icon={<CreditCard className="h-4 w-4" />} />
         <StatCard label="Consults" value={`$${consultTotal.toLocaleString()}`} icon={<Briefcase className="h-4 w-4" />} />
-        <StatCard label="Transactions Total" value={`$${transactionsTotal.toLocaleString()}`} icon={<Receipt className="h-4 w-4" />} />
+        <StatCard label="Linked Payments Total" value={`$${transactionsTotal.toLocaleString()}`} icon={<Receipt className="h-4 w-4" />} />
         <StatCard label="Filevine Tagged" value={`$${filevineTagged.toLocaleString()}`} icon={<FileText className="h-4 w-4" />} />
         <StatCard label="LawPay Tagged" value={`$${lawPayTagged.toLocaleString()}`} icon={<Landmark className="h-4 w-4" />} />
         <StatCard label="Unclassified" value={`$${unclassifiedBooked.toLocaleString()}`} icon={<Calculator className="h-4 w-4" />} />
@@ -143,7 +145,7 @@ const WeeklyRevenueTab = ({ dateRange }: Props) => {
       <div className="dashboard-section">
         <h3 className="mb-2 text-sm font-semibold text-foreground">Classification Logic</h3>
         <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground md:grid-cols-2">
-          <p>• <strong>Transactions Total</strong> is all completed booked payments in the selected week.</p>
+          <p>• <strong>Linked Payments Total</strong> is every client-linked LawPay payment (payments_clean) in the selected week — a subset of firm cash.</p>
           <p>• <strong>Filevine Tagged</strong> only counts rows explicitly marked with Filevine notes, type, or reference.</p>
           <p>• <strong>LawPay Tagged</strong> only counts rows explicitly marked as LawPay or with a LawPay-style reference.</p>
           <p>• <strong>Unclassified</strong> means the payment is booked but not explicitly tagged yet.</p>

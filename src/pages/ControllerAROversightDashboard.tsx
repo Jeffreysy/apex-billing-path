@@ -23,6 +23,7 @@ import {
   useControllerGrowthVsCollections,
   useControllerTrueExposure,
   useControllerARCashflow,
+  useCertifiedMonthlyCollections,
 } from "@/hooks/useSupabaseData";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -85,6 +86,10 @@ const ControllerAROversightDashboard = () => {
   const { data: growthData = [], isLoading: l16 } = useControllerGrowthVsCollections();
   const { data: trueExposure, isLoading: l17 } = useControllerTrueExposure();
   const { data: cashflowData = [], isLoading: l18 } = useControllerARCashflow();
+  // Certified firm cash (mv_collections_certified_monthly). 2026-10-14: the "Auto-Pay Rate" tile divided
+  // v_controller_monthly_collections by itself — every client-linked LawPay row is tagged auto-pay, so it always read
+  // 100%. It now shows the share of certified cash paid by autopay-enrolled payers for the last closed month.
+  const { data: certMonths = [] } = useCertifiedMonthlyCollections(3);
 
   const [autoSearch, setAutoSearch] = useState("");
   const [autoFilter, setAutoFilter] = useState("all");
@@ -137,7 +142,11 @@ const ControllerAROversightDashboard = () => {
     monthlyCol.reduce((s: number, r: any) => s + (Number(r.total_collected) || 0), 0),
   [monthlyCol]);
 
-  const autopayPct = totalCollected > 0 ? autoPayTotal / totalCollected * 100 : 0;
+  const certClosed = certMonths.length >= 2 ? certMonths[certMonths.length - 2] : null; // last CLOSED month
+  const autopayPct = certClosed && certClosed.total > 0 ? certClosed.autopayEnrolled / certClosed.total * 100 : 0;
+  // v_controller_growth_vs_collections reads the contracts table, which has had no new rows since this month.
+  const lastNewBusinessMonth = growthData.filter((r: any) => Number(r.new_contracts) > 0)
+    .map((r: any) => String(r.month).slice(0, 7)).sort().pop() ?? null;
 
   const untouchedExposure = useMemo(() =>
     delinqExpo
@@ -246,7 +255,8 @@ const ControllerAROversightDashboard = () => {
           <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{fmt(Number(trueExposure?.true_collectible_ar) || 0)}</p>
           <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
             <p>Active/Risk: {fmt(trueExposure?.active_risk_outstanding)} ({trueExposure?.active_risk_contracts} contracts)</p>
-            <p>Remaining FV gap: {fmt(trueExposure?.remaining_fv_gap)} (599 invoices not yet migrated)</p>
+            <p>Missing MyCase plans: {fmt(trueExposure?.missing_plans_outstanding)} ({trueExposure?.missing_plans_count ?? 0} plans)</p>
+            <p>Contracts-table basis — not the MyCase AR book; Reported AR (left) is the anchor.</p>
           </div>
         </div>
       </div>
@@ -256,10 +266,10 @@ const ControllerAROversightDashboard = () => {
         <KpiCard icon={TrendingDown} label="180+ Chronic" value={fmt(bucketAmounts["180+"] || 0)}
           sub={pct(totalAR ? (bucketAmounts["180+"] || 0) / totalAR * 100 : 0) + " of reported AR"}
           color="text-destructive" />
-        <KpiCard icon={CreditCard} label="Auto-Pay Rate" value={pct(autopayPct)}
-          sub={fmt(autoPayTotal) + " auto-collected"} />
-        <KpiCard icon={TrendingUp} label="Collection Rate" value={pct(collectionRate)}
-          sub={fmt(installGap) + " monthly gap"} />
+        <KpiCard icon={CreditCard} label="Autopay-Payer Share" value={certClosed ? pct(autopayPct) : "—"}
+          sub={certClosed ? `${fmt(certClosed.autopayEnrolled)} of ${fmt(certClosed.total)} certified cash · ${certClosed.month}` : "certified cash loading"} />
+        <KpiCard icon={TrendingUp} label="Installment Rate (linked)" value={pct(collectionRate)}
+          sub={`${latestRate?.month ? String(latestRate.month).slice(0, 7) + " · " : ""}client-linked LawPay vs scheduled · ${fmt(installGap)} gap`} />
         <KpiCard icon={AlertTriangle} label="Untouched Delinquent" value={fmt(untouchedExposure)}
           sub="Never contacted" color="text-destructive" />
         <KpiCard icon={AlertTriangle} label="Plan Gap (Structural)" value={fmt(planGapTotal)}
@@ -286,6 +296,7 @@ const ControllerAROversightDashboard = () => {
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">AR Cashflow Analysis</span> — obligation created vs cash received vs receivable generated.
               Source: MyCase cases (open_date + invoice &gt; $250) cross-referenced to LawPay first payments.
+              <span className="block mt-1 text-amber-700 dark:text-amber-400">Frozen: v_controller_ar_cashflow has not been refreshed since {cashflowData.length ? cashflowData[cashflowData.length - 1]?.label : "—"}; its "ending firm AR" is not the current book. Current AR and cash are on the Aging Buckets tab and the Admin Dashboard.</span>
             </p>
           </div>
 
@@ -409,6 +420,7 @@ const ControllerAROversightDashboard = () => {
             <p className="text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">Growth vs Collections</span> — are we replacing collected AR with new business, or is the book running off?
               Healthy AR shows collections reducing old balances while new contracts refill the pipeline.
+              <span className="block mt-1 text-amber-700 dark:text-amber-400">Source v_controller_growth_vs_collections: new business reads the legacy contracts table (last new contract month {lastNewBusinessMonth ?? "—"}, so later months show $0 new business), and "Collections" are client-linked LawPay payments only — not certified firm cash.</span>
             </p>
           </div>
 
@@ -746,7 +758,8 @@ const ControllerAROversightDashboard = () => {
         <TabsContent value="collections" className="space-y-6">
           {/* Collections by bucket stacked bar */}
           <div className="rounded-lg border bg-card p-4">
-            <h3 className="text-sm font-semibold mb-3">Collections by Commission Bucket (Monthly)</h3>
+            <h3 className="text-sm font-semibold mb-1">Collections by Commission Bucket (Monthly)</h3>
+            <p className="mb-3 text-xs text-muted-foreground">Client-linked payments by aging bucket (v_controller_bucket_collections) — a subset of certified firm cash.</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={bucketColByMonth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
@@ -807,7 +820,8 @@ const ControllerAROversightDashboard = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Monthly collections: auto vs other */}
             <div className="rounded-lg border bg-card p-4">
-              <h3 className="text-sm font-semibold mb-3">Monthly Collections (Auto-Pay vs Other)</h3>
+              <h3 className="text-sm font-semibold mb-1">Monthly Client-Linked Payments</h3>
+              <p className="mb-3 text-xs text-muted-foreground">v_controller_monthly_collections = client-linked LawPay only (every row is tagged auto-pay). Not firm cash.</p>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={[...monthlyCol].reverse()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />
@@ -825,7 +839,8 @@ const ControllerAROversightDashboard = () => {
 
             {/* Installment collection rate */}
             <div className="rounded-lg border bg-card p-4">
-              <h3 className="text-sm font-semibold mb-3">Installment Collection Rate</h3>
+              <h3 className="text-sm font-semibold mb-1">Installment Collection Rate</h3>
+              <p className="mb-3 text-xs text-muted-foreground">Actual = client-linked LawPay payments vs scheduled installments.</p>
               <ResponsiveContainer width="100%" height={280}>
                 <ComposedChart data={[...installRate].reverse()}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 88%)" />

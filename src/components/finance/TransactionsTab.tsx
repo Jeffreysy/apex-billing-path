@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { usePaymentsClean } from "@/hooks/useSupabaseData";
+import LinkedPaymentsNotice from "./LinkedPaymentsNotice";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ const TransactionsTab = ({ dateRange }: Props) => {
 
   return (
     <div className="space-y-6">
+      <LinkedPaymentsNotice />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Breakdown by Type</h2>
