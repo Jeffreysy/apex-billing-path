@@ -1,131 +1,101 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchAllRows } from "@/hooks/useSupabaseData";
-import StatCard from "@/components/StatCard";
-import { TrendingUp, TrendingDown, BarChart3, Percent } from "lucide-react";
+import { useMemo } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  useArWaterfall, useCertifiedMonthlyCollections, useFirmFinancialSummary, aggregateArWaterfallByMonth,
+} from "@/hooks/useSupabaseData";
+import StatCard from "@/components/StatCard";
+import { TrendingUp, TrendingDown, BarChart3, DollarSign } from "lucide-react";
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
 import { format, parseISO } from "date-fns";
 
-interface MonthlyData {
-  month: string;
-  label: string;
-  arAdded: number;
-  collected: number;
-  net: number;
-}
-
-function useARGrowthVsCollections() {
-  return useQuery({
-    queryKey: ["ar-growth-vs-collections"],
-    queryFn: async () => {
-      // Only the columns this chart reads, each sorted on a unique key so offset paging is stable
-      // (unsorted ar_dashboard pages also got a slow plan). 2026-10-13.
-      const [arRows, payments, activities] = await Promise.all([
-        fetchAllRows<any>("ar_dashboard", { columns: "contract_id, start_date, total_contract_value", orderBy: "contract_id" }),
-        fetchAllRows<any>("payments_clean", { columns: "id, payment_date, amount", orderBy: "id" }),
-        fetchAllRows<any>("collection_activities", {
-          columns: "id, activity_date, collected_amount",
-          orderBy: "id",
-          filter: (q: any) => q.gt("collected_amount", 0),
-        }),
-      ]);
-
-      const arByMonth: Record<string, number> = {};
-      arRows.forEach((c: any) => {
-        const m = c.start_date?.substring(0, 7);
-        if (m) arByMonth[m] = (arByMonth[m] || 0) + Number(c.total_contract_value || 0);
-      });
-
-      const collByMonth: Record<string, number> = {};
-      payments.forEach((p: any) => {
-        const m = p.payment_date?.substring(0, 7);
-        if (m) collByMonth[m] = (collByMonth[m] || 0) + Number(p.amount || 0);
-      });
-      activities.forEach((a: any) => {
-        const m = a.activity_date?.substring(0, 7);
-        if (m) collByMonth[m] = (collByMonth[m] || 0) + Number(a.collected_amount || 0);
-      });
-
-      const allMonths = new Set([...Object.keys(arByMonth), ...Object.keys(collByMonth)]);
-      const sorted = Array.from(allMonths).sort();
-      const last12 = sorted.slice(-12);
-
-      const data: MonthlyData[] = last12.map((m) => ({
-        month: m,
-        label: format(parseISO(m + "-01"), "MMM yy"),
-        arAdded: Math.round(arByMonth[m] || 0),
-        collected: Math.round(collByMonth[m] || 0),
-        net: Math.round((arByMonth[m] || 0) - (collByMonth[m] || 0)),
-      }));
-
-      const totalAR = data.reduce((s, d) => s + d.arAdded, 0);
-      const totalColl = data.reduce((s, d) => s + d.collected, 0);
-      const coverage = totalAR > 0 ? Math.round((totalColl / totalAR) * 100) : 0;
-      const netChange = totalAR - totalColl;
-
-      const recent3 = data.slice(-3).reduce((s, d) => s + d.arAdded, 0);
-      const prior3 = data.slice(-6, -3).reduce((s, d) => s + d.arAdded, 0);
-      const growthRate = prior3 > 0 ? Math.round(((recent3 - prior3) / prior3) * 100) : 0;
-
-      return { data, totalAR, totalColl, coverage, netChange, growthRate };
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
+// 2026-10-14: this chart used to add payments_clean (client-linked LawPay only) to collection_activities.collected_amount
+// (collector-typed amounts that largely describe the SAME payments) and compare that to ar_dashboard.start_date contract
+// value of OPEN contracts (structurally ~$0). Both sides were wrong. It now shows:
+//   - Collected = certified firm cash per month (mv_collections_certified_monthly, bank-supported, transaction grain)
+//   - Net AR change = the AR roll-forward across MyCase snapshots dated in that month (v_ar_waterfall, snapshot grain)
+const MONTHS = 12;
+const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 const ARGrowthVsCollectionsChart = () => {
-  const { data: result, isLoading } = useARGrowthVsCollections();
+  const { data: cash = [], isLoading: cl } = useCertifiedMonthlyCollections(MONTHS);
+  const { data: waterfall = [], isLoading: wl } = useArWaterfall();
+  const { data: firmSummary } = useFirmFinancialSummary();
 
-  if (isLoading || !result) {
+  const result = useMemo(() => {
+    const movement = new Map(aggregateArWaterfallByMonth(waterfall).map((m) => [m.monthKey, m]));
+    const data = cash.map((c) => {
+      const m = movement.get(c.monthKey);
+      return {
+        month: c.monthKey,
+        label: format(parseISO(`${c.monthKey}-01`), "MMM yy"),
+        collected: c.total,
+        collectedExact: c.totalExact,
+        net: m ? m.net : null,
+        ending: m ? m.ending : null,
+      };
+    });
+    const totalColl = data.reduce((s, d) => s + d.collectedExact, 0);
+    const withMove = data.filter((d) => d.net != null);
+    const netChange = withMove.reduce((s, d) => s + (d.net as number), 0);
+    const span = data.length ? `${data[0].label} – ${data[data.length - 1].label}` : "";
+    return { data, totalColl, netChange, span, monthsWithMove: withMove.length };
+  }, [cash, waterfall]);
+
+  if (cl || wl) {
     return <div className="p-4 text-center text-muted-foreground text-sm">Loading AR vs Collections...</div>;
   }
 
-  const { data, totalAR, totalColl, coverage, netChange, growthRate } = result;
+  const { data, totalColl, netChange, span, monthsWithMove } = result;
+  const arNow = Number(firmSummary?.ar_total) || 0;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          label="AR Growth Rate"
-          value={`${growthRate > 0 ? "+" : ""}${growthRate}%`}
-          icon={<TrendingUp className="h-5 w-5" />}
-          change={growthRate}
-        />
-        <StatCard
-          label="Collection Coverage"
-          value={`${coverage}%`}
-          icon={<Percent className="h-5 w-5" />}
+          label="Collected (certified)"
+          value={money(totalColl)}
+          icon={<BarChart3 className="h-5 w-5" />}
+          caption={`${span} · bank-supported cash`}
         />
         <StatCard
           label="Net AR Change"
-          value={`${netChange >= 0 ? "+" : "-"}$${Math.abs(netChange).toLocaleString()}`}
+          value={`${netChange >= 0 ? "+" : "-"}${money(Math.abs(netChange))}`}
           icon={netChange >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+          caption={`MyCase snapshot roll-forward · ${monthsWithMove} month${monthsWithMove === 1 ? "" : "s"} with a snapshot`}
         />
         <StatCard
-          label="Period Collected"
-          value={`$${totalColl.toLocaleString()}`}
-          icon={<BarChart3 className="h-5 w-5" />}
+          label="Total AR Now"
+          value={arNow ? money(arNow) : "—"}
+          icon={<DollarSign className="h-5 w-5" />}
+          caption={firmSummary?.as_of ? `MyCase snapshot ${firmSummary.as_of} · ${Number(firmSummary.open_invoices || 0).toLocaleString()} invoices` : undefined}
+        />
+        <StatCard
+          label="Avg Monthly Cash"
+          value={data.length > 1 ? money(data.slice(0, -1).reduce((s, d) => s + d.collectedExact, 0) / (data.length - 1)) : "—"}
+          icon={<TrendingUp className="h-5 w-5" />}
+          caption="Closed months in the window (current month excluded)"
         />
       </div>
 
       <div className="dashboard-section">
-        <h2 className="mb-1 text-lg font-semibold text-foreground">AR Growth vs Collections — Monthly</h2>
+        <h2 className="mb-1 text-lg font-semibold text-foreground">Collections vs AR Movement — Monthly</h2>
         <p className="mb-4 text-xs text-muted-foreground">
-          New contract value (AR added) vs actual collections per month
+          Certified cash collected per month (mv_collections_certified_monthly) vs the net change in the AR book across the
+          MyCase snapshots dated in that month (v_ar_waterfall). Current month is month to date.
         </p>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
+          <ComposedChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
             <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+            <Tooltip formatter={(v: number) => (v == null ? "—" : money(v))} />
             <Legend />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-            <Bar dataKey="arAdded" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="AR Added" />
-            <Bar dataKey="collected" fill="hsl(152 60% 40%)" radius={[4, 4, 0, 0]} name="Collected" />
-          </BarChart>
+            <Bar dataKey="collected" fill="hsl(152 60% 40%)" radius={[4, 4, 0, 0]} name="Collected (certified cash)" />
+            <Line type="monotone" dataKey="net" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls={false} name="Net AR change (snapshots)" />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>

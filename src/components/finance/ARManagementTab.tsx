@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllRows, usePromiseTracker, useFeedFreshness } from "@/hooks/useSupabaseData";
+import { fetchAllRows, usePromiseTracker, useFeedFreshness, useArWaterfall, useCertifiedMonthlyCollections, aggregateArWaterfallByMonth } from "@/hooks/useSupabaseData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -242,99 +242,66 @@ function PTPSection() {
 }
 
 // ---------- AR Roll-Forward ----------
+// 2026-10-14: rebuilt on the certified sources. It used to compute "New AR" from ar_dashboard.start_date of OPEN
+// contracts (structurally ~$0 — the aging file carries no start dates for new work) and "Collections" from
+// payments_clean (client-linked LawPay only: Jul 2026 $286,820 vs $1,768,833.95 certified). Now:
+//   - Beginning / + Additions / − Reductions / Ending = v_ar_waterfall, the MyCase AR snapshot roll-forward (snapshot
+//     grain, whole dollars), grouped by the month each snapshot is dated in.
+//   - Certified cash = mv_collections_certified_monthly (bank-supported, transaction grain). Reductions include
+//     write-offs/adjustments and are on the snapshot clock, so they legitimately differ from cash.
 function ARRollForwardSection() {
-  // Only the columns the roll-forward reads, sorted on a unique key (stable paging, fast plan). Payments are
-  // limited to the 6 months the table shows instead of paging all of payments_clean. 2026-10-13.
-  const { data: contracts = [] } = useQuery({
-    queryKey: ["arrf-contracts", "v2"],
-    queryFn: async () =>
-      fetchAllRows<any>("ar_dashboard", { columns: "contract_id, start_date, total_contract_value", orderBy: "contract_id" }),
-    staleTime: 5 * 60 * 1000,
-  });
-  const { data: payments = [] } = useQuery({
-    queryKey: ["arrf-payments", "v2"],
-    queryFn: async () => {
-      const from = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
-      return fetchAllRows<any>("payments_clean", {
-        columns: "id, payment_date, amount",
-        orderBy: "id",
-        filter: (q) => q.gte("payment_date", from),
-      });
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Build last 6 months
-  const months = useMemo(() => {
-    const arr: { key: string; label: string; start: Date; end: Date }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = subMonths(new Date(), i);
-      arr.push({
-        key: format(d, "yyyy-MM"),
-        label: format(d, "MMM yy"),
-        start: startOfMonth(d),
-        end: endOfMonth(d),
-      });
-    }
-    return arr;
-  }, []);
+  const { data: waterfall = [] } = useArWaterfall();
+  const { data: cash = [] } = useCertifiedMonthlyCollections(6);
 
   const rollForward = useMemo(() => {
-    // For each month: New AR added (contracts created that month, by value),
-    // Collections (payments that month), Net Movement
-    const rows = months.map(m => {
-      // Calendar-month test on the DATE string: new Date("yyyy-mm-dd") is UTC midnight (the previous evening
-      // in US time zones), which dropped every contract starting on the 1st into the prior month.
-      const newContracts = contracts.filter((c: any) => !!c.start_date && String(c.start_date).slice(0, 7) === m.key);
-      const newAR = newContracts.reduce((s: number, c: any) => s + (Number(c.total_contract_value) || 0), 0);
-
-      const monthPayments = payments.filter((p: any) => {
-        if (!p.payment_date) return false;
-        const d = parseISO(p.payment_date);
-        return d >= m.start && d <= m.end;
-      });
-      const collections = monthPayments.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
-
+    const byMonth = new Map(aggregateArWaterfallByMonth(waterfall).map((m) => [m.monthKey, m]));
+    return cash.map((c) => {
+      const m = byMonth.get(c.monthKey);
       return {
-        month: m.label,
-        newAR,
-        collections,
-        net: newAR - collections,
-        newContractCount: newContracts.length,
+        month: format(parseISO(`${c.monthKey}-01`), "MMM yy"),
+        snapshots: m ? `${m.firstSnapshot} → ${m.lastSnapshot}` : "no snapshot",
+        beginning: m ? m.beginning : null,
+        additions: m ? m.additions : null,
+        reductions: m ? m.reductions : null,
+        ending: m ? m.ending : null,
+        net: m ? m.net : null,
+        certifiedCash: c.total,
       };
     });
-    return rows;
-  }, [contracts, payments, months]);
+  }, [waterfall, cash]);
 
-  const totals = rollForward.reduce(
-    (acc, r) => ({ newAR: acc.newAR + r.newAR, collections: acc.collections + r.collections, net: acc.net + r.net }),
-    { newAR: 0, collections: 0, net: 0 }
-  );
-
-  const trending = rollForward.length >= 2 ? rollForward[rollForward.length - 1].net - rollForward[rollForward.length - 2].net : 0;
+  const withMove = rollForward.filter((r) => r.net != null);
+  const totals = {
+    additions: withMove.reduce((s, r) => s + (r.additions as number), 0),
+    reductions: withMove.reduce((s, r) => s + (r.reductions as number), 0),
+    net: withMove.reduce((s, r) => s + (r.net as number), 0),
+    cash: cash.reduce((s, c) => s + c.totalExact, 0),
+  };
+  const trending = withMove.length >= 2 ? (withMove[withMove.length - 1].net as number) - (withMove[withMove.length - 2].net as number) : 0;
+  const csvRows = rollForward.map((r) => ({ ...r }));
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">New AR (6mo)</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{fmt(totals.newAR)}</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">AR Additions (6mo, snapshots)</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold">{fmt(totals.additions)}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Collections (6mo)</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-emerald-600">{fmt(totals.collections)}</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Certified Cash (6mo)</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl font-bold text-emerald-600">{fmt(totals.cash)}</div><p className="text-xs text-muted-foreground">bank-supported, incl. month to date</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Net AR Movement</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Net AR Movement (6mo)</CardTitle></CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totals.net >= 0 ? "text-amber-600" : "text-emerald-600"}`}>
               {totals.net >= 0 ? "+" : ""}{fmt(totals.net)}
             </div>
-            <p className="text-xs text-muted-foreground">{totals.net >= 0 ? "AR growing" : "AR shrinking"}</p>
+            <p className="text-xs text-muted-foreground">{totals.net >= 0 ? "AR growing" : "AR shrinking"} · additions − reductions</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Trend (mo/mo)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Trend (mo/mo net)</CardTitle></CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold flex items-center gap-1 ${trending <= 0 ? "text-emerald-600" : "text-destructive"}`}>
               {trending <= 0 ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
@@ -348,8 +315,14 @@ function ARRollForwardSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">AR Roll-Forward (6 months)</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => downloadCsv(`ar-rollforward-${format(new Date(), "yyyy-MM-dd")}.csv`, rollForward)}>
+            <div>
+              <CardTitle className="text-sm">AR Roll-Forward (6 months)</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                MyCase AR snapshots (v_ar_waterfall) grouped by the month each snapshot is dated in · certified cash from
+                mv_collections_certified_monthly. Reductions include write-offs and adjustments, so they differ from cash.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => downloadCsv(`ar-rollforward-${format(new Date(), "yyyy-MM-dd")}.csv`, csvRows)}>
               <Download className="mr-1 h-3 w-3" />CSV
             </Button>
           </div>
@@ -360,10 +333,11 @@ function ARRollForwardSection() {
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="month" className="text-xs" />
               <YAxis className="text-xs" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => fmt(v)} />
+              <Tooltip formatter={(v: number) => (v == null ? "—" : fmt(v))} />
               <Legend />
-              <Bar dataKey="newAR" name="New AR" fill="hsl(var(--primary))" />
-              <Bar dataKey="collections" name="Collections" fill="hsl(var(--chart-2, 142 76% 36%))" />
+              <Bar dataKey="additions" name="AR additions" fill="hsl(var(--primary))" />
+              <Bar dataKey="reductions" name="AR reductions" fill="hsl(var(--chart-4, 38 92% 50%))" />
+              <Bar dataKey="certifiedCash" name="Certified cash" fill="hsl(var(--chart-2, 142 76% 36%))" />
             </BarChart>
           </ResponsiveContainer>
 
@@ -371,22 +345,24 @@ function ARRollForwardSection() {
             <TableHeader>
               <TableRow>
                 <TableHead>Month</TableHead>
-                <TableHead className="text-right">New Contracts</TableHead>
-                <TableHead className="text-right">New AR</TableHead>
-                <TableHead className="text-right">Collections</TableHead>
-                <TableHead className="text-right">Net Movement</TableHead>
+                <TableHead>Snapshots</TableHead>
+                <TableHead className="text-right">Beginning AR</TableHead>
+                <TableHead className="text-right">+ Additions</TableHead>
+                <TableHead className="text-right">− Reductions</TableHead>
+                <TableHead className="text-right">Ending AR</TableHead>
+                <TableHead className="text-right">Certified Cash</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rollForward.map(r => (
                 <TableRow key={r.month}>
                   <TableCell className="font-medium">{r.month}</TableCell>
-                  <TableCell className="text-right">{r.newContractCount}</TableCell>
-                  <TableCell className="text-right font-mono">{fmt(r.newAR)}</TableCell>
-                  <TableCell className="text-right font-mono text-emerald-600">{fmt(r.collections)}</TableCell>
-                  <TableCell className={`text-right font-mono ${r.net >= 0 ? "text-amber-600" : "text-emerald-600"}`}>
-                    {r.net >= 0 ? "+" : ""}{fmt(r.net)}
-                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.snapshots}</TableCell>
+                  <TableCell className="text-right font-mono">{r.beginning == null ? "—" : fmt(r.beginning)}</TableCell>
+                  <TableCell className="text-right font-mono">{r.additions == null ? "—" : fmt(r.additions)}</TableCell>
+                  <TableCell className="text-right font-mono">{r.reductions == null ? "—" : fmt(r.reductions)}</TableCell>
+                  <TableCell className="text-right font-mono">{r.ending == null ? "—" : fmt(r.ending)}</TableCell>
+                  <TableCell className="text-right font-mono text-emerald-600">{fmt(r.certifiedCash)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   useAdminKPI, useFirmFinancialSummary, useMergedClients, usePaymentsClean, useCollectionActivityRows,
-  useControllerARCashflow, useARLiveMovement, useARLiveTrend,
+  useControllerARCashflow, useARLiveMovement, useARLiveTrend, useCertifiedMonthlyCollections,
   computeARAgingData, computeTransactionsByType, computeDailyCollections,
-  computeWeeklyPastCollections, computeMonthlyPastCollections, computeContractAnalytics,
+  computeWeeklyPastCollections, computeContractAnalytics,
 } from "@/hooks/useSupabaseData";
 import {
   DollarSign, TrendingUp, FileText, CheckCircle, Target,
@@ -50,6 +50,9 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const { data: cashflowData = [] } = useControllerARCashflow();
   const { data: liveMovementRows = [] } = useARLiveMovement();
   const { data: liveTrendRows = [] } = useARLiveTrend();
+  // Certified firm cash by month (mv_collections_certified_monthly). 2026-10-14: "Cash This Month", the monthly cash
+  // chart and the month variance used payments_clean (client-linked LawPay only, ~40-50% of cash in Sep/Oct 2026).
+  const { data: certMonths = [] } = useCertifiedMonthlyCollections(6);
 
   // ar_dashboard can exceed the REST statement timeout on later pages. Do not
   // hold the certified summary cards hostage to that optional detail dataset.
@@ -67,7 +70,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     method: p.payment_method === "ach" || p.payment_method === "wire" ? "ach"
       : p.payment_method === "check" ? "check"
       : p.payment_method === "cash" ? "cash"
-      : "card",
+      : "card" as "ach" | "check" | "cash" | "card",
     collectorId: "",
     collectorName: p.collector_name || "CRM",
     status: "completed" as const,
@@ -106,7 +109,12 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
     })
     .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
+  // Client-linked LawPay payments this month (payments_clean). NOT firm cash; certified cash is certMonthCash below.
   const monthCollected = currentPeriodPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const certThisMonth = certMonths.find((m) => m.monthKey === thisMonthKey) ?? null;
+  const certMonthCash = certThisMonth ? certThisMonth.total : null;
+  const certifiedMonthly = certMonths.map((m) => ({ month: m.month, onPlan: m.onPlan, delinquent: m.delinquent, total: m.total }));
 
   const weekCollectorLogged = activityRows
     .filter((activity) => {
@@ -147,7 +155,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const forecastWeek = Math.round(scheduledWeekly);
   const forecastMonth = Math.round(scheduledMonthly);
   const varianceWeek = forecastWeek > 0 ? Math.round(((weekCollected - forecastWeek) / forecastWeek) * 100) : 0;
-  const varianceMonth = forecastMonth > 0 ? Math.round(((monthCollected - forecastMonth) / forecastMonth) * 100) : 0;
+  const varianceMonth = forecastMonth > 0 ? Math.round((((certMonthCash ?? monthCollected) - forecastMonth) / forecastMonth) * 100) : 0;
 
   const delinquentClients = clients.filter(c => c.daysAging > 0);
   const avgDSO = delinquentClients.length > 0
@@ -167,12 +175,11 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
   const transactionTypes = computeTransactionsByType(payments, clients, paymentRows);
   const dailyCollections = computeDailyCollections(payments);
   const weeklyPast = computeWeeklyPastCollections(payments);
-  const monthlyPast = computeMonthlyPastCollections(payments);
   const contractAnalytics = computeContractAnalytics(clients);
   const paymentDeltaMonth = Math.round(monthCollectorLogged - monthCollected);
   const paymentDeltaWeek = Math.round(weekCollectorLogged - weekCollected);
   const paymentFreshness = latestBookedPaymentDate
-    ? `Booked through ${new Date(latestBookedPaymentDate).toLocaleDateString()}`
+    ? `Client-linked LawPay through ${new Date(latestBookedPaymentDate).toLocaleDateString()}`
     : "No booked payments this period";
   const collectorFreshness = latestCollectorActivityDate
     ? `Collector logs through ${new Date(latestCollectorActivityDate).toLocaleDateString()}`
@@ -255,12 +262,16 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
       {/* ── AR CASHFLOW KPIs (MyCase + LawPay Verified) ── */}
       <div className="rounded-lg border bg-card p-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">AR CASHFLOW — MyCase Cases + LawPay Verified</p>
+        <p className="text-xs font-semibold text-muted-foreground mb-1">AR CASHFLOW — MyCase Cases + LawPay Verified</p>
+        <p className="mb-2 text-[10px] text-amber-700 dark:text-amber-400">
+          New cases, 13-month collected and net movement come from v_controller_ar_cashflow, which is frozen through {cfLatest?.label || "—"} (not refreshed since).
+          Firm AR and Cash This Month are current (MyCase snapshot and certified cash).
+        </p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
           <div className="rounded-lg border px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Firm AR</p>
-            <p className="mt-1 text-xl font-bold">{cfFmt(cfLatest?.ending_firm_ar)}</p>
-            <p className="text-[10px] text-muted-foreground">{cfLatest?.label || ''}</p>
+            <p className="mt-1 text-xl font-bold">{cfFmt(totalAR)}</p>
+            <p className="text-[10px] text-muted-foreground">MyCase snapshot {firmSummary?.as_of || "—"}</p>
           </div>
           <div className="rounded-lg border px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New Cases (Latest)</p>
@@ -268,20 +279,20 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
             <p className="text-[10px] text-muted-foreground">{cfLatestComplete?.label} • Avg {cfFmt(cfLatestComplete?.avg_contract)}/case</p>
           </div>
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Total Collected (13mo)</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Total Collected (13mo, frozen)</p>
             <p className="mt-1 text-xl font-bold text-emerald-700">{cfFmt(cfTotalCollected)}</p>
             <p className="text-[10px] text-emerald-600/70">{((cfTotalCollected / Math.max(cfTotalContract, 1)) * 100).toFixed(0)}% of contract value</p>
           </div>
           <div className={`rounded-lg border px-4 py-3 ${cfTotalNet < 0 ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950' : 'border-red-200 bg-red-50'}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net AR Movement (13mo)</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net AR Movement (13mo, frozen)</p>
             <p className={`mt-1 text-xl font-bold ${cfTotalNet < 0 ? 'text-emerald-700' : 'text-red-700'}`}>{cfFmt(cfTotalNet)}</p>
             <p className="text-[10px] text-muted-foreground">{cfTotalNet < 0 ? 'AR shrinking (collecting > new)' : 'AR growing'}</p>
           </div>
           <StatCard
-            label="Cash This Month"
-            value={`$${monthCollected.toLocaleString()}`}
+            label="Cash This Month (certified)"
+            value={certMonthCash != null ? `$${certMonthCash.toLocaleString()}` : "—"}
             icon={<TrendingUp className="h-5 w-5" />}
-            caption={`Collector logs $${monthCollectorLogged.toLocaleString()}`}
+            caption={`Bank-supported, month to date · client-linked LawPay $${Math.round(monthCollected).toLocaleString()} · collector logs $${Math.round(monthCollectorLogged).toLocaleString()}`}
           />
           <StatCard label="Scheduled / Mo" value={`$${forecastMonth.toLocaleString()}`} icon={<Target className="h-5 w-5" />} caption={`Variance ${varianceMonth >= 0 ? "+" : ""}${varianceMonth}%`} />
         </div>
@@ -290,8 +301,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       {/* ── AR Created vs Collections Chart ── */}
       {cashflowData.length > 0 && (
         <div className="rounded-lg border bg-card p-4">
-          <h2 className="text-lg font-semibold mb-1">AR Created vs Collections</h2>
-          <p className="text-xs text-muted-foreground mb-3">Contract value (new cases) vs total collected vs net AR movement — source: MyCase + LawPay</p>
+          <h2 className="text-lg font-semibold mb-1">AR Created vs Collections (frozen through {cfLatest?.label || "—"})</h2>
+          <p className="text-xs text-muted-foreground mb-3">Contract value (new cases) vs total collected vs net AR movement — source: v_controller_ar_cashflow (MyCase + LawPay), not refreshed since {cfLatest?.label || "—"}. Current monthly cash is in "Collections vs AR Movement".</p>
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={cashflowData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -323,7 +334,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
           <div>
             <h2 className="text-lg font-semibold text-foreground">Cash Validation</h2>
             <p className="text-sm text-muted-foreground">
-              Compares booked payment rows against imported collector logs and explicit Filevine-tagged payments.
+              Compares client-linked LawPay payments (payments_clean) against imported collector logs and explicit Filevine-tagged payments.
+              Certified firm cash is shown for the month for scale.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -341,7 +353,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
             <p className="text-xs uppercase tracking-wide text-muted-foreground">This Week</p>
             <div className="mt-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span>Booked payments</span>
+                <span>Client-linked LawPay</span>
                 <span className="font-semibold">${weekCollected.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
@@ -359,7 +371,11 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
             <p className="text-xs uppercase tracking-wide text-muted-foreground">This Month</p>
             <div className="mt-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span>Booked payments</span>
+                <span>Certified firm cash</span>
+                <span className="font-semibold">{certMonthCash != null ? `$${certMonthCash.toLocaleString()}` : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Client-linked LawPay</span>
                 <span className="font-semibold">${monthCollected.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
@@ -399,7 +415,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Revenue by Transaction Type</h2>
+          <h2 className="mb-1 text-lg font-semibold text-foreground">Payments by Transaction Type</h2>
+          <p className="mb-3 text-xs text-muted-foreground">Client-linked LawPay payments (payments_clean), all time — not firm cash</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={transactionTypes} dataKey="total" nameKey="label" cx="50%" cy="50%" outerRadius={95} innerRadius={55} paddingAngle={2}
@@ -411,7 +428,8 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
           </ResponsiveContainer>
         </div>
         <div className="dashboard-section">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">This Week — Collections by Day</h2>
+          <h2 className="mb-1 text-lg font-semibold text-foreground">This Week — Client-Linked Payments by Day</h2>
+          <p className="mb-3 text-xs text-muted-foreground">LawPay charges matched to a client contract (payments_clean) — a subset of firm cash</p>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={dailyCollections}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -424,7 +442,7 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
             </BarChart>
           </ResponsiveContainer>
           <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-            <ArrowUpRight className="h-3 w-3 text-primary" /> Both sources feed AR totals
+            <ArrowUpRight className="h-3 w-3 text-primary" /> Collector vs CRM split of client-linked payments
           </p>
         </div>
       </div>
@@ -457,11 +475,12 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
       </div>
 
       <div className="dashboard-section">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Cash-In Trends — Revenue by Source</h2>
+        <h2 className="mb-1 text-lg font-semibold text-foreground">Cash-In Trends</h2>
+        <p className="mb-3 text-xs text-muted-foreground">Monthly = certified firm cash (mv_collections_certified_monthly), split by whether the client was behind when they paid. Weekly = client-linked LawPay payments only.</p>
         <Tabs defaultValue="weekly">
           <TabsList>
-            <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly (client-linked)</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly (certified cash)</TabsTrigger>
           </TabsList>
           <TabsContent value="weekly">
             <ResponsiveContainer width="100%" height={280}>
@@ -478,14 +497,14 @@ const FinanceOverviewTab = ({ dateRange }: Props) => {
           </TabsContent>
           <TabsContent value="monthly">
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={monthlyPast}>
+              <BarChart data={certifiedMonthly}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
                 <Legend />
-                <Bar dataKey="collector" fill="hsl(var(--primary))" name="Collector" stackId="a" />
-                <Bar dataKey="crm" fill="hsl(var(--secondary))" name="CRM / Auto-Pay" stackId="a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="onPlan" fill="hsl(var(--primary))" name="Current / other cash" stackId="a" />
+                <Bar dataKey="delinquent" fill="hsl(var(--secondary))" name="Delinquent recovery" stackId="a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </TabsContent>

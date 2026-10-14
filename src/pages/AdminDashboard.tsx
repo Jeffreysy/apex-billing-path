@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import TaskPanel from "@/components/TaskPanel";
 import EscalationInboxPanel from "@/components/EscalationInboxPanel";
 import ExecutiveInsights from "@/components/admin/ExecutiveInsights";
-import { useAdminKPI, useAdminContractStatus, useFirmFinancialSummary, useCollectors, useEscalations, useCertifiedMonthlyCollections } from "@/hooks/useSupabaseData";
+import { useAdminKPI, useAdminContractStatus, useFirmFinancialSummary, useCollectors, useEscalations, useCertifiedMonthlyCollections, useArClientGrain } from "@/hooks/useSupabaseData";
 import { DollarSign, Phone, TrendingUp, FileText, Scale, Eye, Briefcase, Percent } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,7 @@ const AdminDashboard = () => {
   const { data: collectors = [], isLoading: col } = useCollectors();
   const { data: unresolvedEscalations = [] } = useEscalations(true);
   const { data: monthlyCash = [], isLoading: mcl } = useCertifiedMonthlyCollections(5);
+  const { data: arClients } = useArClientGrain();
 
   // Canonical Total AR = v_firm_financial_summary.ar_total (VP-certified LIVE anchor). admin_kpi.total_remaining
   // carries the same figure and arrives in well under a second, so the tile shows it while the certified row loads.
@@ -69,7 +70,9 @@ const AdminDashboard = () => {
   const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const collectedThisMonth = monthlyCash.find((m) => m.monthKey === thisMonthKey)?.total ?? (Number(kpi?.collected_this_month) || 0);
   const paymentsThisMonth = Number(kpi?.payments_this_month) || 0;
-  const totalClients = Number(kpi?.total_clients) || 0;
+  // CLIENT grain: linked clients on the active AR snapshot (v_client_ar_front_door; 3,321 on 10-12). admin_kpi.total_clients
+  // counts ar_dashboard's own client join (3,304) and is only the loading fallback.
+  const totalClients = arClients?.clients || Number(kpi?.total_clients) || 0;
   const unresolvedCount = unresolvedEscalations.length;
 
   // Contract status: the per-invoice AR clock when available (ties to Total AR); otherwise the legacy admin_kpi split.
@@ -108,7 +111,8 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-xl" />)}</div>
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <StatCard label="Total AR" value={`$${totalAR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<DollarSign className="h-5 w-5" />} />
+          <StatCard label="Total AR" value={`$${totalAR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<DollarSign className="h-5 w-5" />}
+            caption={firmSummary?.as_of ? `MyCase snapshot ${shortDate(firmSummary.as_of)} · ${Number(firmSummary.open_invoices || 0).toLocaleString()} invoices` : undefined} />
           <StatCard label="Collected (Active Book)" value={money(totalCollected)} icon={<TrendingUp className="h-5 w-5" />} caption="Collected-to-date on active AR — not firm all-time" />
           <StatCard label="Active Contracts" value={activeContracts.toLocaleString()} icon={<FileText className="h-5 w-5" />} />
           <StatCard label="Active Imm. Cases" value={activeCases.toLocaleString()} icon={<Briefcase className="h-5 w-5" />} />
@@ -138,10 +142,10 @@ const AdminDashboard = () => {
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Badge variant="outline" className="text-xs">Total Clients: {totalClients.toLocaleString()}</Badge>
+        <Badge variant="outline" className="text-xs" title="Clients linked to the active AR snapshot (client grain). Invoices with no client link are in Total AR but not counted here.">AR clients (linked): {totalClients.toLocaleString()}</Badge>
         <Badge variant="outline" className="text-xs">Delinquent clients: {delinquentClients.toLocaleString()}</Badge>
         <Badge variant="outline" className="text-xs">Behind contracts (late + delinquent): {behindContracts.toLocaleString()}</Badge>
-        <Badge variant="outline" className="text-xs">Collected This Month: {money(collectedThisMonth)}</Badge>
+        <Badge variant="outline" className="text-xs" title="Certified cash, month to date (mv_collections_certified_monthly)">Collected This Month (certified): {money(collectedThisMonth)}</Badge>
         <Badge variant={unresolvedCount > 0 ? "destructive" : "outline"} className="text-xs">Unresolved Escalations: {unresolvedCount}</Badge>
       </div>
 

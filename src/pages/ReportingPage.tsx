@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { useMergedClients, usePaymentsData, computeForecastData, computeWeeklyCollections, computeMonthlyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
+import { useMergedClients, usePaymentsData, useCertifiedMonthlyCollections, computeForecastData, computeWeeklyCollections, computeContractAnalytics } from "@/hooks/useSupabaseData";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, LineChart, Line,
@@ -9,12 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const ReportingPage = () => {
   const { data: clients = [], isLoading: cl } = useMergedClients();
   const { data: payments = [], isLoading: pl } = usePaymentsData();
+  // 2026-10-14: monthly history = certified firm cash (mv_collections_certified_monthly). It used to sum payments_clean
+  // (client-linked LawPay only). Weekly stays on linked payments (no certified weekly series) and is labelled so.
+  const { data: certMonths = [] } = useCertifiedMonthlyCollections(12);
 
   if (cl || pl) return <DashboardLayout><div className="p-8 text-center text-muted-foreground">Loading reports...</div></DashboardLayout>;
 
   const forecastData = computeForecastData(clients);
   const weeklyData = computeWeeklyCollections(payments);
-  const monthlyData = computeMonthlyCollections(payments);
+  const monthlyData = certMonths.map((m) => ({ month: m.month, collected: m.total, delinquent: m.delinquent }));
   const contractData = computeContractAnalytics(clients);
 
   return (
@@ -37,9 +40,10 @@ const ReportingPage = () => {
         </ResponsiveContainer>
       </div>
       <div className="dashboard-section mb-6">
-        <h2 className="mb-4 text-lg font-semibold">Historical Collections</h2>
-        <Tabs defaultValue="weekly">
-          <TabsList><TabsTrigger value="weekly">Weekly</TabsTrigger><TabsTrigger value="monthly">Monthly</TabsTrigger></TabsList>
+        <h2 className="mb-1 text-lg font-semibold">Historical Collections</h2>
+        <p className="mb-4 text-xs text-muted-foreground">Monthly = certified firm cash (bank-supported, mv_collections_certified_monthly; current month to date). Weekly = client-linked LawPay payments only (payments_clean), a subset of firm cash.</p>
+        <Tabs defaultValue="monthly">
+          <TabsList><TabsTrigger value="weekly">Weekly (client-linked)</TabsTrigger><TabsTrigger value="monthly">Monthly (certified cash)</TabsTrigger></TabsList>
           <TabsContent value="weekly">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={weeklyData}>
@@ -61,8 +65,8 @@ const ReportingPage = () => {
                 <YAxis tick={{ fontSize: 12 }} stroke="hsl(220 10% 46%)" tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
                 <Legend />
-                <Bar dataKey="collected" fill="hsl(174 60% 40%)" radius={[4, 4, 0, 0]} name="Collected" />
-                <Bar dataKey="target" fill="hsl(220 70% 22%)" radius={[4, 4, 0, 0]} name="Target" opacity={0.25} />
+                <Bar dataKey="collected" fill="hsl(174 60% 40%)" radius={[4, 4, 0, 0]} name="Certified cash" />
+                <Bar dataKey="delinquent" fill="hsl(220 70% 22%)" radius={[4, 4, 0, 0]} name="of which delinquent recovery" opacity={0.35} />
               </BarChart>
             </ResponsiveContainer>
           </TabsContent>
