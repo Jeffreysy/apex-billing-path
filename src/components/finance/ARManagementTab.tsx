@@ -660,7 +660,7 @@ function StaleQueueSection() {
 }
 
 // ---------- Main Tab ----------
-const AROversightTab = () => {
+const ARManagementTab = () => {
   const [section, setSection] = useState("ptp");
   return (
     <div className="space-y-4">
@@ -678,4 +678,4 @@ const AROversightTab = () => {
   );
 };
 
-export default AROversightTab;
+export default ARManagementTab;

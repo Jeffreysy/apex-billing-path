@@ -9,8 +9,8 @@ import { ALL_USER_ROLES, getDefaultRouteForRole, type UserRole } from "./lib/aut
 import AdminDashboard from "./pages/AdminDashboard";
 import CollectionsDashboard from "./pages/CollectionsDashboard";
 import LegalDashboard from "./pages/LegalDashboard";
-import FinancialOversightDashboard from "./pages/FinancialOversightDashboard";
-import ControllerAROversightDashboard from "./pages/ControllerAROversightDashboard";
+import FinancialManagementDashboard from "./pages/FinancialManagementDashboard";
+import ControllerARManagementDashboard from "./pages/ControllerARManagementDashboard";
 import ReportingPage from "./pages/ReportingPage";
 import ContractsPage from "./pages/ContractsPage";
 import CollectorDashboard from "./pages/CollectorDashboard";
@@ -20,6 +20,14 @@ import CollectorWorkspace from "./pages/CollectorWorkspace";
 import ArMovementDashboard from "./pages/ArMovementDashboard";
 import EscalationManagementPage from "./pages/EscalationManagementPage";
 import LoginPage from "./pages/LoginPage";
+import LandingPage from "./pages/LandingPage";
+import PlatformPage from "./pages/marketing/PlatformPage";
+import ResultsPage from "./pages/marketing/ResultsPage";
+import AboutPage from "./pages/marketing/AboutPage";
+import BlogPage from "./pages/marketing/BlogPage";
+import BlogPostPage from "./pages/marketing/BlogPostPage";
+import ContactPage from "./pages/marketing/ContactPage";
+import InquiriesPage from "./pages/InquiriesPage";
 import SettingsPage from "./pages/SettingsPage";
 import DataImportPage from "./pages/DataImportPage";
 import NotFound from "./pages/NotFound";
@@ -46,15 +54,29 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public marketing site */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/platform" element={<PlatformPage />} />
+            <Route path="/services" element={<Navigate to="/platform" replace />} />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            {/* Workspace */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/inquiries" element={<ProtectedRoute allowedRoles={ADMIN_ROLES}><InquiriesPage /></ProtectedRoute>} />
             <Route path="/home" element={<ProtectedRoute><RoleLanding /></ProtectedRoute>} />
             <Route path="/collections" element={<ProtectedRoute allowedRoles={COLLECTIONS_ROLES}><CollectionsDashboard /></ProtectedRoute>} />
             <Route path="/legal" element={<ProtectedRoute allowedRoles={LEGAL_ROLES}><LegalDashboard /></ProtectedRoute>} />
-            <Route path="/ar-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
-            <Route path="/financial-oversight" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialOversightDashboard /></ProtectedRoute>} />
+            <Route path="/financial-management" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialManagementDashboard /></ProtectedRoute>} />
+            <Route path="/ar-management" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><FinancialManagementDashboard /></ProtectedRoute>} />
+            {/* Old "oversight" URLs keep working */}
+            <Route path="/financial-oversight" element={<Navigate to="/financial-management" replace />} />
+            <Route path="/ar-oversight" element={<Navigate to="/ar-management" replace />} />
             <Route path="/ar-movement" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ArMovementDashboard /></ProtectedRoute>} />
-            <Route path="/controller-ar" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ControllerAROversightDashboard /></ProtectedRoute>} />
+            <Route path="/controller-ar" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ControllerARManagementDashboard /></ProtectedRoute>} />
             <Route path="/reporting" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ReportingPage /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute allowedRoles={FINANCIAL_ROLES}><ContractsPage /></ProtectedRoute>} />
             <Route path="/clients" element={<ProtectedRoute allowedRoles={CLIENT_ROLES}><ClientLookup /></ProtectedRoute>} />

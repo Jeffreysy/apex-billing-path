@@ -201,12 +201,12 @@ const AdminDashboard = () => {
         {[
           { name: "Collections", icon: Phone, desc: col ? "Loading…" : `${collectors.reduce((s, c) => s + c.callsMade, 0)} calls · ${collectors.reduce((s, c) => s + c.paymentsTaken, 0)} payments taken` },
           { name: "Legal", icon: Scale, desc: `${activeCases.toLocaleString()} active cases` },
-          { name: "Financial Oversight", icon: Eye, desc: `${money(totalAR)} outstanding · ${delinquentClients.toLocaleString()} delinquent clients` },
+          { name: "Financial Management", icon: Eye, desc: `${money(totalAR)} outstanding · ${delinquentClients.toLocaleString()} delinquent clients` },
           { name: "Reporting", icon: TrendingUp, desc: `${paymentsThisMonth} payments this month` },
         ].map((dept) => (
           <Card key={dept.name} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><dept.icon className="h-4 w-4 text-secondary" />{dept.name}</CardTitle></CardHeader>
-            <CardContent><p className="text-xs text-muted-foreground">{dept.desc}</p><div className="mt-2"><Badge variant="outline" className="text-[10px]">{deptData.find(d => d.name === dept.name || (dept.name === "Reporting" && d.name === "AR") || (dept.name === "Financial Oversight" && d.name === "AR"))?.tasks || 0} open tasks</Badge></div></CardContent>
+            <CardContent><p className="text-xs text-muted-foreground">{dept.desc}</p><div className="mt-2"><Badge variant="outline" className="text-[10px]">{deptData.find(d => d.name === dept.name || (dept.name === "Reporting" && d.name === "AR") || (dept.name === "Financial Management" && d.name === "AR"))?.tasks || 0} open tasks</Badge></div></CardContent>
           </Card>
         ))}
       </div>

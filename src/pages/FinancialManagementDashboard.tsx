@@ -9,7 +9,7 @@ import ForecastingTab from "@/components/finance/ForecastingTab";
 import ReportBuilderTab from "@/components/finance/ReportBuilderTab";
 import CollectionsKPITab from "@/components/finance/CollectionsKPITab";
 import CollectionFlowTab from "@/components/finance/CollectionFlowTab";
-import AROversightTab from "@/components/finance/AROversightTab";
+import ARManagementTab from "@/components/finance/ARManagementTab";
 import CardRecoveryTab from "@/components/finance/CardRecoveryTab";
 import TaskPanel from "@/components/TaskPanel";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 
-const FinancialOversightDashboard = () => {
+const FinancialManagementDashboard = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 90),
     to: new Date(),
@@ -34,10 +34,10 @@ const FinancialOversightDashboard = () => {
   }, [dateRange]);
 
   return (
-    <DashboardLayout title="Financial Oversight">
+    <DashboardLayout title="Financial Management">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Financial Oversight</h1>
+          <h1 className="text-2xl font-bold text-foreground">Financial Management</h1>
           <p className="text-muted-foreground text-sm">
             Finance command center — AR, revenue, forecasting, collections KPIs, and reporting
           </p>
@@ -76,7 +76,7 @@ const FinancialOversightDashboard = () => {
           <TabsTrigger value="collection-flow">Collection Flow</TabsTrigger>
           <TabsTrigger value="collections-kpi">Collections KPI</TabsTrigger>
           <TabsTrigger value="card-recovery">Card Recovery</TabsTrigger>
-          <TabsTrigger value="ar-oversight">AR Oversight</TabsTrigger>
+          <TabsTrigger value="ar-management">AR Management</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
@@ -104,8 +104,8 @@ const FinancialOversightDashboard = () => {
         <TabsContent value="card-recovery">
           <CardRecoveryTab />
         </TabsContent>
-        <TabsContent value="ar-oversight">
-          <AROversightTab />
+        <TabsContent value="ar-management">
+          <ARManagementTab />
         </TabsContent>
         <TabsContent value="reports">
           <ReportBuilderTab />
@@ -119,4 +119,4 @@ const FinancialOversightDashboard = () => {
   );
 };
 
-export default FinancialOversightDashboard;
+export default FinancialManagementDashboard;
