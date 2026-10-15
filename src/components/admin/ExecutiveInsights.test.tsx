@@ -29,6 +29,9 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useExecArAtRisk: () => ok(f.arAtRisk),
     useExecCollectorActivityMonthly: (month: string) => ok(month === "2026-09" ? f.collectorActivitySep : []),
     useExecFailedActivities: () => ok([]),
+    useDelinquentCollectionsKpi: () => ok([]),
+    useDelinquentCollectionsPlanLoads: () => ok([]),
+    useDelinquentCollectionsBasis: () => ok({ certified: false, statuses: {} }),
   };
 });
 
