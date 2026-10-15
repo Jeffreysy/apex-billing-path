@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeDcmRow, normalizePlanLoadRow, type DcmKpiRow, type DcmPlanLoadRow } from "@/lib/delinquentCollections";
 import type { Client, Payment, CallLog, Collector, CaseStage } from "@/data/mockData";
 import { format, subDays, addWeeks, addMonths, startOfWeek } from "date-fns";
 import { ESCALATION_STATUSES, isEscalationUnresolved } from "@/lib/escalations";
@@ -2269,6 +2270,63 @@ export function usePromiseTracker() {
         lastCallBy: r.last_call_by ?? null,
         clientId: r.client_id ?? null,
       }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Delinquent Collections KEY METRIC (Jeff 2026-10-14). Cached rows of delinquent_collections_metrics()
+ *  over the delinquent-cash spine: MTD (cut at the ledger's complete-through day), the same day range of
+ *  the prior month, and monthly + weekly trend. Cash = transaction grain; payers = client grain.
+ *  No fallback figures: if the view cannot be read the panel says so instead of showing a number. */
+export function useDelinquentCollectionsKpi() {
+  return useQuery<DcmKpiRow[]>({
+    queryKey: ["delinquent-collections-kpi"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_delinquent_collections_kpi")
+        .select("*")
+        .order("period_kind")
+        .order("period_start");
+      if (error) throw error;
+      return ((data as Record<string, unknown>[]) ?? []).map(normalizeDcmRow);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** New payment plans first seen per plan-feed load (dcm.new_plan_seen.v2) — newest first. Dated by feed load. */
+export function useDelinquentCollectionsPlanLoads(limit = 4) {
+  return useQuery<DcmPlanLoadRow[]>({
+    queryKey: ["delinquent-collections-plan-loads", limit],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_delinquent_collections_plan_loads")
+        .select("*")
+        .order("load_as_of", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return ((data as Record<string, unknown>[]) ?? []).map(normalizePlanLoadRow);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Certification status of the delinquent-cash spine + KPI objects, from ar_object_basis_registry.
+ *  The registry is RLS-protected; when it returns nothing (blocked / loading) the result is the
+ *  conservative "derived" status, so the panel never claims a certification it cannot see. */
+export function useDelinquentCollectionsBasis() {
+  const objects = ["mv_delinquent_cash_txn", "v_delinquent_collections_kpi"];
+  return useQuery<{ certified: boolean; statuses: Record<string, string> }>({
+    queryKey: ["delinquent-collections-basis"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("ar_object_basis_registry")
+        .select("object_name, status")
+        .in("object_name", objects);
+      const statuses: Record<string, string> = {};
+      for (const r of (data as { object_name: string; status: string }[]) ?? []) statuses[r.object_name] = r.status;
+      return { certified: objects.every((o) => statuses[o] === "certified"), statuses };
     },
     staleTime: 5 * 60 * 1000,
   });

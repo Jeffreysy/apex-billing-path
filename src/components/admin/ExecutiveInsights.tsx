@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary, useArWaterfall, useCertifiedMonthlyCollections, aggregateArWaterfallByMonth } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
+import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollectionsPanel";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -244,6 +245,7 @@ export default function ExecutiveInsights() {
 
   const sections = [
     { id: "hero", label: "Executive" },
+    { id: "delinquent", label: "Delinquent $" },
     { id: "flow", label: "Money Flow" },
     { id: "aging", label: "Aging × Collector" },
     { id: "activity", label: "Collector Activity" },
@@ -309,6 +311,11 @@ export default function ExecutiveInsights() {
           <DriftKpi monthVal={monthVal} />
           <ArAtRiskKpi />
         </div>
+      </section>
+
+      {/* ─────────── Key metric: delinquent collections ─────────── */}
+      <section id="delinquent" className="scroll-mt-24">
+        <DelinquentCollectionsPanel />
       </section>
 
       {/* ─────────── Money flow + Net change ─────────── */}
