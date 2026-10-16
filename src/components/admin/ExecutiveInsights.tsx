@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary, useArWaterfall, useCertifiedMonthlyCollections, aggregateArWaterfallByMonth } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollectionsPanel";
+import CaseMixDetailDialog from "@/components/admin/CaseMixDetailDialog";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -933,14 +934,47 @@ function DriftMatrix({ cells, base, end }: { cells: ExecDriftCell[]; base: strin
  *  loaded month never reads as a collapse in sales. */
 function CaseMixCard({ monthVal }: { monthVal: string }) {
   const q = useExecCaseMixMonthly();
+  // Jeff 2026-10-16: click into the box for the per-invoice breakdown (client, case #, invoice #) + CSV export.
+  const [detailOpen, setDetailOpen] = useState(false);
   const rows: ExecCaseMixRow[] | undefined = q.data;
   const monthStart = monthValToDate(monthVal);
   const monthLabel = format(monthStart, "MMMM yyyy");
-  const mr = (rows ?? [])
-    .filter((r) => r.month.slice(0, 7) === monthVal)
-    .sort((a, b) => b.contract_value - a.contract_value);
+  const monthRows = (rows ?? []).filter((r) => r.month.slice(0, 7) === monthVal);
+  // Jeff 2026-10-16: a case with no money accounted for is not a service sold -- it is an invoice to delete.
+  // When the sold/unfunded/awaiting split is deployed, the tile counts SOLD cases only and lists the rest below.
+  const hasSold = monthRows.some((r) => r.sold_cases != null);
+  const unfundedCases = monthRows.reduce((s, r) => s + (Number(r.unfunded_cases) || 0), 0);
+  const unfundedValue = monthRows.reduce((s, r) => s + (Number(r.unfunded_contract_value) || 0), 0);
+  const callFirstCases = monthRows.reduce((s, r) => s + (Number(r.call_first_cases) || 0), 0);
+  const callFirstValue = monthRows.reduce((s, r) => s + (Number(r.call_first_contract_value) || 0), 0);
+  const awaitingCases = monthRows.reduce((s, r) => s + (Number(r.awaiting_cases) || 0), 0);
+  const awaitingValue = monthRows.reduce((s, r) => s + (Number(r.awaiting_contract_value) || 0), 0);
+  const mr = (hasSold
+    ? monthRows
+        .map((r) => {
+          const c = Number(r.sold_cases) || 0, v = Number(r.sold_contract_value) || 0;
+          return { ...r, revenue_cases: c, contract_value: v, avg_per_case: c > 0 ? v / c : 0 };
+        })
+        .filter((r) => r.revenue_cases > 0)
+    : monthRows
+  ).sort((a, b) => b.contract_value - a.contract_value);
   const totalCases = mr.reduce((s, r) => s + r.revenue_cases, 0);
   const totalValue = mr.reduce((s, r) => s + r.contract_value, 0);
+  // Cash that hit the bank on these cases (VP 2026-10-16): paid at signing = open date -3..+7 days.
+  const n = (v: unknown) => Number(v) || 0;
+  // No cash columns on the rows (older cache / test fixtures) -> show contract value only, never "NaN".
+  const hasCash = mr.some((r) => r.payments_through != null);
+  const totalPaid = mr.reduce((s, r) => s + n(r.paid_at_signing), 0);
+  const totalToDate = mr.reduce((s, r) => s + n(r.collected_to_date), 0);
+  const totalWithCash = mr.reduce((s, r) => s + n(r.cases_with_cash), 0);
+  const totalPending = mr.reduce((s, r) => s + n(r.pending_at_signing), 0);
+  const totalFailed = mr.reduce((s, r) => s + n(r.failed_at_signing), 0);
+  const totalRejected = mr.reduce((s, r) => s + n(r.rejected_at_signing), 0);
+  const totalInvoicedAtSigning = mr.reduce((s, r) => s + n(r.cases_invoiced_at_signing), 0);
+  // Jan/Feb 2026 invoices were re-issued in April, so at-signing cash can't be measured for some months.
+  const signingMeasurable = hasCash && (totalCases === 0 || totalInvoicedAtSigning / totalCases >= 0.8);
+  const paidPct = totalValue > 0 ? (totalPaid / totalValue) * 100 : 0;
+  const paymentsThrough = rows?.find((r) => r.payments_through)?.payments_through ?? null;
   const maxValue = Math.max(1, ...mr.map((r) => r.contract_value));
   const freshRow = rows?.find((r) => r.cases_loaded_through) ?? null;
   const loadedThrough = freshRow?.cases_loaded_through ? ymd(freshRow.cases_loaded_through) : null;
@@ -954,7 +988,17 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
 
   return (
     <Card className="rounded-2xl border-border/70 p-6 shadow-none">
-      <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
+      <div className="flex items-start justify-between gap-2">
+        <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="mt-1 shrink-0 rounded-full border border-border/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          View breakdown · CSV
+        </button>
+      </div>
+      <CaseMixDetailDialog open={detailOpen} onOpenChange={setDetailOpen} monthVal={monthVal} monthLabel={monthLabel} />
       {q.isLoading ? (
         <div className="py-8 text-center text-xs text-muted-foreground">Loading case mix…</div>
       ) : q.isError || !rows ? (
@@ -963,14 +1007,37 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
         </div>
       ) : (
         <>
-          <div className="mt-5 flex items-baseline gap-2">
+          <div className="mt-5 flex cursor-pointer items-baseline gap-2" title="Click for the per-invoice breakdown" onClick={() => setDetailOpen(true)}>
             <span className="text-3xl font-semibold tracking-tight tabular-nums">{mr.length ? fmtMoney(totalValue) : DASH}</span>
-            <span className="text-xs text-muted-foreground">contract value</span>
+            <span className="text-xs text-muted-foreground">{hasSold ? "contract value sold" : "contract value"}</span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-            {totalCases.toLocaleString()} revenue {totalCases === 1 ? "case" : "cases"}
+            {totalCases.toLocaleString()} {hasSold ? "cases sold" : `revenue ${totalCases === 1 ? "case" : "cases"}`}
             {totalCases > 0 ? ` · avg ${fmtMoney(totalValue / totalCases)} per case` : ""}
           </p>
+          {mr.length > 0 && hasCash && (
+            <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+              {signingMeasurable ? (
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-semibold tracking-tight tabular-nums text-success">{fmtMoney(totalPaid)}</span>
+                    <span className="text-xs text-muted-foreground">hit the bank at signing · {paidPct.toFixed(0)}% of contract value</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                    {totalWithCash} of {totalCases} cases paid · {fmtMoney(totalToDate)} collected to date
+                    {totalPending > 0 ? ` · ${fmtMoney(totalPending)} pending` : ""}
+                    {totalFailed > 0 ? ` · ${fmtMoney(totalFailed)} in failed down payments` : ""}
+                    {totalRejected > 0 ? ` · ${fmtMoney(totalRejected)} bounced eChecks (not counted)` : ""}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[11px] text-warning">
+                  Cash at signing can't be measured for this month: most of its invoices were re-issued later
+                  ({totalInvoicedAtSigning} of {totalCases} cases had an invoice at signing). Collected to date: {fmtMoney(totalToDate)}.
+                </p>
+              )}
+            </div>
+          )}
 
           {mr.length === 0 ? (
             <div className="mt-5 rounded-lg border border-dashed border-border/70 py-6 text-center text-xs text-muted-foreground">
@@ -986,7 +1053,14 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
                       <span className="truncate text-xs font-medium tracking-tight" title={r.reporting_family}>
                         {r.reporting_family}
                       </span>
-                      <span className="font-mono text-[12px] font-semibold tabular-nums">{fmtMoney(r.contract_value)}</span>
+                      <span className="font-mono text-[12px] font-semibold tabular-nums">
+                        {signingMeasurable && (
+                          <span className="mr-2 font-normal text-success" title="Cash that hit the bank at signing">
+                            {fmtMoney(n(r.paid_at_signing))} paid ·
+                          </span>
+                        )}
+                        {fmtMoney(r.contract_value)}
+                      </span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted/50" title={`${share.toFixed(1)}% of contract value`}>
@@ -1004,9 +1078,32 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
               })}
               <li className="flex items-baseline justify-between border-t border-border/60 pt-2.5 text-xs font-semibold">
                 <span>Total · {totalCases.toLocaleString()} cases</span>
-                <span className="font-mono tabular-nums">{fmtMoney(totalValue)}</span>
+                <span className="font-mono tabular-nums">
+                  {signingMeasurable && <span className="mr-2 font-normal text-success">{fmtMoney(totalPaid)} paid ·</span>}
+                  {fmtMoney(totalValue)}
+                </span>
               </li>
             </ul>
+          )}
+
+          {hasSold && (unfundedCases > 0 || callFirstCases > 0 || awaitingCases > 0) && (
+            <div className="mt-3 space-y-1 rounded-lg border border-dashed border-border/70 px-3 py-2 text-[11px] tabular-nums">
+              {unfundedCases > 0 && (
+                <p className="text-destructive">
+                  Not counted · {unfundedCases} {unfundedCases === 1 ? "case" : "cases"} / {fmtMoney(unfundedValue)} with no money in — invoices to delete
+                </p>
+              )}
+              {callFirstCases > 0 && (
+                <p className="text-warning">
+                  Call first · {callFirstCases} {callFirstCases === 1 ? "case" : "cases"} / {fmtMoney(callFirstValue)} where the down payment failed or bounced — not counted
+                </p>
+              )}
+              {awaitingCases > 0 && (
+                <p className="text-muted-foreground">
+                  Not counted yet · {awaitingCases} {awaitingCases === 1 ? "case" : "cases"} / {fmtMoney(awaitingValue)} opened in the last week, awaiting a first payment
+                </p>
+              )}
+            </div>
           )}
 
           <p className={`mt-4 text-[10px] leading-snug ${partial || notLoaded ? "text-warning" : "text-muted-foreground/70"}`}>
@@ -1014,6 +1111,7 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
             {syncedAt ? ` · invoices synced ${format(syncedAt, "MMM d")}` : ""}
             {partial ? " — partial month: cases opened after that date are not counted yet, not a drop in sales." : ""}
             {notLoaded ? " — the MyCase case feed has not reached this month yet." : ""}
+            {paymentsThrough ? ` · cash counted through ${format(ymd(paymentsThrough), "MMM d")}` : ""}
             {refreshedAt ? ` · updated ${fmtUpdated(refreshedAt)}` : ""}
           </p>
         </>

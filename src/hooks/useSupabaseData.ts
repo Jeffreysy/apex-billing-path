@@ -1803,6 +1803,33 @@ export interface ExecCaseMixRow {
   cases_loaded_through: string | null;
   invoices_synced_at: string | null;
   refreshed_at: string | null;
+  /** Cash columns (VP 2026-10-16, ddl 3ad778e9): settled operating money on the case's own invoices
+   *  (digits-only invoice key -> MyCase transaction report). At signing = open_date - 3 .. + 7 days.
+   *  Bounced eChecks are kept OUT of paid (rejected_at_signing); failed/pending never count as cash. */
+  paid_at_signing: number;
+  collected_to_date: number;
+  cases_with_cash: number;
+  pending_at_signing: number;
+  failed_at_signing: number;
+  rejected_at_signing: number;
+  /** Cases that had their own invoice by open_date + 7 -- Jan/Feb 2026 invoices were re-issued in April,
+   *  so at-signing cash cannot be measured there; the tile caveats it instead of showing a false $0. */
+  cases_invoiced_at_signing: number;
+  payments_through: string | null;
+  /** Jeff 2026-10-16: "if there is no cash to account for lets not count that as a service sold its just
+   *  an invoice that has to be deleted". sold = settled or pending money on the case; unfunded = no money
+   *  and a week of payment data has passed (invoice to delete); awaiting = no money yet, opened in the last week.
+   *  sold + unfunded + awaiting = revenue_cases / contract_value. Null when the columns are not deployed. */
+  sold_cases: number | null;
+  sold_contract_value: number | null;
+  unfunded_cases: number | null;
+  unfunded_contract_value: number | null;
+  /** Jeff 2026-10-16 "put failed and bounced on a separate call list first": no money in, but the client
+   *  tried (failed down payment / bounced eCheck) -> call before deleting. Not counted as sold. */
+  call_first_cases: number | null;
+  call_first_contract_value: number | null;
+  awaiting_cases: number | null;
+  awaiting_contract_value: number | null;
 }
 
 export function useExecCaseMixMonthly() {
@@ -1811,7 +1838,7 @@ export function useExecCaseMixMonthly() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_case_mix_monthly")
-        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at")
+        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at, paid_at_signing, collected_to_date, cases_with_cash, pending_at_signing, failed_at_signing, rejected_at_signing, cases_invoiced_at_signing, payments_through, sold_cases, sold_contract_value, unfunded_cases, unfunded_contract_value, call_first_cases, call_first_contract_value, awaiting_cases, awaiting_contract_value")
         .order("month")
         .order("contract_value", { ascending: false });
       if (error) throw error;
@@ -1821,6 +1848,86 @@ export function useExecCaseMixMonthly() {
         revenue_cases: Number(r.revenue_cases) || 0,
         contract_value: Number(r.contract_value) || 0,
         avg_per_case: Number(r.avg_per_case) || 0,
+        paid_at_signing: Number(r.paid_at_signing) || 0,
+        collected_to_date: Number(r.collected_to_date) || 0,
+        cases_with_cash: Number(r.cases_with_cash) || 0,
+        pending_at_signing: Number(r.pending_at_signing) || 0,
+        failed_at_signing: Number(r.failed_at_signing) || 0,
+        rejected_at_signing: Number(r.rejected_at_signing) || 0,
+        cases_invoiced_at_signing: Number(r.cases_invoiced_at_signing) || 0,
+        sold_cases: r.sold_cases == null ? null : Number(r.sold_cases),
+        sold_contract_value: r.sold_contract_value == null ? null : Number(r.sold_contract_value),
+        unfunded_cases: r.unfunded_cases == null ? null : Number(r.unfunded_cases),
+        unfunded_contract_value: r.unfunded_contract_value == null ? null : Number(r.unfunded_contract_value),
+        call_first_cases: r.call_first_cases == null ? null : Number(r.call_first_cases),
+        call_first_contract_value: r.call_first_contract_value == null ? null : Number(r.call_first_contract_value),
+        awaiting_cases: r.awaiting_cases == null ? null : Number(r.awaiting_cases),
+        awaiting_contract_value: r.awaiting_contract_value == null ? null : Number(r.awaiting_contract_value),
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_exec_case_mix_detail (hourly cache) -- GRAIN: one row per INVOICE on a revenue case in the month.
+ *  The Case Mix drill-down (Jeff 2026-10-16: "click into this box and get that break down ... export that
+ *  table of data in CSV"). Same cases/invoices/classification as v_exec_case_mix_monthly, so the rows add up
+ *  to the tile. invoice_number is TEXT (19-digit keys must never become numbers). Fetched only when opened. */
+export interface ExecCaseMixDetailRow {
+  month: string;
+  reporting_family: string;
+  funding_status: string;
+  sold_basis: string | null;
+  open_date: string | null;
+  mycase_case_id: string | null;
+  case_number: string | null;
+  case_name: string | null;
+  client_id: string | null;
+  client_name: string | null;
+  invoice_number: string | null;
+  mycase_invoice_id: string | null;
+  invoice_amount: number;
+  invoice_paid_at_signing: number;
+  invoice_collected_to_date: number;
+  invoice_pending_usd: number;
+  invoice_failed_usd: number;
+  invoice_bounced_usd: number;
+  case_contract_value: number;
+  case_collected_to_date: number;
+  last_attempt_date: string | null;
+  payments_through: string | null;
+  funding_judged_through: string | null;
+}
+
+const CASE_MIX_DETAIL_COLUMNS =
+  "month, reporting_family, funding_status, sold_basis, open_date, mycase_case_id, case_number, case_name, client_id, client_name, " +
+  "invoice_number, mycase_invoice_id, invoice_amount, invoice_paid_at_signing, invoice_collected_to_date, invoice_pending_usd, " +
+  "invoice_failed_usd, invoice_bounced_usd, case_contract_value, case_collected_to_date, last_attempt_date, payments_through, funding_judged_through";
+
+export function useExecCaseMixDetail(month: string | null) {
+  return useQuery<ExecCaseMixDetailRow[]>({
+    queryKey: ["exec-case-mix-detail", month],
+    enabled: !!month,
+    queryFn: async () => {
+      const rows = await fetchAllRows<any>("v_exec_case_mix_detail", {
+        columns: CASE_MIX_DETAIL_COLUMNS,
+        orderBy: "invoice_number",
+        filter: (q) => q.eq("month", `${month}-01`),
+      });
+      const num = (v: unknown) => Number(v) || 0;
+      return rows.map((r) => ({
+        ...r,
+        mycase_case_id: r.mycase_case_id == null ? null : String(r.mycase_case_id),
+        mycase_invoice_id: r.mycase_invoice_id == null ? null : String(r.mycase_invoice_id),
+        invoice_number: r.invoice_number == null ? null : String(r.invoice_number),
+        invoice_amount: num(r.invoice_amount),
+        invoice_paid_at_signing: num(r.invoice_paid_at_signing),
+        invoice_collected_to_date: num(r.invoice_collected_to_date),
+        invoice_pending_usd: num(r.invoice_pending_usd),
+        invoice_failed_usd: num(r.invoice_failed_usd),
+        invoice_bounced_usd: num(r.invoice_bounced_usd),
+        case_contract_value: num(r.case_contract_value),
+        case_collected_to_date: num(r.case_collected_to_date),
       }));
     },
     staleTime: 5 * 60 * 1000,
