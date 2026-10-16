@@ -26,6 +26,7 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useExecCollectedSplitMonthly: () => ok(f.collected),
     useExecClientBucketDrift: () => ok(f.drift),
     useExecCaseMixMonthly: () => ok(f.caseMix),
+    useExecCaseMixDetail: () => ok([]),
     useExecArAtRisk: () => ok(f.arAtRisk),
     useExecCollectorActivityMonthly: (month: string) => ok(month === "2026-09" ? f.collectorActivitySep : []),
     useExecFailedActivities: () => ok([]),

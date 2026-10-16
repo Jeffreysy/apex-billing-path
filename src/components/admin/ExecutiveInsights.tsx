@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollectedByCollector, useFirmFinancialSummary, useArWaterfall, useCertifiedMonthlyCollections, aggregateArWaterfallByMonth } from "@/hooks/useSupabaseData";
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollectionsPanel";
+import CaseMixDetailDialog from "@/components/admin/CaseMixDetailDialog";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -933,6 +934,8 @@ function DriftMatrix({ cells, base, end }: { cells: ExecDriftCell[]; base: strin
  *  loaded month never reads as a collapse in sales. */
 function CaseMixCard({ monthVal }: { monthVal: string }) {
   const q = useExecCaseMixMonthly();
+  // Jeff 2026-10-16: click into the box for the per-invoice breakdown (client, case #, invoice #) + CSV export.
+  const [detailOpen, setDetailOpen] = useState(false);
   const rows: ExecCaseMixRow[] | undefined = q.data;
   const monthStart = monthValToDate(monthVal);
   const monthLabel = format(monthStart, "MMMM yyyy");
@@ -985,7 +988,17 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
 
   return (
     <Card className="rounded-2xl border-border/70 p-6 shadow-none">
-      <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
+      <div className="flex items-start justify-between gap-2">
+        <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
+        <button
+          type="button"
+          onClick={() => setDetailOpen(true)}
+          className="mt-1 shrink-0 rounded-full border border-border/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          View breakdown · CSV
+        </button>
+      </div>
+      <CaseMixDetailDialog open={detailOpen} onOpenChange={setDetailOpen} monthVal={monthVal} monthLabel={monthLabel} />
       {q.isLoading ? (
         <div className="py-8 text-center text-xs text-muted-foreground">Loading case mix…</div>
       ) : q.isError || !rows ? (
@@ -994,7 +1007,7 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
         </div>
       ) : (
         <>
-          <div className="mt-5 flex items-baseline gap-2">
+          <div className="mt-5 flex cursor-pointer items-baseline gap-2" title="Click for the per-invoice breakdown" onClick={() => setDetailOpen(true)}>
             <span className="text-3xl font-semibold tracking-tight tabular-nums">{mr.length ? fmtMoney(totalValue) : DASH}</span>
             <span className="text-xs text-muted-foreground">{hasSold ? "contract value sold" : "contract value"}</span>
           </div>

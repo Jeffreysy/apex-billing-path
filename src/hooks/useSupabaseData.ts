@@ -1869,6 +1869,71 @@ export function useExecCaseMixMonthly() {
   });
 }
 
+/** v_exec_case_mix_detail (hourly cache) -- GRAIN: one row per INVOICE on a revenue case in the month.
+ *  The Case Mix drill-down (Jeff 2026-10-16: "click into this box and get that break down ... export that
+ *  table of data in CSV"). Same cases/invoices/classification as v_exec_case_mix_monthly, so the rows add up
+ *  to the tile. invoice_number is TEXT (19-digit keys must never become numbers). Fetched only when opened. */
+export interface ExecCaseMixDetailRow {
+  month: string;
+  reporting_family: string;
+  funding_status: string;
+  sold_basis: string | null;
+  open_date: string | null;
+  mycase_case_id: string | null;
+  case_number: string | null;
+  case_name: string | null;
+  client_id: string | null;
+  client_name: string | null;
+  invoice_number: string | null;
+  mycase_invoice_id: string | null;
+  invoice_amount: number;
+  invoice_paid_at_signing: number;
+  invoice_collected_to_date: number;
+  invoice_pending_usd: number;
+  invoice_failed_usd: number;
+  invoice_bounced_usd: number;
+  case_contract_value: number;
+  case_collected_to_date: number;
+  last_attempt_date: string | null;
+  payments_through: string | null;
+  funding_judged_through: string | null;
+}
+
+const CASE_MIX_DETAIL_COLUMNS =
+  "month, reporting_family, funding_status, sold_basis, open_date, mycase_case_id, case_number, case_name, client_id, client_name, " +
+  "invoice_number, mycase_invoice_id, invoice_amount, invoice_paid_at_signing, invoice_collected_to_date, invoice_pending_usd, " +
+  "invoice_failed_usd, invoice_bounced_usd, case_contract_value, case_collected_to_date, last_attempt_date, payments_through, funding_judged_through";
+
+export function useExecCaseMixDetail(month: string | null) {
+  return useQuery<ExecCaseMixDetailRow[]>({
+    queryKey: ["exec-case-mix-detail", month],
+    enabled: !!month,
+    queryFn: async () => {
+      const rows = await fetchAllRows<any>("v_exec_case_mix_detail", {
+        columns: CASE_MIX_DETAIL_COLUMNS,
+        orderBy: "invoice_number",
+        filter: (q) => q.eq("month", `${month}-01`),
+      });
+      const num = (v: unknown) => Number(v) || 0;
+      return rows.map((r) => ({
+        ...r,
+        mycase_case_id: r.mycase_case_id == null ? null : String(r.mycase_case_id),
+        mycase_invoice_id: r.mycase_invoice_id == null ? null : String(r.mycase_invoice_id),
+        invoice_number: r.invoice_number == null ? null : String(r.invoice_number),
+        invoice_amount: num(r.invoice_amount),
+        invoice_paid_at_signing: num(r.invoice_paid_at_signing),
+        invoice_collected_to_date: num(r.invoice_collected_to_date),
+        invoice_pending_usd: num(r.invoice_pending_usd),
+        invoice_failed_usd: num(r.invoice_failed_usd),
+        invoice_bounced_usd: num(r.invoice_bounced_usd),
+        case_contract_value: num(r.case_contract_value),
+        case_collected_to_date: num(r.case_collected_to_date),
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. INVOICE-CLOCK basis (Jeff 2026-10-13):
  *  ar_at_risk_60 = SUM(v_ar_invoice_clock.amount_due) where effective_aging_days > 60 on the active AR
  *  snapshot. invoices_at_risk_60 = invoice grain; clients_at_risk_60 = client grain (distinct client_id);
