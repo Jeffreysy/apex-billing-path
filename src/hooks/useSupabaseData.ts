@@ -1803,6 +1803,19 @@ export interface ExecCaseMixRow {
   cases_loaded_through: string | null;
   invoices_synced_at: string | null;
   refreshed_at: string | null;
+  /** Cash columns (VP 2026-10-16, ddl 3ad778e9): settled operating money on the case's own invoices
+   *  (digits-only invoice key -> MyCase transaction report). At signing = open_date - 3 .. + 7 days.
+   *  Bounced eChecks are kept OUT of paid (rejected_at_signing); failed/pending never count as cash. */
+  paid_at_signing: number;
+  collected_to_date: number;
+  cases_with_cash: number;
+  pending_at_signing: number;
+  failed_at_signing: number;
+  rejected_at_signing: number;
+  /** Cases that had their own invoice by open_date + 7 -- Jan/Feb 2026 invoices were re-issued in April,
+   *  so at-signing cash cannot be measured there; the tile caveats it instead of showing a false $0. */
+  cases_invoiced_at_signing: number;
+  payments_through: string | null;
 }
 
 export function useExecCaseMixMonthly() {
@@ -1811,7 +1824,7 @@ export function useExecCaseMixMonthly() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_case_mix_monthly")
-        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at")
+        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at, paid_at_signing, collected_to_date, cases_with_cash, pending_at_signing, failed_at_signing, rejected_at_signing, cases_invoiced_at_signing, payments_through")
         .order("month")
         .order("contract_value", { ascending: false });
       if (error) throw error;
@@ -1821,6 +1834,13 @@ export function useExecCaseMixMonthly() {
         revenue_cases: Number(r.revenue_cases) || 0,
         contract_value: Number(r.contract_value) || 0,
         avg_per_case: Number(r.avg_per_case) || 0,
+        paid_at_signing: Number(r.paid_at_signing) || 0,
+        collected_to_date: Number(r.collected_to_date) || 0,
+        cases_with_cash: Number(r.cases_with_cash) || 0,
+        pending_at_signing: Number(r.pending_at_signing) || 0,
+        failed_at_signing: Number(r.failed_at_signing) || 0,
+        rejected_at_signing: Number(r.rejected_at_signing) || 0,
+        cases_invoiced_at_signing: Number(r.cases_invoiced_at_signing) || 0,
       }));
     },
     staleTime: 5 * 60 * 1000,

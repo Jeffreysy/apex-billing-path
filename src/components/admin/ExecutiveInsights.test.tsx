@@ -82,6 +82,7 @@ describe("Executive Insights hero band", () => {
     expect(c).toContain("4 revenue cases");
     expect(c).toContain("Cases loaded through Oct 2, 2026");
     expect(c).toContain("partial month");
+    expect(c).not.toContain("NaN"); // fixture predates the 10-16 cash columns: tile must fall back to contract value only
     expect(screen.queryByText("Net AR Change")).toBeNull();
   });
 

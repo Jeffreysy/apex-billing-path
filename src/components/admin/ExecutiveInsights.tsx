@@ -941,6 +941,21 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
     .sort((a, b) => b.contract_value - a.contract_value);
   const totalCases = mr.reduce((s, r) => s + r.revenue_cases, 0);
   const totalValue = mr.reduce((s, r) => s + r.contract_value, 0);
+  // Cash that hit the bank on these cases (VP 2026-10-16): paid at signing = open date -3..+7 days.
+  const n = (v: unknown) => Number(v) || 0;
+  // No cash columns on the rows (older cache / test fixtures) -> show contract value only, never "NaN".
+  const hasCash = mr.some((r) => r.payments_through != null);
+  const totalPaid = mr.reduce((s, r) => s + n(r.paid_at_signing), 0);
+  const totalToDate = mr.reduce((s, r) => s + n(r.collected_to_date), 0);
+  const totalWithCash = mr.reduce((s, r) => s + n(r.cases_with_cash), 0);
+  const totalPending = mr.reduce((s, r) => s + n(r.pending_at_signing), 0);
+  const totalFailed = mr.reduce((s, r) => s + n(r.failed_at_signing), 0);
+  const totalRejected = mr.reduce((s, r) => s + n(r.rejected_at_signing), 0);
+  const totalInvoicedAtSigning = mr.reduce((s, r) => s + n(r.cases_invoiced_at_signing), 0);
+  // Jan/Feb 2026 invoices were re-issued in April, so at-signing cash can't be measured for some months.
+  const signingMeasurable = hasCash && (totalCases === 0 || totalInvoicedAtSigning / totalCases >= 0.8);
+  const paidPct = totalValue > 0 ? (totalPaid / totalValue) * 100 : 0;
+  const paymentsThrough = rows?.find((r) => r.payments_through)?.payments_through ?? null;
   const maxValue = Math.max(1, ...mr.map((r) => r.contract_value));
   const freshRow = rows?.find((r) => r.cases_loaded_through) ?? null;
   const loadedThrough = freshRow?.cases_loaded_through ? ymd(freshRow.cases_loaded_through) : null;
@@ -971,6 +986,29 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
             {totalCases.toLocaleString()} revenue {totalCases === 1 ? "case" : "cases"}
             {totalCases > 0 ? ` · avg ${fmtMoney(totalValue / totalCases)} per case` : ""}
           </p>
+          {mr.length > 0 && hasCash && (
+            <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+              {signingMeasurable ? (
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-lg font-semibold tracking-tight tabular-nums text-success">{fmtMoney(totalPaid)}</span>
+                    <span className="text-xs text-muted-foreground">hit the bank at signing · {paidPct.toFixed(0)}% of contract value</span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                    {totalWithCash} of {totalCases} cases paid · {fmtMoney(totalToDate)} collected to date
+                    {totalPending > 0 ? ` · ${fmtMoney(totalPending)} pending` : ""}
+                    {totalFailed > 0 ? ` · ${fmtMoney(totalFailed)} in failed down payments` : ""}
+                    {totalRejected > 0 ? ` · ${fmtMoney(totalRejected)} bounced eChecks (not counted)` : ""}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[11px] text-warning">
+                  Cash at signing can't be measured for this month: most of its invoices were re-issued later
+                  ({totalInvoicedAtSigning} of {totalCases} cases had an invoice at signing). Collected to date: {fmtMoney(totalToDate)}.
+                </p>
+              )}
+            </div>
+          )}
 
           {mr.length === 0 ? (
             <div className="mt-5 rounded-lg border border-dashed border-border/70 py-6 text-center text-xs text-muted-foreground">
@@ -986,7 +1024,14 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
                       <span className="truncate text-xs font-medium tracking-tight" title={r.reporting_family}>
                         {r.reporting_family}
                       </span>
-                      <span className="font-mono text-[12px] font-semibold tabular-nums">{fmtMoney(r.contract_value)}</span>
+                      <span className="font-mono text-[12px] font-semibold tabular-nums">
+                        {signingMeasurable && (
+                          <span className="mr-2 font-normal text-success" title="Cash that hit the bank at signing">
+                            {fmtMoney(n(r.paid_at_signing))} paid ·
+                          </span>
+                        )}
+                        {fmtMoney(r.contract_value)}
+                      </span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted/50" title={`${share.toFixed(1)}% of contract value`}>
@@ -1004,7 +1049,10 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
               })}
               <li className="flex items-baseline justify-between border-t border-border/60 pt-2.5 text-xs font-semibold">
                 <span>Total · {totalCases.toLocaleString()} cases</span>
-                <span className="font-mono tabular-nums">{fmtMoney(totalValue)}</span>
+                <span className="font-mono tabular-nums">
+                  {signingMeasurable && <span className="mr-2 font-normal text-success">{fmtMoney(totalPaid)} paid ·</span>}
+                  {fmtMoney(totalValue)}
+                </span>
               </li>
             </ul>
           )}
@@ -1014,6 +1062,7 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
             {syncedAt ? ` · invoices synced ${format(syncedAt, "MMM d")}` : ""}
             {partial ? " — partial month: cases opened after that date are not counted yet, not a drop in sales." : ""}
             {notLoaded ? " — the MyCase case feed has not reached this month yet." : ""}
+            {paymentsThrough ? ` · cash counted through ${format(ymd(paymentsThrough), "MMM d")}` : ""}
             {refreshedAt ? ` · updated ${fmtUpdated(refreshedAt)}` : ""}
           </p>
         </>
