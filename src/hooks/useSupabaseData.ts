@@ -1816,6 +1816,20 @@ export interface ExecCaseMixRow {
    *  so at-signing cash cannot be measured there; the tile caveats it instead of showing a false $0. */
   cases_invoiced_at_signing: number;
   payments_through: string | null;
+  /** Jeff 2026-10-16: "if there is no cash to account for lets not count that as a service sold its just
+   *  an invoice that has to be deleted". sold = settled or pending money on the case; unfunded = no money
+   *  and a week of payment data has passed (invoice to delete); awaiting = no money yet, opened in the last week.
+   *  sold + unfunded + awaiting = revenue_cases / contract_value. Null when the columns are not deployed. */
+  sold_cases: number | null;
+  sold_contract_value: number | null;
+  unfunded_cases: number | null;
+  unfunded_contract_value: number | null;
+  /** Jeff 2026-10-16 "put failed and bounced on a separate call list first": no money in, but the client
+   *  tried (failed down payment / bounced eCheck) -> call before deleting. Not counted as sold. */
+  call_first_cases: number | null;
+  call_first_contract_value: number | null;
+  awaiting_cases: number | null;
+  awaiting_contract_value: number | null;
 }
 
 export function useExecCaseMixMonthly() {
@@ -1824,7 +1838,7 @@ export function useExecCaseMixMonthly() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("v_exec_case_mix_monthly")
-        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at, paid_at_signing, collected_to_date, cases_with_cash, pending_at_signing, failed_at_signing, rejected_at_signing, cases_invoiced_at_signing, payments_through")
+        .select("month, reporting_family, family_sort, revenue_cases, contract_value, avg_per_case, cases_loaded_through, invoices_synced_at, refreshed_at, paid_at_signing, collected_to_date, cases_with_cash, pending_at_signing, failed_at_signing, rejected_at_signing, cases_invoiced_at_signing, payments_through, sold_cases, sold_contract_value, unfunded_cases, unfunded_contract_value, call_first_cases, call_first_contract_value, awaiting_cases, awaiting_contract_value")
         .order("month")
         .order("contract_value", { ascending: false });
       if (error) throw error;
@@ -1841,6 +1855,14 @@ export function useExecCaseMixMonthly() {
         failed_at_signing: Number(r.failed_at_signing) || 0,
         rejected_at_signing: Number(r.rejected_at_signing) || 0,
         cases_invoiced_at_signing: Number(r.cases_invoiced_at_signing) || 0,
+        sold_cases: r.sold_cases == null ? null : Number(r.sold_cases),
+        sold_contract_value: r.sold_contract_value == null ? null : Number(r.sold_contract_value),
+        unfunded_cases: r.unfunded_cases == null ? null : Number(r.unfunded_cases),
+        unfunded_contract_value: r.unfunded_contract_value == null ? null : Number(r.unfunded_contract_value),
+        call_first_cases: r.call_first_cases == null ? null : Number(r.call_first_cases),
+        call_first_contract_value: r.call_first_contract_value == null ? null : Number(r.call_first_contract_value),
+        awaiting_cases: r.awaiting_cases == null ? null : Number(r.awaiting_cases),
+        awaiting_contract_value: r.awaiting_contract_value == null ? null : Number(r.awaiting_contract_value),
       }));
     },
     staleTime: 5 * 60 * 1000,

@@ -936,9 +936,25 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
   const rows: ExecCaseMixRow[] | undefined = q.data;
   const monthStart = monthValToDate(monthVal);
   const monthLabel = format(monthStart, "MMMM yyyy");
-  const mr = (rows ?? [])
-    .filter((r) => r.month.slice(0, 7) === monthVal)
-    .sort((a, b) => b.contract_value - a.contract_value);
+  const monthRows = (rows ?? []).filter((r) => r.month.slice(0, 7) === monthVal);
+  // Jeff 2026-10-16: a case with no money accounted for is not a service sold -- it is an invoice to delete.
+  // When the sold/unfunded/awaiting split is deployed, the tile counts SOLD cases only and lists the rest below.
+  const hasSold = monthRows.some((r) => r.sold_cases != null);
+  const unfundedCases = monthRows.reduce((s, r) => s + (Number(r.unfunded_cases) || 0), 0);
+  const unfundedValue = monthRows.reduce((s, r) => s + (Number(r.unfunded_contract_value) || 0), 0);
+  const callFirstCases = monthRows.reduce((s, r) => s + (Number(r.call_first_cases) || 0), 0);
+  const callFirstValue = monthRows.reduce((s, r) => s + (Number(r.call_first_contract_value) || 0), 0);
+  const awaitingCases = monthRows.reduce((s, r) => s + (Number(r.awaiting_cases) || 0), 0);
+  const awaitingValue = monthRows.reduce((s, r) => s + (Number(r.awaiting_contract_value) || 0), 0);
+  const mr = (hasSold
+    ? monthRows
+        .map((r) => {
+          const c = Number(r.sold_cases) || 0, v = Number(r.sold_contract_value) || 0;
+          return { ...r, revenue_cases: c, contract_value: v, avg_per_case: c > 0 ? v / c : 0 };
+        })
+        .filter((r) => r.revenue_cases > 0)
+    : monthRows
+  ).sort((a, b) => b.contract_value - a.contract_value);
   const totalCases = mr.reduce((s, r) => s + r.revenue_cases, 0);
   const totalValue = mr.reduce((s, r) => s + r.contract_value, 0);
   // Cash that hit the bank on these cases (VP 2026-10-16): paid at signing = open date -3..+7 days.
@@ -980,10 +996,10 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
         <>
           <div className="mt-5 flex items-baseline gap-2">
             <span className="text-3xl font-semibold tracking-tight tabular-nums">{mr.length ? fmtMoney(totalValue) : DASH}</span>
-            <span className="text-xs text-muted-foreground">contract value</span>
+            <span className="text-xs text-muted-foreground">{hasSold ? "contract value sold" : "contract value"}</span>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-            {totalCases.toLocaleString()} revenue {totalCases === 1 ? "case" : "cases"}
+            {totalCases.toLocaleString()} {hasSold ? "cases sold" : `revenue ${totalCases === 1 ? "case" : "cases"}`}
             {totalCases > 0 ? ` · avg ${fmtMoney(totalValue / totalCases)} per case` : ""}
           </p>
           {mr.length > 0 && hasCash && (
@@ -1055,6 +1071,26 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
                 </span>
               </li>
             </ul>
+          )}
+
+          {hasSold && (unfundedCases > 0 || callFirstCases > 0 || awaitingCases > 0) && (
+            <div className="mt-3 space-y-1 rounded-lg border border-dashed border-border/70 px-3 py-2 text-[11px] tabular-nums">
+              {unfundedCases > 0 && (
+                <p className="text-destructive">
+                  Not counted · {unfundedCases} {unfundedCases === 1 ? "case" : "cases"} / {fmtMoney(unfundedValue)} with no money in — invoices to delete
+                </p>
+              )}
+              {callFirstCases > 0 && (
+                <p className="text-warning">
+                  Call first · {callFirstCases} {callFirstCases === 1 ? "case" : "cases"} / {fmtMoney(callFirstValue)} where the down payment failed or bounced — not counted
+                </p>
+              )}
+              {awaitingCases > 0 && (
+                <p className="text-muted-foreground">
+                  Not counted yet · {awaitingCases} {awaitingCases === 1 ? "case" : "cases"} / {fmtMoney(awaitingValue)} opened in the last week, awaiting a first payment
+                </p>
+              )}
+            </div>
           )}
 
           <p className={`mt-4 text-[10px] leading-snug ${partial || notLoaded ? "text-warning" : "text-muted-foreground/70"}`}>
