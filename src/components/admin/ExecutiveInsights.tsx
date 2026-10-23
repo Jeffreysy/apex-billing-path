@@ -4,6 +4,7 @@ import { fetchAllRows, useActivityCollectedByCollectorWeekly, certifiedCollected
 import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollectionsPanel";
 import CaseMixDetailDialog from "@/components/admin/CaseMixDetailDialog";
+import CashMovementPanel from "@/components/admin/CashMovementPanel";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -255,6 +256,15 @@ export default function ExecutiveInsights() {
   ];
 
   const monthLabel = format(monthValToDate(monthVal), "MMMM yyyy");
+  const arCaption = !view
+    ? `AR roll-forward · ${monthLabel}`
+    : view.movementSpan
+      ? `AR roll-forward · MyCase snapshots ${view.movementSpan.from} → ${view.movementSpan.to} (${view.movementSpan.periods} period${view.movementSpan.periods === 1 ? "" : "s"}) · ${monthLabel}`
+      : view.movementState === "loading"
+        ? `Loading the AR roll-forward · ${monthLabel}`
+        : view.movementState === "error"
+          ? `AR roll-forward unavailable right now (snapshot waterfall did not load) — showing closing AR only · ${monthLabel}`
+          : `No MyCase AR snapshot landed in ${monthLabel} — no movement to show`;
 
   return (
     <div className="space-y-8 font-sans">
@@ -319,96 +329,92 @@ export default function ExecutiveInsights() {
         <DelinquentCollectionsPanel />
       </section>
 
-      {/* ─────────── Money flow + Net change ─────────── */}
+      {/* ─────────── Money flow (cash movement; AR roll-forward on the second tab) + Case Mix ─────────── */}
       <section id="flow" className="scroll-mt-24 grid gap-4 lg:grid-cols-3">
-        {view ? (
-        <Card className="lg:col-span-2 rounded-2xl border-border/70 p-6 shadow-none">
-          <SectionHeader
-            eyebrow="Cash Movement"
-            title="Money Flow"
-            caption={view.movementSpan
-              ? `AR roll-forward · MyCase snapshots ${view.movementSpan.from} → ${view.movementSpan.to} (${view.movementSpan.periods} period${view.movementSpan.periods === 1 ? "" : "s"}) · ${monthLabel}`
-              : view.movementState === "loading"
-                ? `Loading the AR roll-forward · ${monthLabel}`
-                : view.movementState === "error"
-                  ? `AR roll-forward unavailable right now (snapshot waterfall did not load) — showing closing AR only · ${monthLabel}`
-                  : `No MyCase AR snapshot landed in ${monthLabel} — no movement to show`}
-          />
-          {(() => {
-            const opening = view.waterfall[0].value;
-            const newAR = view.waterfall[1].value;
-            const collected = Math.abs(view.waterfall[2].value);
-            const closing = view.closingAR;
-            const pieData = [
-              { name: "Opening AR", value: Math.max(0, opening), color: "hsl(var(--primary))" },
-              { name: "+ New AR", value: Math.max(0, newAR), color: "hsl(var(--destructive))" },
-              { name: view.waterfall[2].name, value: Math.max(0, collected), color: "hsl(var(--success))" },
-            ].filter((d) => d.value > 0);
-            const total = pieData.reduce((s, d) => s + d.value, 0) || 1;
-            return (
-              <div className="mt-6 grid items-center gap-6 sm:grid-cols-[260px_1fr]">
-                <div className="relative">
-                  <ResponsiveContainer width="100%" height={240}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={64}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        stroke="hsl(var(--background))"
-                        strokeWidth={2}
-                      >
-                        {pieData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(v: number) => fmtMoney(v)}
-                        contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: 8,
-                          fontSize: 11,
-                          boxShadow: "0 8px 24px -8px hsl(var(--primary)/0.25)",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">Closing AR</span>
-                    <span className="text-lg font-semibold tabular-nums">{fmtMoney(closing)}</span>
+        <CashMovementPanel
+          className="lg:col-span-2"
+          monthVal={monthVal}
+          arCaption={arCaption}
+          arRollForward={
+            view ? (
+              <>
+              {(() => {
+                const opening = view.waterfall[0].value;
+                const newAR = view.waterfall[1].value;
+                const collected = Math.abs(view.waterfall[2].value);
+                const closing = view.closingAR;
+                const pieData = [
+                  { name: "Opening AR", value: Math.max(0, opening), color: "hsl(var(--primary))" },
+                  { name: "+ New AR", value: Math.max(0, newAR), color: "hsl(var(--destructive))" },
+                  { name: view.waterfall[2].name, value: Math.max(0, collected), color: "hsl(var(--success))" },
+                ].filter((d) => d.value > 0);
+                const total = pieData.reduce((s, d) => s + d.value, 0) || 1;
+                return (
+                  <div className="mt-6 grid items-center gap-6 sm:grid-cols-[260px_1fr]">
+                    <div className="relative">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={64}
+                            outerRadius={100}
+                            paddingAngle={2}
+                            stroke="hsl(var(--background))"
+                            strokeWidth={2}
+                          >
+                            {pieData.map((d, i) => (
+                              <Cell key={i} fill={d.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(v: number) => fmtMoney(v)}
+                            contentStyle={{
+                              background: "hsl(var(--popover))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: 8,
+                              fontSize: 11,
+                              boxShadow: "0 8px 24px -8px hsl(var(--primary)/0.25)",
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70">Closing AR</span>
+                        <span className="text-lg font-semibold tabular-nums">{fmtMoney(closing)}</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-3 text-sm">
+                      {pieData.map((d) => {
+                        const pct = (d.value / total) * 100;
+                        return (
+                          <li key={d.name} className="flex items-center gap-3">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
+                            <span className="flex-1 text-muted-foreground">{d.name}</span>
+                            <span className="tabular-nums font-medium">{fmtMoney(d.value)}</span>
+                            <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">{pct.toFixed(1)}%</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                </div>
-                <ul className="space-y-3 text-sm">
-                  {pieData.map((d) => {
-                    const pct = (d.value / total) * 100;
-                    return (
-                      <li key={d.name} className="flex items-center gap-3">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
-                        <span className="flex-1 text-muted-foreground">{d.name}</span>
-                        <span className="tabular-nums font-medium">{fmtMoney(d.value)}</span>
-                        <span className="w-12 text-right text-xs text-muted-foreground tabular-nums">{pct.toFixed(1)}%</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })()}
-        </Card>
-        ) : (
-          <LegacyPending
-            className="lg:col-span-2"
-            title="Money Flow"
-            loading={isLoading}
-            error={insightsError}
-            onRetry={() => refetchInsights()}
-          />
-        )}
+                );
+              })()}
+              </>
+            ) : (
+              <LegacyPending
+                className="mt-4 border-dashed"
+                title="AR roll-forward"
+                loading={isLoading}
+                error={insightsError}
+                onRetry={() => refetchInsights()}
+              />
+            )
+          }
+        />
 
         <CaseMixCard monthVal={monthVal} />
       </section>

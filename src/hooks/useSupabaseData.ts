@@ -1869,6 +1869,83 @@ export function useExecCaseMixMonthly() {
   });
 }
 
+/** v_firm_cash_movement_monthly (VP, 2026-10-23) -- GRAIN: one row per CASH month. Firm cash collected in the
+ *  month split into seven mutually exclusive buckets that sum exactly to total_collected (Jeff 2026-10-23: "auto pay
+ *  money manuel money dilquent money manual and deliquent then consult money and new sales money", as in the COO
+ *  workbook). reconciliation_diff = total_collected - SUM(buckets), 0 when healthy. month_status 'open' = provisional,
+ *  counted through ledger_through. Until the VP certifies and ships the view, the hook resolves to
+ *  { available: false } (no error, no numbers) so the screen shows "awaiting certified data" -- never a fabricated figure. */
+export const CASH_MOVEMENT_BUCKETS = [
+  "autopay_current",
+  "manual_current",
+  "delinquent_manual",
+  "delinquent_autopay",
+  "consult_cash",
+  "new_sales_cash",
+  "other_unresolved",
+] as const;
+export type CashMovementBucket = (typeof CASH_MOVEMENT_BUCKETS)[number];
+
+export interface FirmCashMovementMonth extends Record<CashMovementBucket, number> {
+  month: string; // yyyy-MM-dd (1st of month)
+  month_label: string | null;
+  month_status: "closed" | "open" | string;
+  ledger_through: string | null;
+  total_collected: number;
+  reconciliation_diff: number | null;
+  n_payments: number | null;
+  basis: string | null;
+  /** Free-form caveats from the VP (text, json array or json object); rendered as a note, never hidden. */
+  data_quality: unknown;
+}
+
+export interface FirmCashMovementResult {
+  /** false = the view is not deployed / not exposed yet (awaiting VP cert). */
+  available: boolean;
+  rows: FirmCashMovementMonth[];
+}
+
+/** PostgREST / Postgres "relation is not there (yet)" -- distinct from a real failure, which still throws. */
+function isMissingRelation(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === "PGRST205" || error.code === "42P01") return true;
+  return /could not find the table|does not exist|schema cache/i.test(error.message ?? "");
+}
+
+export function useFirmCashMovementMonthly() {
+  return useQuery<FirmCashMovementResult>({
+    queryKey: ["firm-cash-movement-monthly"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("v_firm_cash_movement_monthly")
+        .select(
+          `month, month_label, month_status, ledger_through, total_collected, ${CASH_MOVEMENT_BUCKETS.join(", ")}, reconciliation_diff, n_payments, basis, data_quality`,
+        )
+        .order("month", { ascending: false })
+        .limit(24);
+      if (error) {
+        if (isMissingRelation(error)) return { available: false, rows: [] };
+        throw error;
+      }
+      const rows = ((data ?? []) as any[])
+        .map((r) => {
+          const out: any = {
+            ...r,
+            month: String(r.month).slice(0, 10),
+            total_collected: Number(r.total_collected) || 0,
+            reconciliation_diff: numOrNull(r.reconciliation_diff),
+            n_payments: numOrNull(r.n_payments),
+          };
+          for (const b of CASH_MOVEMENT_BUCKETS) out[b] = Number(r[b]) || 0;
+          return out as FirmCashMovementMonth;
+        })
+        .sort((a, b) => a.month.localeCompare(b.month));
+      return { available: true, rows };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** v_exec_case_mix_detail (hourly cache) -- GRAIN: one row per INVOICE on a revenue case in the month.
  *  The Case Mix drill-down (Jeff 2026-10-16: "click into this box and get that break down ... export that
  *  table of data in CSV"). Same cases/invoices/classification as v_exec_case_mix_monthly, so the rows add up
