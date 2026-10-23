@@ -2011,6 +2011,53 @@ export function useExecCaseMixDetail(month: string | null) {
   });
 }
 
+/** v_new_case_sales_cohort_monthly -- GRAIN: one row per case OPEN month (cohort). Counts are CASES, never
+ *  clients. The certified new-case sales cash spine re-cut by open month (Jeff 2026-10-23, "First 90 days" tab on
+ *  the Case Mix card): first-90-day net cash and signing cash on each cohort's own invoices, MyCase + Filevine
+ *  ("all systems"). cohort_mature = the 90-day window has closed; data_quality_all_systems = OK | THIN |
+ *  NOT_MEASURABLE (n/m -- never shown as $0). Read-only; authenticated SELECT, security_invoker view. */
+export interface NewCaseSalesCohortRow {
+  open_month: string;
+  first90_cash_net_all_systems: number;
+  signing_cash_net_by_open_month_all_systems: number;
+  cases_with_first90_cash_all_systems: number;
+  cohort_mature: boolean;
+  window_closes_on: string | null;
+  data_quality_all_systems: string;
+  all_systems_status: string | null;
+  payments_through: string | null;
+}
+
+const NEW_CASE_SALES_COHORT_COLUMNS =
+  "open_month, first90_cash_net_all_systems, signing_cash_net_by_open_month_all_systems, cases_with_first90_cash_all_systems, " +
+  "cohort_mature, window_closes_on, data_quality_all_systems, all_systems_status, payments_through";
+
+export function useNewCaseSalesCohortMonthly(enabled = true) {
+  return useQuery<NewCaseSalesCohortRow[]>({
+    queryKey: ["new-case-sales-cohort-monthly"],
+    enabled,
+    queryFn: async () => {
+      const rows = await fetchAllRows<any>("v_new_case_sales_cohort_monthly", {
+        columns: NEW_CASE_SALES_COHORT_COLUMNS,
+        orderBy: "open_month",
+      });
+      const num = (v: unknown) => Number(v) || 0;
+      return rows.map((r) => ({
+        open_month: String(r.open_month).slice(0, 10),
+        first90_cash_net_all_systems: num(r.first90_cash_net_all_systems),
+        signing_cash_net_by_open_month_all_systems: num(r.signing_cash_net_by_open_month_all_systems),
+        cases_with_first90_cash_all_systems: num(r.cases_with_first90_cash_all_systems),
+        cohort_mature: r.cohort_mature === true,
+        window_closes_on: r.window_closes_on == null ? null : String(r.window_closes_on).slice(0, 10),
+        data_quality_all_systems: String(r.data_quality_all_systems ?? "NOT_MEASURABLE"),
+        all_systems_status: r.all_systems_status ?? null,
+        payments_through: r.payments_through == null ? null : String(r.payments_through).slice(0, 10),
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** v_exec_ar_at_risk (hourly cache) — GRAIN: one row. INVOICE-CLOCK basis (Jeff 2026-10-13):
  *  ar_at_risk_60 = SUM(v_ar_invoice_clock.amount_due) where effective_aging_days > 60 on the active AR
  *  snapshot. invoices_at_risk_60 = invoice grain; clients_at_risk_60 = client grain (distinct client_id);
