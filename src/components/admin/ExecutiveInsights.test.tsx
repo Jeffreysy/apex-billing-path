@@ -10,6 +10,8 @@ import { render, screen, within, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const legacy = vi.hoisted(() => ({ hang: false }));
+// Cash Movement view (v_firm_cash_movement_monthly): not deployed by default -> "awaiting certified data".
+const cash = vi.hoisted(() => ({ result: { available: false, rows: [] as unknown[] } as { available: boolean; rows: unknown[] } }));
 
 vi.mock("@/hooks/useSupabaseData", async () => {
   const f = await import("./__fixtures__/execInsightsHero.20261013");
@@ -33,6 +35,11 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useDelinquentCollectionsKpi: () => ok([]),
     useDelinquentCollectionsPlanLoads: () => ok([]),
     useDelinquentCollectionsBasis: () => ok({ certified: false, statuses: {} }),
+    useFirmCashMovementMonthly: () => ok(cash.result),
+    CASH_MOVEMENT_BUCKETS: [
+      "autopay_current", "manual_current", "delinquent_manual", "delinquent_autopay",
+      "consult_cash", "new_sales_cash", "other_unresolved",
+    ],
   };
 });
 
@@ -46,6 +53,7 @@ afterEach(() => {
   cleanup();
   vi.useRealTimers();
   legacy.hang = false;
+  cash.result = { available: false, rows: [] };
 });
 
 async function renderAt(isoDate: string) {
@@ -125,7 +133,10 @@ describe("Executive Insights hero band", () => {
     expect(h).toContain("$257.7k");
     expect(h).toMatch(/114\s*worse/);
     expect(text(caseMixCard)).toContain("$52.4k");
-    expect(screen.getAllByText("Loading detail…").length).toBe(2); // Money Flow + legacy sections
+    // Money Flow now opens on Cash movement (own view, not the legacy pull); the AR roll-forward tab is not
+    // mounted until chosen, so only the legacy sections below are still waiting.
+    expect(screen.getAllByText("Loading detail…").length).toBe(1);
+    expect(screen.getByText("Awaiting certified data")).toBeInTheDocument();
     expect(screen.queryByText("Loading executive insights…")).toBeNull();
   });
 
