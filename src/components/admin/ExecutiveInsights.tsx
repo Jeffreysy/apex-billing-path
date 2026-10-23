@@ -5,6 +5,7 @@ import { Sparkline, HeatCell } from "@/components/collections/MiniViz";
 import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollectionsPanel";
 import CaseMixDetailDialog from "@/components/admin/CaseMixDetailDialog";
 import CashMovementPanel from "@/components/admin/CashMovementPanel";
+import NewCaseSalesCashCard from "@/components/admin/NewCaseSalesCashCard";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -249,6 +250,7 @@ export default function ExecutiveInsights() {
     { id: "hero", label: "Executive" },
     { id: "delinquent", label: "Delinquent $" },
     { id: "flow", label: "Money Flow" },
+    { id: "newsales", label: "New-Case Cash" },
     { id: "aging", label: "Aging × Collector" },
     { id: "activity", label: "Collector Activity" },
     { id: "movement", label: "Bucket Movement" },
@@ -417,6 +419,11 @@ export default function ExecutiveInsights() {
         />
 
         <CaseMixCard monthVal={monthVal} />
+      </section>
+
+      {/* ─────────── New-case sales cash (all systems, VP-certified v_new_case_sales_cash_monthly) ─────────── */}
+      <section id="newsales" className="scroll-mt-24">
+        <NewCaseSalesCashCard monthVal={monthVal} />
       </section>
 
       {view ? (

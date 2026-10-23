@@ -36,6 +36,7 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useDelinquentCollectionsPlanLoads: () => ok([]),
     useDelinquentCollectionsBasis: () => ok({ certified: false, statuses: {} }),
     useFirmCashMovementMonthly: () => ok(cash.result),
+    useNewCaseSalesCashMonthly: () => ok([]),
     CASH_MOVEMENT_BUCKETS: [
       "autopay_current", "manual_current", "delinquent_manual", "delinquent_autopay",
       "consult_cash", "new_sales_cash", "other_unresolved",

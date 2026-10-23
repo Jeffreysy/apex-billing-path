@@ -1875,29 +1875,9 @@ export function useExecCaseMixMonthly() {
  *  workbook). reconciliation_diff = total_collected - SUM(buckets), 0 when healthy. month_status 'open' = provisional,
  *  counted through ledger_through. Until the VP certifies and ships the view, the hook resolves to
  *  { available: false } (no error, no numbers) so the screen shows "awaiting certified data" -- never a fabricated figure. */
-export const CASH_MOVEMENT_BUCKETS = [
-  "autopay_current",
-  "manual_current",
-  "delinquent_manual",
-  "delinquent_autopay",
-  "consult_cash",
-  "new_sales_cash",
-  "other_unresolved",
-] as const;
-export type CashMovementBucket = (typeof CASH_MOVEMENT_BUCKETS)[number];
-
-export interface FirmCashMovementMonth extends Record<CashMovementBucket, number> {
-  month: string; // yyyy-MM-dd (1st of month)
-  month_label: string | null;
-  month_status: "closed" | "open" | string;
-  ledger_through: string | null;
-  total_collected: number;
-  reconciliation_diff: number | null;
-  n_payments: number | null;
-  basis: string | null;
-  /** Free-form caveats from the VP (text, json array or json object); rendered as a note, never hidden. */
-  data_quality: unknown;
-}
+export { CASH_MOVEMENT_BUCKETS, isCashBucketMeasurable } from "@/lib/cashMovement";
+export type { CashMovementBucket, FirmCashMovementMonth } from "@/lib/cashMovement";
+import { CASH_MOVEMENT_BUCKETS, type FirmCashMovementMonth } from "@/lib/cashMovement";
 
 export interface FirmCashMovementResult {
   /** false = the view is not deployed / not exposed yet (awaiting VP cert). */
@@ -1919,7 +1899,7 @@ export function useFirmCashMovementMonthly() {
       const { data, error } = await (supabase as any)
         .from("v_firm_cash_movement_monthly")
         .select(
-          `month, month_label, month_status, ledger_through, total_collected, ${CASH_MOVEMENT_BUCKETS.join(", ")}, reconciliation_diff, n_payments, basis, data_quality`,
+          `month, month_label, month_status, ledger_through, total_collected, ${CASH_MOVEMENT_BUCKETS.join(", ")}, reconciliation_diff, n_payments, basis, data_quality, consult_measurable, delinquency_split_measurable, new_sales_quality, new_sales_cash_net, filevine_signing_cash_not_included`,
         )
         .order("month", { ascending: false })
         .limit(24);
@@ -1935,12 +1915,79 @@ export function useFirmCashMovementMonthly() {
             total_collected: Number(r.total_collected) || 0,
             reconciliation_diff: numOrNull(r.reconciliation_diff),
             n_payments: numOrNull(r.n_payments),
+            consult_measurable: r.consult_measurable ?? null,
+            delinquency_split_measurable: r.delinquency_split_measurable ?? null,
+            new_sales_quality: r.new_sales_quality ?? null,
+            new_sales_cash_net: numOrNull(r.new_sales_cash_net),
+            filevine_signing_cash_not_included: numOrNull(r.filevine_signing_cash_not_included),
           };
-          for (const b of CASH_MOVEMENT_BUCKETS) out[b] = Number(r[b]) || 0;
+          // NULL stays NULL (= NOT_MEASURABLE), never coerced to 0.
+          for (const b of CASH_MOVEMENT_BUCKETS) out[b] = numOrNull(r[b]);
           return out as FirmCashMovementMonth;
         })
         .sort((a, b) => a.month.localeCompare(b.month));
       return { available: true, rows };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** v_new_case_sales_cash_monthly (VP-certified, 2026-10-23) -- GRAIN: one row per CASH month (payments summed, not
+ *  cases). "New-case sales cash" = paid on a new case's own invoices from open_date - 3 to open_date + 7, net of refunds,
+ *  operating only (no consults, no trust). The *_all_systems columns add the certified Filevine leg (Dec 2025 - Apr 2026);
+ *  that is NOT the MyCase-only basis the Cash Movement "New sales" bucket ties to. Counts are CASES, never clients.
+ *  data_quality_all_systems: OK | THIN | NOT_MEASURABLE (NOT_MEASURABLE -> show n/m, never $0). */
+export interface NewCaseSalesCashMonth {
+  month: string; // yyyy-MM-dd
+  month_status: string; // 'closed' | 'partial' | 'open'
+  payments_through: string | null;
+  signing_cash_net_all_systems: number | null;
+  certified_cash_all_systems: number | null;
+  /** Already a percent number (17.3 = 17.3%). */
+  signing_pct_of_certified_all_systems: number | null;
+  signing_cases_paid_all_systems: number | null;
+  cases_opened: number | null;
+  data_quality_all_systems: string | null;
+  quality_note_all_systems: string | null;
+  all_systems_status: string | null;
+  /** Optional Filevine-era breakdown (guarded: absent columns -> undefined). */
+  filevine_signing_cash?: number | null;
+  mycase_signing_keyed_by_filevine_added?: number | null;
+}
+
+const NEW_CASE_SALES_BASE_COLS =
+  "month, month_status, payments_through, signing_cash_net_all_systems, certified_cash_all_systems, signing_pct_of_certified_all_systems, signing_cases_paid_all_systems, cases_opened, data_quality_all_systems, quality_note_all_systems, all_systems_status";
+const NEW_CASE_SALES_OPTIONAL_COLS = "filevine_signing_cash, mycase_signing_keyed_by_filevine_added";
+
+export function useNewCaseSalesCashMonthly(months = 13) {
+  return useQuery<NewCaseSalesCashMonth[]>({
+    queryKey: ["new-case-sales-cash-monthly", months],
+    queryFn: async () => {
+      const run = (cols: string) =>
+        (supabase as any).from("v_new_case_sales_cash_monthly").select(cols).order("month", { ascending: false }).limit(months);
+      let { data, error } = await run(`${NEW_CASE_SALES_BASE_COLS}, ${NEW_CASE_SALES_OPTIONAL_COLS}`);
+      // 42703 = undefined column: the optional Filevine breakdown is not there -> read the required columns only.
+      if (error && (error.code === "42703" || /column .* does not exist/i.test(error.message ?? ""))) {
+        ({ data, error } = await run(NEW_CASE_SALES_BASE_COLS));
+      }
+      if (error) throw error;
+      return ((data ?? []) as any[])
+        .map((r) => {
+          const out: NewCaseSalesCashMonth = {
+            ...r,
+            month: String(r.month).slice(0, 10),
+            signing_cash_net_all_systems: numOrNull(r.signing_cash_net_all_systems),
+            certified_cash_all_systems: numOrNull(r.certified_cash_all_systems),
+            signing_pct_of_certified_all_systems: numOrNull(r.signing_pct_of_certified_all_systems),
+            signing_cases_paid_all_systems: numOrNull(r.signing_cases_paid_all_systems),
+            cases_opened: numOrNull(r.cases_opened),
+          };
+          if ("filevine_signing_cash" in r) out.filevine_signing_cash = numOrNull(r.filevine_signing_cash);
+          if ("mycase_signing_keyed_by_filevine_added" in r)
+            out.mycase_signing_keyed_by_filevine_added = numOrNull(r.mycase_signing_keyed_by_filevine_added);
+          return out;
+        })
+        .sort((a, b) => a.month.localeCompare(b.month));
     },
     staleTime: 5 * 60 * 1000,
   });
