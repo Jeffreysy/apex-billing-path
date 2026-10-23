@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CaseMixFirst90Tab from "@/components/admin/CaseMixFirst90Tab";
 import { useExecCaseMixDetail, type ExecCaseMixDetailRow } from "@/hooks/useSupabaseData";
 
 /** Case Mix drill-down (Jeff 2026-10-16): every invoice on the month's revenue cases with client, case number
@@ -57,9 +59,10 @@ function downloadCsv(text: string, filename: string) {
 }
 
 export default function CaseMixDetailDialog({
-  open, onOpenChange, monthVal, monthLabel,
-}: { open: boolean; onOpenChange: (o: boolean) => void; monthVal: string; monthLabel: string }) {
-  const q = useExecCaseMixDetail(open ? monthVal : null);
+  open, onOpenChange, monthVal, monthLabel, defaultTab = "breakdown",
+}: { open: boolean; onOpenChange: (o: boolean) => void; monthVal: string; monthLabel: string; defaultTab?: "breakdown" | "first90" }) {
+  const [tab, setTab] = useState<string>(defaultTab);
+  const q = useExecCaseMixDetail(open && tab === "breakdown" ? monthVal : null);
   const [pile, setPile] = useState<string>("all");
   const [family, setFamily] = useState<string>("all");
   const [term, setTerm] = useState("");
@@ -94,12 +97,20 @@ export default function CaseMixDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-[min(1200px,95vw)] overflow-hidden p-0">
+        <Tabs value={tab} onValueChange={setTab}>
         <DialogHeader className="border-b px-6 pb-4 pt-6">
           <DialogTitle>Case Mix breakdown · {monthLabel}</DialogTitle>
           <DialogDescription>
-            Every invoice on the cases opened this month, with client, case and invoice number.
-            {paymentsThrough ? ` Payments counted through ${day(paymentsThrough)}.` : ""}
+            {tab === "first90"
+              ? "Cash collected on new cases in their first 90 days, per case open month."
+              : <>Every invoice on the cases opened this month, with client, case and invoice number.
+                {paymentsThrough ? ` Payments counted through ${day(paymentsThrough)}.` : ""}</>}
           </DialogDescription>
+          <TabsList className="mt-3 h-8 w-fit">
+            <TabsTrigger value="breakdown" className="px-3 py-1 text-xs">Breakdown</TabsTrigger>
+            <TabsTrigger value="first90" className="px-3 py-1 text-xs">First 90 days</TabsTrigger>
+          </TabsList>
+          {tab === "breakdown" && (<>
           <div className="mt-3 flex flex-wrap gap-2">
             <button type="button" onClick={() => setPile("all")}
               className={`rounded-full border px-3 py-1 text-xs ${pile === "all" ? "border-foreground font-semibold" : "border-border/70 text-muted-foreground"}`}>
@@ -132,7 +143,12 @@ export default function CaseMixDetailDialog({
               <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
           </div>
+          </>)}
         </DialogHeader>
+        <TabsContent value="first90" className="mt-3">
+          <CaseMixFirst90Tab monthVal={monthVal} />
+        </TabsContent>
+        <TabsContent value="breakdown" className="mt-0">
         <div className="max-h-[60vh] overflow-auto px-2 pb-4">
           {q.isLoading ? (
             <div className="py-10 text-center text-xs text-muted-foreground">Loading breakdown…</div>
@@ -183,6 +199,8 @@ export default function CaseMixDetailDialog({
             </Table>
           )}
         </div>
+        </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
