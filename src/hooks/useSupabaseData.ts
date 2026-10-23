@@ -1993,6 +1993,75 @@ export function useNewCaseSalesCashMonthly(months = 13) {
   });
 }
 
+/** rpc exec_new_case_gross_sales_monthly(p_from) (VP, 2026-10-23) -- GRAIN: one row per case OPEN month. Gross sales
+ *  (contract value of revenue cases opened) and the dollars down at signing on those cases (open_date - 3 .. + 7 days,
+ *  net). signing_cash_net_by_open_month must equal Case Mix "Paid at signing" for the same month (VP-aligned).
+ *  Admin/partner only at the DB: other roles get 0 rows (-> "no access" state, never zeros). Counts are CASES.
+ *  data_quality: OK | THIN | NOT_MEASURABLE (NOT_MEASURABLE -> n/m). */
+export interface NewCaseGrossSalesMonth {
+  month: string;
+  month_status: string; // 'closed' | 'open' | 'partial'
+  data_quality: string | null;
+  quality_note: string | null;
+  revenue_cases: number | null;
+  distinct_clients: number | null;
+  gross_contract_value: number | null;
+  avg_contract_value: number | null;
+  median_contract_value: number | null;
+  sold_cases: number | null;
+  sold_contract_value: number | null;
+  call_first_cases: number | null;
+  call_first_contract_value: number | null;
+  delete_no_cash_cases: number | null;
+  delete_no_cash_contract_value: number | null;
+  awaiting_cases: number | null;
+  awaiting_contract_value: number | null;
+  signing_cash_net_by_open_month: number | null;
+  /** Already a percent number (26.0 = 26.0%). */
+  signing_cash_pct_of_gross: number | null;
+  consult_payments: number | null;
+  revenue_cases_per_consult: number | null;
+  cases_loaded_through: string | null;
+  payments_through: string | null;
+  funding_judged_through: string | null;
+}
+export interface NewCaseGrossSalesResult {
+  /** false = the rpc is not deployed / not executable yet (awaiting the VP). */
+  available: boolean;
+  rows: NewCaseGrossSalesMonth[];
+}
+const GROSS_SALES_NUMERIC = [
+  "revenue_cases", "distinct_clients", "gross_contract_value", "avg_contract_value", "median_contract_value", "sold_cases",
+  "sold_contract_value", "call_first_cases", "call_first_contract_value", "delete_no_cash_cases", "delete_no_cash_contract_value",
+  "awaiting_cases", "awaiting_contract_value", "signing_cash_net_by_open_month", "signing_cash_pct_of_gross", "consult_payments",
+  "revenue_cases_per_consult",
+] as const;
+
+export function useNewCaseGrossSalesMonthly(from = "2024-04-01") {
+  return useQuery<NewCaseGrossSalesResult>({
+    queryKey: ["new-case-gross-sales-monthly", from],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("exec_new_case_gross_sales_monthly", { p_from: from });
+      if (error) {
+        // PGRST202 = function not found (not applied yet); 42883 = undefined function; 42501 = no EXECUTE grant yet.
+        if (["PGRST202", "42883", "42501"].includes(error.code) || /could not find the function/i.test(error.message ?? "")) {
+          return { available: false, rows: [] };
+        }
+        throw error;
+      }
+      const rows = ((data ?? []) as any[])
+        .map((r) => {
+          const out: any = { ...r, month: String(r.month).slice(0, 10) };
+          for (const k of GROSS_SALES_NUMERIC) out[k] = numOrNull(r[k]);
+          return out as NewCaseGrossSalesMonth;
+        })
+        .sort((a, b) => a.month.localeCompare(b.month));
+      return { available: true, rows };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** v_exec_case_mix_detail (hourly cache) -- GRAIN: one row per INVOICE on a revenue case in the month.
  *  The Case Mix drill-down (Jeff 2026-10-16: "click into this box and get that break down ... export that
  *  table of data in CSV"). Same cases/invoices/classification as v_exec_case_mix_monthly, so the rows add up
