@@ -37,6 +37,8 @@ vi.mock("@/hooks/useSupabaseData", async () => {
     useDelinquentCollectionsBasis: () => ok({ certified: false, statuses: {} }),
     useFirmCashMovementMonthly: () => ok(cash.result),
     useNewCaseSalesCashMonthly: () => ok([]),
+    useNewCaseGrossSalesMonthly: () => ok({ available: false, rows: [] }),
+    useNewCaseSalesCohortMonthly: () => ok([]),
     CASH_MOVEMENT_BUCKETS: [
       "autopay_current", "manual_current", "delinquent_manual", "delinquent_autopay",
       "consult_cash", "new_sales_cash", "other_unresolved",
@@ -137,7 +139,8 @@ describe("Executive Insights hero band", () => {
     // Money Flow now opens on Cash movement (own view, not the legacy pull); the AR roll-forward tab is not
     // mounted until chosen, so only the legacy sections below are still waiting.
     expect(screen.getAllByText("Loading detail…").length).toBe(1);
-    expect(screen.getByText("Awaiting certified data")).toBeInTheDocument();
+    // Cash Movement + Gross sales: both views mocked as not deployed -> both say so, neither shows numbers.
+    expect(screen.getAllByText("Awaiting certified data").length).toBe(2);
     expect(screen.queryByText("Loading executive insights…")).toBeNull();
   });
 

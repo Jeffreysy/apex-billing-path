@@ -6,6 +6,8 @@ import DelinquentCollectionsPanel from "@/components/admin/DelinquentCollections
 import CaseMixDetailDialog from "@/components/admin/CaseMixDetailDialog";
 import CashMovementPanel from "@/components/admin/CashMovementPanel";
 import NewCaseSalesCashCard from "@/components/admin/NewCaseSalesCashCard";
+import GrossSalesCard from "@/components/admin/GrossSalesCard";
+import { caseMixMonthPaidAtSigning } from "@/lib/caseMix";
 import {
   useExecCollectedSplitMonthly, useExecClientBucketDrift, useExecCaseMixMonthly, useExecArAtRisk,
   useFirmFinancialSummary as useCertifiedFirmSummary,
@@ -422,8 +424,10 @@ export default function ExecutiveInsights() {
       </section>
 
       {/* ─────────── New-case sales cash (all systems, VP-certified v_new_case_sales_cash_monthly) ─────────── */}
-      <section id="newsales" className="scroll-mt-24">
-        <NewCaseSalesCashCard monthVal={monthVal} />
+      <section id="newsales" className="scroll-mt-24 grid gap-4 lg:grid-cols-3">
+        <NewCaseSalesCashCard className="lg:col-span-2" monthVal={monthVal} />
+        {/* Gross sales · dollars down, under Case Mix: month-level "service sold" + money down at signing. */}
+        <GrossSalesCard monthVal={monthVal} />
       </section>
 
       {view ? (
@@ -945,10 +949,13 @@ function DriftMatrix({ cells, base, end }: { cells: ExecDriftCell[]; base: strin
 /** CASE MIX — services sold in the month (revenue cases opened, invoiced > 0) and the contract
  *  value they bring (v_exec_case_mix_monthly). Carries a feed-freshness line so a partially
  *  loaded month never reads as a collapse in sales. */
-function CaseMixCard({ monthVal }: { monthVal: string }) {
+export function CaseMixCard({ monthVal }: { monthVal: string }) {
   const q = useExecCaseMixMonthly();
   // Jeff 2026-10-16: click into the box for the per-invoice breakdown (client, case #, invoice #) + CSV export.
   const [detailOpen, setDetailOpen] = useState(false);
+  // PR #21: the dialog reads defaultTab on mount, so the key remounts it on the tab the link asked for.
+  const [detailTab, setDetailTab] = useState<"breakdown" | "first90">("breakdown");
+  const openDetail = (tab: "breakdown" | "first90") => { setDetailTab(tab); setDetailOpen(true); };
   const rows: ExecCaseMixRow[] | undefined = q.data;
   const monthStart = monthValToDate(monthVal);
   const monthLabel = format(monthStart, "MMMM yyyy");
@@ -977,7 +984,8 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
   const n = (v: unknown) => Number(v) || 0;
   // No cash columns on the rows (older cache / test fixtures) -> show contract value only, never "NaN".
   const hasCash = mr.some((r) => r.payments_through != null);
-  const totalPaid = mr.reduce((s, r) => s + n(r.paid_at_signing), 0);
+  // Shared with the Gross sales card cross-check (src/lib/caseMix.ts) so both read the same "Paid at signing".
+  const totalPaid = caseMixMonthPaidAtSigning(rows, monthVal) ?? 0;
   const totalToDate = mr.reduce((s, r) => s + n(r.collected_to_date), 0);
   const totalWithCash = mr.reduce((s, r) => s + n(r.cases_with_cash), 0);
   const totalPending = mr.reduce((s, r) => s + n(r.pending_at_signing), 0);
@@ -1003,15 +1011,20 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
     <Card className="rounded-2xl border-border/70 p-6 shadow-none">
       <div className="flex items-start justify-between gap-2">
         <SectionHeader eyebrow="Services Sold" title="Case Mix" caption={`Revenue cases opened · ${monthLabel}`} />
-        <button
-          type="button"
-          onClick={() => setDetailOpen(true)}
-          className="mt-1 shrink-0 rounded-full border border-border/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          View breakdown · CSV
-        </button>
+        <div className="mt-1 flex shrink-0 flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={() => openDetail("breakdown")}
+            className="rounded-full border border-border/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            View breakdown · CSV
+          </button>
+          <button type="button" onClick={() => openDetail("first90")} className="text-[10px] font-medium text-secondary underline-offset-2 hover:underline">
+            First 90 days
+          </button>
+        </div>
       </div>
-      <CaseMixDetailDialog open={detailOpen} onOpenChange={setDetailOpen} monthVal={monthVal} monthLabel={monthLabel} />
+      <CaseMixDetailDialog key={detailTab} open={detailOpen} onOpenChange={setDetailOpen} monthVal={monthVal} monthLabel={monthLabel} defaultTab={detailTab} />
       {q.isLoading ? (
         <div className="py-8 text-center text-xs text-muted-foreground">Loading case mix…</div>
       ) : q.isError || !rows ? (
@@ -1020,7 +1033,7 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
         </div>
       ) : (
         <>
-          <div className="mt-5 flex cursor-pointer items-baseline gap-2" title="Click for the per-invoice breakdown" onClick={() => setDetailOpen(true)}>
+          <div className="mt-5 flex cursor-pointer items-baseline gap-2" title="Click for the per-invoice breakdown" onClick={() => openDetail("breakdown")}>
             <span className="text-3xl font-semibold tracking-tight tabular-nums">{mr.length ? fmtMoney(totalValue) : DASH}</span>
             <span className="text-xs text-muted-foreground">{hasSold ? "contract value sold" : "contract value"}</span>
           </div>
@@ -1033,8 +1046,9 @@ function CaseMixCard({ monthVal }: { monthVal: string }) {
               {signingMeasurable ? (
                 <>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-lg font-semibold tracking-tight tabular-nums text-success">{fmtMoney(totalPaid)}</span>
-                    <span className="text-xs text-muted-foreground">hit the bank at signing · {paidPct.toFixed(0)}% of contract value</span>
+                    <span className="text-lg font-semibold tracking-tight tabular-nums text-success" data-testid="casemix-paid-at-signing">{fmtMoney(totalPaid)}</span>
+                    {/* Same name and figure as the Gross sales card (Jeff 2026-10-23: "they should read the same number"). */}
+                    <span className="text-xs text-muted-foreground">Paid at signing · {paidPct.toFixed(0)}% of contract value</span>
                   </div>
                   <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
                     {totalWithCash} of {totalCases} cases paid · {fmtMoney(totalToDate)} collected to date
